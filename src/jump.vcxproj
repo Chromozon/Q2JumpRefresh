@@ -65,10 +65,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>gamex86</TargetName>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>gamex86</TargetName>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -137,15 +139,7 @@
     <ClCompile Include="g_utils.c" />
     <ClCompile Include="g_weapon.c" />
     <ClCompile Include="jumpmod.c" />
-    <ClCompile Include="m_berserk.c" />
-    <ClCompile Include="m_boss3.c" />
-    <ClCompile Include="m_flipper.c" />
-    <ClCompile Include="m_gunner.c" />
-    <ClCompile Include="m_infantry.c" />
-    <ClCompile Include="m_insane.c" />
     <ClCompile Include="m_move.c" />
-    <ClCompile Include="m_mutant.c" />
-    <ClCompile Include="m_soldier.c" />
     <ClCompile Include="p_client.c" />
     <ClCompile Include="p_hud.c" />
     <ClCompile Include="p_menu.c" />
@@ -160,17 +154,12 @@
     <ClInclude Include="g_ctf.h" />
     <ClInclude Include="g_local.h" />
     <ClInclude Include="jumpmod.h" />
-    <ClInclude Include="m_berserk.h" />
-    <ClInclude Include="m_boss32.h" />
-    <ClInclude Include="m_flipper.h" />
-    <ClInclude Include="m_gunner.h" />
-    <ClInclude Include="m_infantry.h" />
-    <ClInclude Include="m_insane.h" />
-    <ClInclude Include="m_mutant.h" />
     <ClInclude Include="m_player.h" />
-    <ClInclude Include="m_soldier.h" />
     <ClInclude Include="p_menu.h" />
     <ClInclude Include="q_shared.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="jump.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

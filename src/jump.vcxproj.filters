@@ -72,31 +72,7 @@
     <ClCompile Include="jumpmod.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="m_berserk.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="m_boss3.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="m_flipper.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="m_gunner.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="m_infantry.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="m_insane.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="m_move.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="m_mutant.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="m_soldier.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="p_client.c">
@@ -137,31 +113,7 @@
     <ClInclude Include="jumpmod.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="m_berserk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="m_boss32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="m_flipper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="m_gunner.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="m_infantry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="m_insane.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="m_mutant.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="m_player.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="m_soldier.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="p_menu.h">
@@ -170,5 +122,10 @@
     <ClInclude Include="q_shared.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="jump.def">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

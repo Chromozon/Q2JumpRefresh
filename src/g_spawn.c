@@ -132,7 +132,9 @@ spawn_t	spawns[] = {
 	{"misc_gib_arm", SP_misc_gib_arm},
 	{"misc_gib_leg", SP_misc_gib_leg},
 	{"misc_gib_head", SP_misc_gib_head},
-	{"misc_insane", SP_misc_insane},
+#if 0 // remove monster code
+    { "misc_insane", SP_misc_insane },
+#endif
 	{"misc_deadsoldier", SP_misc_deadsoldier},
 	{"misc_viper", SP_misc_viper},
 	{"misc_viper_bomb", SP_misc_viper_bomb},
@@ -148,42 +150,32 @@ spawn_t	spawns[] = {
 	{"misc_eastertank", SP_misc_eastertank},
 	{"misc_easterchick", SP_misc_easterchick},
 	{"misc_easterchick2", SP_misc_easterchick2},
-	{"monster_berserk", SP_monster_berserk},
-	{"monster_gunner", SP_monster_gunner},
+
 #if 0 // remove monster code
-
-	{"monster_gladiator", SP_monster_gladiator},
-
-
-#endif
+	{"monster_berserk", SP_monster_berserk},
+    { "monster_gladiator", SP_monster_gladiator },
+	{"monster_gunner", SP_monster_gunner},
 	{"monster_infantry", SP_monster_infantry},
 	{"monster_soldier_light", SP_monster_soldier_light},
 	{"monster_soldier", SP_monster_soldier},
 	{"monster_soldier_ss", SP_monster_soldier_ss},
-#if 0
 	{"monster_tank", SP_monster_tank},
 	{"monster_tank_commander", SP_monster_tank},
 	{"monster_medic", SP_monster_medic},
-#endif
 	{"monster_flipper", SP_monster_flipper},
-#if 0
 	{"monster_chick", SP_monster_chick},
 	{"monster_parasite", SP_monster_parasite},
 	{"monster_flyer", SP_monster_flyer},
 	{"monster_brain", SP_monster_brain},
 	{"monster_floater", SP_monster_floater},
 	{"monster_hover", SP_monster_hover},
-
+    { "monster_mutant", SP_monster_mutant },
 	{"monster_supertank", SP_monster_supertank},
 	{"monster_boss2", SP_monster_boss2},
-#endif
-	{"monster_mutant", SP_monster_mutant},
 	{"monster_boss3_stand", SP_monster_boss3_stand},
-	{"monster_commander_body", SP_monster_commander_body},
-#if 0
 	{"monster_jorg", SP_monster_jorg},
 
-
+    { "monster_commander_body", SP_monster_commander_body },
 
 	{"turret_breach", SP_turret_breach},
 	{"turret_base", SP_turret_base},

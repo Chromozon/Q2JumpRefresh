@@ -23,12 +23,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef _WIN32
 // unknown pragmas are SUPPOSED to be ignored, but....
-#pragma warning(disable : 4244)     // MIPS
-#pragma warning(disable : 4136)     // X86
-#pragma warning(disable : 4051)     // ALPHA
+#pragma warning(disable : 4244)
+//#pragma warning(disable : 4136)     // X86
+//#pragma warning(disable : 4051)     // ALPHA
 
-#pragma warning(disable : 4018)     // signed/unsigned mismatch
-#pragma warning(disable : 4305)		// truncation from const double to float
+//#pragma warning(disable : 4018)     // signed/unsigned mismatch
+#pragma warning(disable : 4244) // conversion from type to type, possible loss of data TODO
+#pragma warning(disable : 4305) // truncation from double to float; happens when you do "float val = 12.0" without the f appended to the number
 
 #endif
 

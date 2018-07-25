@@ -392,9 +392,6 @@ void EndDMLevel (void)
 }
 
 
-void End_Overtime(void);
-void End_Jumping(void);
-
 void End_Jumping(void)
 {
 	float r;
@@ -1098,7 +1095,7 @@ void G_RunFrame (void)
 
 	Ghost_Play_Frame();
 
-	Generate_Highlight_List();
+	//Generate_Highlight_List(); CHROMO TODO
 	if (!mset_vars->timelimit)
 	{
 		gi.cvar_set("time_remaining","unlimited");

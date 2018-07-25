@@ -200,8 +200,6 @@ static char *tnames[] = {
 	NULL
 };
 
-void CTFAutoJoinTeam(edict_t *ent, int desired_team);
-
 void stuffcmd(edict_t *ent, char *s) 	
 {
    	gi.WriteByte (11);	        
@@ -1475,7 +1473,7 @@ void SP_info_player_team2(edict_t *self)
 void CTFPlayerResetGrapple(edict_t *ent)
 {
 	if (ent->client && ent->client->ctf_grapple)
-		CTFResetGrapple(ent->client->ctf_grapple);
+		CTFResetGrapple((edict_t*)ent->client->ctf_grapple);
 }
 
 // self is grapple, not player
@@ -1788,7 +1786,7 @@ void CTFWeapon_Grapple (edict_t *ent)
 
 	if (!(ent->client->buttons & BUTTON_ATTACK) && 
 		ent->client->ctf_grapple) {
-		CTFResetGrapple(ent->client->ctf_grapple);
+		CTFResetGrapple((edict_t*)ent->client->ctf_grapple);
 		if (ent->client->weaponstate == WEAPON_FIRING)
 			ent->client->weaponstate = WEAPON_READY;
 	}
@@ -2997,7 +2995,6 @@ static void SetLevelName(pmenu_t *p)
 
 
 /* ELECTIONS */
-void CTFWinElection(int pvote, edict_t* pvoter);
 
 qboolean CTFBeginElection(edict_t *ent, elect_t type, char *msg,qboolean require_max)
 {
@@ -4439,7 +4436,7 @@ void CTFOpenAdminMenu(edict_t *ent);
 
 void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 	char st[80];
 	int i;
 
@@ -4532,7 +4529,7 @@ void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
 
 void CTFAdmin_SettingsCancel(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 
 	PMenu_Close(ent);
 	CTFOpenAdminMenu(ent);
@@ -4540,7 +4537,7 @@ void CTFAdmin_SettingsCancel(edict_t *ent, pmenuhnd_t *p)
 
 void CTFAdmin_ChangeMatchLen(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 
 	settings->matchlen = (settings->matchlen % 60) + 5;
 	if (settings->matchlen < 5)
@@ -4551,7 +4548,7 @@ void CTFAdmin_ChangeMatchLen(edict_t *ent, pmenuhnd_t *p)
 
 void CTFAdmin_ChangeMatchSetupLen(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 
 	settings->matchsetuplen = (settings->matchsetuplen % 60) + 5;
 	if (settings->matchsetuplen < 5)
@@ -4562,7 +4559,7 @@ void CTFAdmin_ChangeMatchSetupLen(edict_t *ent, pmenuhnd_t *p)
 
 void CTFAdmin_ChangeMatchStartLen(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 
 	settings->matchstartlen = (settings->matchstartlen % 600) + 10;
 	if (settings->matchstartlen < 20)
@@ -4573,7 +4570,7 @@ void CTFAdmin_ChangeMatchStartLen(edict_t *ent, pmenuhnd_t *p)
 
 void CTFAdmin_ChangeWeapStay(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 
 	settings->weaponsstay = !settings->weaponsstay;
 	CTFAdmin_UpdateSettings(ent, p);
@@ -4581,7 +4578,7 @@ void CTFAdmin_ChangeWeapStay(edict_t *ent, pmenuhnd_t *p)
 
 void CTFAdmin_ChangeInstantItems(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 
 	settings->instantitems = !settings->instantitems;
 	CTFAdmin_UpdateSettings(ent, p);
@@ -4589,7 +4586,7 @@ void CTFAdmin_ChangeInstantItems(edict_t *ent, pmenuhnd_t *p)
 
 void CTFAdmin_ChangeQuadDrop(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 
 	settings->quaddrop = !settings->quaddrop;
 	CTFAdmin_UpdateSettings(ent, p);
@@ -4605,7 +4602,7 @@ void CTFAdmin_ChangeQuadDrop(edict_t *ent, pmenuhnd_t *p)
 */
 void CTFAdmin_ChangeMatchLock(edict_t *ent, pmenuhnd_t *p)
 {
-	admin_settings_t *settings = p->arg;
+	admin_settings_t *settings = (admin_settings_t*)p->arg;
 
 	settings->matchlock = !settings->matchlock;
 	CTFAdmin_UpdateSettings(ent, p);
@@ -4615,7 +4612,7 @@ void CTFAdmin_UpdateSettings(edict_t *ent, pmenuhnd_t *setmenu)
 {
 	int i = 2;
 	char text[64];
-	admin_settings_t *settings = setmenu->arg;
+	admin_settings_t *settings = (admin_settings_t*)setmenu->arg;
 
 	sprintf(text, "Match Len:       %2d mins", settings->matchlen);
 	PMenu_UpdateEntry(setmenu->entries + i, text, PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchLen);
@@ -4675,7 +4672,7 @@ void CTFAdmin_Settings(edict_t *ent, pmenuhnd_t *p)
 
 	PMenu_Close(ent);
 
-	settings = malloc(sizeof(*settings));
+	settings = (admin_settings_t*)malloc(sizeof(*settings));
 
 	settings->matchlen = matchtime->value;
 	settings->matchsetuplen = matchsetuptime->value;

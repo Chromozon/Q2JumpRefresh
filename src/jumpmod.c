@@ -1,6 +1,7 @@
 #include "g_local.h"
 #ifdef _WIN32
 #include <windows.h>
+#include <direct.h>
 #else
 #include <sys/types.h>
 #include <sys/time.h>
@@ -1288,7 +1289,7 @@ int LoadMapList(char *filename)
    maplist.num_users = 0;
    maplist.sort_num_users = 0;
    //read in users file
-   open_users_file(1);
+   open_users_file();
 
 
 	strcpy(maplist.path,filename);
@@ -6764,7 +6765,7 @@ qboolean writeMapCfgFile(char *cfgfilename)
 						comparison = *((int *)zbotCommands[i].datapoint)!=*((int *)zbotCommands[i2].datapoint);
 						break;
 					case CMDTYPE_STRING:
-						comparison = (strcmp(zbotCommands[i].datapoint,zbotCommands[i2].datapoint)!=0);
+						comparison = (strcmp((char*)zbotCommands[i].datapoint, (char*)zbotCommands[i2].datapoint) != 0);
 						break;
 					}
 					
@@ -6882,7 +6883,7 @@ qboolean readCfgFile(char *cfgfilename)
                 break;
 
               case CMDTYPE_STRING:
-                strcpy(zbotCommands[i].datapoint, buff2);
+                strcpy((char*)zbotCommands[i].datapoint, buff2);
                 break;
             }
 
@@ -6924,7 +6925,7 @@ void processCommand(int cmdidx, int startarg, edict_t *ent)
         break;
 
       case CMDTYPE_STRING:
-        processstring(zbotCommands[cmdidx].datapoint, gi.argv(startarg), 255, 0);
+        processstring((char*)zbotCommands[cmdidx].datapoint, gi.argv(startarg), 255, 0);
         break;
     }
   }
@@ -10498,7 +10499,6 @@ void stuff_client(edict_t *ent)
 	gi.cprintf(ent,PRINT_HIGH,"stuff (client)\n");
 }
 
-void Slap_Him(edict_t *ent, edict_t *targ);
 void SlapClient(edict_t *ent)
 {
 	int i;
@@ -12544,7 +12544,8 @@ void ListBans(edict_t *ent)
 			break;
 		if (!bans[i].inuse)
 			continue;
-		time_str = ctime(&bans[i].expiry);
+        time_t banTime = bans[i].expiry;
+		time_str = ctime(&banTime);
 		time_str[strlen(time_str) - 1] = '\0';
 		gi.cprintf(ent,PRINT_HIGH," %-2d | %-19s | %-25s | %lu \n",i,bans[i].idstring,bans[i].expiry ? time_str : "None",bans[i].banflags);
 	}
@@ -12597,7 +12598,8 @@ void AddBan(edict_t *ent)
 	bans[i].ipban = ipban;
 	bans[i].inuse = true;
 
-	time_str = ctime(&bans[i].expiry);
+    time_t banTime = bans[i].expiry;
+	time_str = ctime(&banTime);
 	time_str[strlen(time_str) - 1] = '\0';
 
 	gi.cprintf(ent,PRINT_HIGH," ID |       IP/Name       |        Expiry time        | Ban flags\n");

@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 // g_local.h -- local definitions for game module
+#pragma once
 
 #include "q_shared.h"
 
@@ -731,6 +732,7 @@ void ThrowHead (edict_t *self, char *gibname, int damage, int type);
 void ThrowClientHead (edict_t *self, int damage);
 void ThrowGib (edict_t *self, char *gibname, int damage, int type);
 void BecomeExplosion1(edict_t *self);
+void ThrowUpNow(edict_t *self);
 
 //
 // g_ai.c
@@ -763,6 +765,7 @@ void fire_grenade2 (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int 
 void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius, int radius_damage);
 void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick);
 void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius);
+void weapon_ball_fire(edict_t *ent);
 
 //
 // g_ptrail.c
@@ -785,6 +788,9 @@ void InitClientPersistant (gclient_t *client);
 void InitClientResp (gclient_t *client);
 void ClientBeginServerFrame (edict_t *ent);
 void ClientUserinfoChanged (edict_t *ent, char *userinfo);
+void give_item(edict_t *ent, char *name);
+void SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles);
+void Generate_Race_Data(int race_frame, int race_this);
 
 //
 // g_player.c
@@ -809,6 +815,7 @@ void MoveClientToIntermission (edict_t *client);
 void G_SetStats (edict_t *ent);
 void ValidateSelectedItem (edict_t *ent);
 void DeathmatchScoreboardMessage (edict_t *client, edict_t *killer);
+void Cmd_Score2_f(edict_t *ent);
 
 //
 // g_pweapon.c
@@ -836,15 +843,155 @@ void G_RunEntity (edict_t *ent);
 void SaveClientData (void);
 void FetchClientEntData (edict_t *ent);
 void EndDMLevel (void);
+void End_Overtime(void);
+void End_Jumping(void);
 
 //pooy
-void EndDMLevel (void);  // not sure why id didn't include this 
+void EndDMLevel (void);  // not sure why id didn't include this
+
+// g_spawn.c
+void ED_CallSpawn(edict_t *ent);
+void ED_ParseField(char *key, char *value, edict_t *ent, int add);
+
+// g_ctf.c
 
 
 //
 // g_svcmds.c
 //
 qboolean SV_FilterPacket (char *from);
+
+// g_cmds.c
+void Cmd_Kill_f(edict_t *ent);
+
+// Misc
+void SP_item_health(edict_t *self);
+void SP_item_health_small(edict_t *self);
+void SP_item_health_large(edict_t *self);
+void SP_item_health_mega(edict_t *self);
+
+void SP_info_player_start(edict_t *ent);
+void SP_info_player_deathmatch(edict_t *ent);
+void SP_info_player_coop(edict_t *ent);
+void SP_info_player_intermission(edict_t *ent);
+
+void SP_func_plat(edict_t *ent);
+void SP_func_rotating(edict_t *ent);
+void SP_func_button(edict_t *ent);
+void SP_func_door(edict_t *ent);
+void SP_func_door_secret(edict_t *ent);
+void SP_func_door_rotating(edict_t *ent);
+void SP_func_water(edict_t *ent);
+void SP_func_train(edict_t *ent);
+void SP_func_conveyor(edict_t *self);
+void SP_func_wall(edict_t *self);
+void SP_func_object(edict_t *self);
+void SP_func_explosive(edict_t *self);
+void SP_func_timer(edict_t *self);
+void SP_func_areaportal(edict_t *ent);
+void SP_func_clock(edict_t *ent);
+void SP_func_killbox(edict_t *ent);
+
+void SP_trigger_always(edict_t *ent);
+void SP_trigger_once(edict_t *ent);
+void SP_trigger_multiple(edict_t *ent);
+void SP_trigger_relay(edict_t *ent);
+void SP_trigger_push(edict_t *ent);
+void SP_trigger_hurt(edict_t *ent);
+void SP_trigger_key(edict_t *ent);
+void SP_trigger_counter(edict_t *ent);
+void SP_trigger_elevator(edict_t *ent);
+void SP_trigger_gravity(edict_t *ent);
+void SP_trigger_monsterjump(edict_t *ent);
+
+void SP_target_temp_entity(edict_t *ent);
+void SP_target_speaker(edict_t *ent);
+void SP_target_explosion(edict_t *ent);
+void SP_target_changelevel(edict_t *ent);
+void SP_target_secret(edict_t *ent);
+void SP_target_goal(edict_t *ent);
+void SP_target_splash(edict_t *ent);
+void SP_target_spawner(edict_t *ent);
+void SP_target_blaster(edict_t *ent);
+void SP_target_crosslevel_trigger(edict_t *ent);
+void SP_target_crosslevel_target(edict_t *ent);
+void SP_target_laser(edict_t *self);
+void SP_target_help(edict_t *ent);
+void SP_target_actor(edict_t *ent);
+void SP_target_lightramp(edict_t *self);
+void SP_target_earthquake(edict_t *ent);
+void SP_target_character(edict_t *ent);
+void SP_target_string(edict_t *ent);
+
+void SP_worldspawn(edict_t *ent);
+void SP_viewthing(edict_t *ent);
+
+void SP_light(edict_t *self);
+void SP_light_mine1(edict_t *ent);
+void SP_light_mine2(edict_t *ent);
+void SP_info_null(edict_t *self);
+void SP_info_notnull(edict_t *self);
+void SP_path_corner(edict_t *self);
+void SP_point_combat(edict_t *self);
+
+void SP_misc_explobox(edict_t *self);
+void SP_misc_banner(edict_t *self);
+void SP_misc_satellite_dish(edict_t *self);
+void SP_misc_actor(edict_t *self);
+void SP_misc_gib_arm(edict_t *self);
+void SP_misc_gib_leg(edict_t *self);
+void SP_misc_gib_head(edict_t *self);
+void SP_misc_insane(edict_t *self);
+void SP_misc_deadsoldier(edict_t *self);
+void SP_misc_viper(edict_t *self);
+void SP_misc_viper_bomb(edict_t *self);
+void SP_misc_bigviper(edict_t *self);
+void SP_misc_strogg_ship(edict_t *self);
+void SP_misc_teleporter(edict_t *self);
+void SP_misc_teleporter_dest(edict_t *self);
+void SP_misc_blackhole(edict_t *self);
+void SP_misc_eastertank(edict_t *self);
+void SP_misc_easterchick(edict_t *self);
+void SP_misc_easterchick2(edict_t *self);
+
+void SP_monster_berserk(edict_t *self);
+void SP_monster_gladiator(edict_t *self);
+void SP_monster_gunner(edict_t *self);
+void SP_monster_infantry(edict_t *self);
+void SP_monster_soldier_light(edict_t *self);
+void SP_monster_soldier(edict_t *self);
+void SP_monster_soldier_ss(edict_t *self);
+void SP_monster_tank(edict_t *self);
+void SP_monster_medic(edict_t *self);
+void SP_monster_flipper(edict_t *self);
+void SP_monster_chick(edict_t *self);
+void SP_monster_parasite(edict_t *self);
+void SP_monster_flyer(edict_t *self);
+void SP_monster_brain(edict_t *self);
+void SP_monster_floater(edict_t *self);
+void SP_monster_hover(edict_t *self);
+void SP_monster_mutant(edict_t *self);
+void SP_monster_supertank(edict_t *self);
+void SP_monster_boss2(edict_t *self);
+void SP_monster_jorg(edict_t *self);
+void SP_monster_boss3_stand(edict_t *self);
+
+void SP_monster_commander_body(edict_t *self);
+
+void SP_turret_breach(edict_t *self);
+void SP_turret_base(edict_t *self);
+void SP_turret_driver(edict_t *self);
+
+void SP_effect(edict_t *ent);
+void SP_jumpbox_small(edict_t *ent);
+void SP_jumpbox_medium(edict_t *ent);
+void SP_jumpbox_large(edict_t *ent);
+void SP_jump_score(edict_t *ent);
+void SP_jump_time(edict_t *ent);
+void SP_jump_clip(edict_t *ent);
+void SP_cpbox_small(edict_t *ent);
+void SP_cpbox_medium(edict_t *ent);
+void SP_cpbox_large(edict_t *ent);
 
 //============================================================================
 
@@ -1413,7 +1560,7 @@ struct edict_s
 
 };
 
-int ESF_debug;
+static int ESF_debug;
 
 //ZOID
 #include "g_ctf.h"

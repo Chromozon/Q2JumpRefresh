@@ -1,3 +1,5 @@
+#pragma once
+
 //defines
 #define MAX_USERS 4096
 #define MAX_HIGHSCORES 15
@@ -667,7 +669,13 @@ extern qboolean map_allow_voting;
 void WriteMapList(void);
 int closest_ent(edict_t *ent);
 
+void ServerError(char *error);
+void TagLeave(edict_t *ent);
+void SelectSpawnPointFromDemo(edict_t *ent, vec3_t origin, vec3_t angles);
+void OverTime_GiveAll(edict_t *temp, qboolean rocket);
 
+void Cmd_RepRepeat(edict_t *ent);
+void CTFApplyDegeneration(edict_t *ent);
 
 void lock_ents(edict_t *ent);
 void reset_map_played_count(edict_t *ent);
@@ -681,6 +689,47 @@ void Overide_Vote_Maps(edict_t *ent);
 extern qboolean Neuro_RedKey_Overide;
 void UpdateVoteMaps(void);
 void sort_maps(edict_t *ent);
+int FindTRecID(int uid);
+void addmaps(void);
+qboolean readCfgFile(char *cfgfilename);
+void SetSpinnyThing(void);
+qboolean readCfgFile(char *cfgfilename);
+void UpdateScores2();
+void say_person(edict_t *ent);
+void AddMap(edict_t *ent);
+void Add_Time(edict_t *ent);
+void showfps(edict_t *ent);
+void stuff_client(edict_t *ent);
+void D_Votes(edict_t *ent);
+void Skin_Ent(edict_t *ent);
+void list_mapsdone(edict_t *ent);
+void CTFVoteTime(edict_t *ent);
+void Slap_Him(edict_t *ent, edict_t *targ);
+void SlapClient(edict_t *ent);
+void change_admin_pass(edict_t *ent);
+void ASET(edict_t *ent);
+void RemoveMap(edict_t* ent);
+void Cmd_Debug(edict_t *ent);
+void Cmd_UpdateScores(edict_t* ent);
+void PlayTag(edict_t *ent);
+void cmsg(edict_t *ent);
+void ShowPlayerMaps(edict_t *ent);
+void FlashLight(edict_t *ent);
+void AntiGlue(edict_t *ent);
+void Cmd_UnadminAll(edict_t *ent);
+void AddBan(edict_t *ent);
+void Random_Teams(void);
+int RemoveAllItems(void);
+void ForceEveryoneToHard(void);
+int CheckOverTimeLastManRules(void);
+int CheckOverTimeRules(void);
+void NewTag(void);
+void SendFlashLight(edict_t *ent);
+void PassTag(edict_t *from);
+void UpdateVoteMenu(void);
+void Ghost_Play_Frame(void);
+void Generate_Highlight_List(edict_t *ent);
+void Overtime_Kill(edict_t *ent);
 
 typedef struct {
 	qboolean loaded;
@@ -727,7 +776,7 @@ typedef struct {
 	char tplate[SIZEOF_HTML_BUFFER];
 	int len;
 } html_data_t;
-html_data_t html_data;
+static html_data_t html_data;
 
 #define HTML_TEMPLATE_POSITION "$template_position$"
 #define HTML_TEMPLATE_MAPBESTTIME "$template_mapbesttime$"

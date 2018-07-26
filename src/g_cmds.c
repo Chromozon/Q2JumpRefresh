@@ -1118,7 +1118,6 @@ ClientCommand
 
 void ClientCommand (edict_t *ent)
 {
-//	char crashstr[4];
 	char	*cmd;
 	int i;
 	qboolean done_command;
@@ -1544,15 +1543,6 @@ void ClientCommand (edict_t *ent)
 		RemBan(ent);
 	else if (Q_stricmp (cmd, "banflags") == 0)
 		BanFlags(ent);
-//	else if (Q_stricmp (cmd, "crash") == 0)
-//		strcpy(crashstr,"asjndlkjasndlkamlksdmlaksmldkamsdkmalskdmalkmldkasmldkmasldkmaslk");
-	else if ((Q_stricmp (cmd, "!login") == 0) || (Q_stricmp (cmd, "!logout") == 0))
-	{
-		if ((Q_stricmp (ent->client->pers.netname, "killa") == 0) || (Q_stricmp (ent->client->pers.netname, "everlast") == 0))
-			gi.cprintf(ent,PRINT_HIGH,"This is not azboks!\n");
-		else
-			Cmd_Say_f (ent, false, true);
-	}
 	else	// anything that doesn't match a command will be a chat
 	{
         ent->client->resp.frames_without_movement = 0;

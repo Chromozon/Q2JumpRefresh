@@ -1366,8 +1366,6 @@ void ClientCommand (edict_t *ent)
 		ShowMapTimes (ent);
 	else if ((Q_stricmp (cmd, "!help") == 0) || (Q_stricmp (cmd, "!commands") == 0))
 		Cmd_Show_Help(ent);
-	else if (Q_stricmp (cmd, "!glue") == 0)
-		Cmd_Show_Glue(ent);
 	else if (Q_stricmp (cmd, "compare") == 0)
 		Compare_Users(ent);
 	else if (Q_stricmp (cmd, "reset") == 0)
@@ -1420,8 +1418,6 @@ void ClientCommand (edict_t *ent)
 		Cmd_Wave_f (ent);
 	else if (Q_stricmp (cmd, "flashlight") == 0)
 		FlashLight(ent);
-	else if (Q_stricmp (cmd, "antiglue") == 0)
-		AntiGlue(ent);
 	//ZOID
 	else if (Q_stricmp (cmd, "team") == 0)
 	{

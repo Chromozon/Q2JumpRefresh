@@ -1207,7 +1207,6 @@ typedef struct
 	vec3_t		store_angles3;
 	int			store;
 
-	int glued;
 	int client_think_begin;
 	float			item_timer;
 	float			item_timer_penalty;
@@ -1248,7 +1247,6 @@ typedef struct
 	int			chasecam_type;
 	qboolean	chase_ineye;
 	qboolean	flashlight;
-	qboolean	antiglue;
 	int			uid;
 	int			suid;
 	int trecid;

@@ -53,29 +53,6 @@ static char *help_main[] = {
 	NULL
 };
 
-static char *glue_main[] = {
-	"\n--------------------------------------------------\n\n",
-"Çìõå åøðìáéîåä\n",
-"Sometimes when you hit the ground you are prevented from jumping again.\n",
-"This is known as glue. You will notice the effect on chain strafe jumps,\n",
-"where you keep sticking to the floor.\n\n",
-
-"Áîôéçìõå ÅÁÓÙ ÏÎÌÙ\n",
-"This means antiglue is only available to those on EASY team. Type áîôéçìõå to\n",
-"switch on.\n\n",
-
-"Áîôéçìõå Ïææ¯Ïî\n",
-"You may turn antiglue on and off at will on both teams. Type áîôéçìõå to toggle.\n\n",
-
-"Áîôéçìõå Ðåîáìôù\n",
-"If no time has been set on the current map the penalty per glue is 5 seconds.\n",
-"When a time has been set you may be prevented from setting a 1st place while\n",
-"using antiglue. The penalty only applies when you turn antiglue on yourself.\n",
-	"\n--------------------------------------------------\n",
-	NULL
-};
-
-
 char moddir[256];
 int mset_timelimit;
 mset_vars_t mset_vars[1];
@@ -192,48 +169,6 @@ zbotcmd_t zbotCommands[] =
     CMDWHERE_CFGFILE | CMD_MSET, 
     CMDTYPE_NUMBER,
     &mset_vars->fast_firing,
-  },
-  { 
-	0,2,0,
-    "antiglue", 
-    CMDWHERE_CFGFILE | CMD_MSET, 
-    CMDTYPE_NUMBER,
-    &mset_vars->antiglue,
-  },
-  { 
-	0,100,2,
-    "antiglue_penalty", 
-    CMDWHERE_CFGFILE | CMD_MSET, 
-    CMDTYPE_NUMBER,
-    &mset_vars->antiglue_penalty,
-  },
-  { 
-	0,1,0,
-    "antiglue_allow1st", 
-    CMDWHERE_CFGFILE | CMD_MSET, 
-    CMDTYPE_NUMBER,
-    &mset_vars->antiglue_allow1st,
-  },
-  { 
-	0,1,1,
-    "gantiglue", 
-    CMDWHERE_CFGFILE | CMD_GSET | CMD_GSETMAP, 
-    CMDTYPE_NUMBER,
-    &gset_vars->mset->antiglue,
-  },
-  { 
-	0,100,1,
-    "gantiglue_penalty", 
-    CMDWHERE_CFGFILE | CMD_GSET | CMD_GSETMAP, 
-    CMDTYPE_NUMBER,
-    &gset_vars->mset->antiglue_penalty,
-  },
-  { 
-	0,1,0,
-    "gantiglue_allow1st", 
-    CMDWHERE_CFGFILE | CMD_GSET | CMD_GSETMAP, 
-    CMDTYPE_NUMBER,
-    &gset_vars->mset->antiglue_allow1st,
   },
   { 
 	0,2147483647,8388608,
@@ -6991,9 +6926,6 @@ void SetDefaultValues(void)
 	gset_vars->mset->regen = 5;
 	gset_vars->mset->timelimit = 20;
 	gset_vars->mset->best_time_glow = 0;
-	gset_vars->mset->antiglue = 0;
-	gset_vars->mset->antiglue_penalty = 2;
-	gset_vars->mset->antiglue_allow1st = 0;
 	gset_vars->mset->target_glow = 512;
 	gset_vars->mset->ghost = 1;
 	gset_vars->mset->kill_delay = 2;
@@ -7646,7 +7578,6 @@ ent->client->resp.replay_speed = REPLAY_SPEED_ONE;
 
 	ent->client->resp.jumps = 0;
 	ent->client->resp.item_timer = 0;
-	ent->client->resp.glued = 0;
 	ent->client->resp.item_timer_penalty = 0;
 	ent->client->resp.client_think_begin = 0;
 	ent->client->resp.item_timer_penalty_delay = 0;
@@ -8304,42 +8235,6 @@ void FlashLight(edict_t *ent)
 	gi.cprintf(ent,PRINT_HIGH,"Flashlight is %s\n",ent->client->resp.flashlight ? "on" : "off");
 }
 
-void AntiGlue(edict_t *ent)
-{
-	float penalty;
-	char txt[255];
-	//antiglue available and with the penalty if set
-	ent->client->resp.antiglue = !ent->client->resp.antiglue;
-	if (ent->client->resp.antiglue)
-	{
-		if (mset_vars->antiglue)
-			gi.cprintf(ent,PRINT_HIGH,"Antiglue is on (for both EASY and HARD).\n");
-		else
-			gi.cprintf(ent,PRINT_HIGH,"Antiglue is on (for EASY only).\n");
-
-		if (!level_items.stored_item_times_count)
-		{
-			penalty = 5.0f;
-			Com_sprintf(txt,sizeof(txt),"Warning: As no 1st place has been set all jumps antiglued will have a %1.1f second penalty.",(penalty));
-			gi.cprintf (ent, PRINT_HIGH,"%s\n",HighAscii(txt));
-			
-		}
-		else
-		{
-			penalty = (float)mset_vars->antiglue_penalty/10;
-			Com_sprintf(txt,sizeof(txt),"Warning: using antiglue will prevent you from setting a 1st place. Also, all jumps antiglued will have a %1.1f second penalty.",(penalty));
-			gi.cprintf (ent, PRINT_HIGH,"%s\n",HighAscii(txt));
-		}
-	}
-	else
-	{
-		if (mset_vars->antiglue)
-			gi.cprintf(ent,PRINT_HIGH,"Antiglue is off (for EASY and HARD).\n");
-		else
-			gi.cprintf(ent,PRINT_HIGH,"Antiglue is off (for EASY only).\n");
-	}			
-}
-
 char *HighAscii(char *str)
 {
 	int len =strlen(str);
@@ -8366,20 +8261,6 @@ void Cmd_Show_Help(edict_t *ent)
 
 
 }
-void Cmd_Show_Glue(edict_t *ent) 
-{
-	int i = 0;
-
-	while (glue_main[i])
-	{
-		gi.cprintf (ent, PRINT_HIGH,glue_main[i] );
-		i++;
-	}
-
-
-}
-
-
 
 void SendFlashLight(edict_t *ent)
 {
@@ -8769,7 +8650,6 @@ void Overtime_Kill(edict_t *ent)
 
 	ent->client->resp.jumps = 0;
 	ent->client->resp.item_timer = 0;
-	ent->client->resp.glued = 0;
 	ent->client->resp.client_think_begin = 0;
 	ent->client->resp.item_timer_penalty = 0;
 	ent->client->resp.item_timer_penalty_delay = 0;
@@ -9032,10 +8912,6 @@ qboolean tourney_log(edict_t *ent,int uid, float time,float item_time_penalty,ch
 	float oldtime;
 	char penalty_str[64];
 	memset(penalty_str,0,sizeof(penalty_str));
-
-	if (item_time_penalty) {
-		sprintf(penalty_str,"(%2.1f seconds antiglue penalty)",item_time_penalty/10);
-	}
 
 	//find user in tourney record
 	trecid = FindTRecID(uid);
@@ -9481,11 +9357,7 @@ float add_item_to_queue(edict_t *ent, float item_time,float item_time_penalty,ch
 	char temp_stamp[32];
 	int uid;
 	int uid_1st = -1;
-/*	if (item_time_penalty>=1)
-	{
-		item_time += (item_time_penalty/10);
-	}
-*/
+
 	//dont add if name = zero length
 	if (strcmp(owner,"")==0)
 		return item_time;
@@ -9526,21 +9398,8 @@ float add_item_to_queue(edict_t *ent, float item_time,float item_time_penalty,ch
 	UpdateThisUsersSortedUid(ent);
 	//log off everyones time
 	sprintf(temp_date, "%02d/%02d/%02d",day, month,year-100);
-	if ((item_time+0.0001) < level_items.stored_item_times[0].time)
-	{
-		//antiglue fix
-		if (mset_vars->antiglue && !mset_vars->antiglue_allow1st && ent->client->resp.item_timer_penalty>=1)
-		{
-			diff = (level_items.stored_item_times[0].time-item_time)*2;
-			if (diff<1)
-				diff = 1;
-			item_time_penalty += (int)(diff*10);
-			item_time += diff;
-		}
-	}
 	if (!item_time_penalty && ent->client->resp.client_think_begin)
 	{
-		
 		m_current = Sys_Milliseconds();
 		m_time = m_current - ent->client->resp.client_think_begin;
 		item_time_new = (float)m_time / 1000.0f;

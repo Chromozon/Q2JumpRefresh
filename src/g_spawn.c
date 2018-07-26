@@ -1143,9 +1143,6 @@ void SP_worldspawn (edict_t *ent)
 		strcpy(prev_levels[0].mapname,this_map);
 		for (i=0;i<strlen(this_map);i++)
 			this_map[i] |= 128;
-		gi.configstring (CONFIG_JUMP_ANTIGLUE,         "Antiglue    Ïî");			
-		gi.configstring (CONFIG_JUMP_ANTIGLUE_OFF,     "Antiglue   ÏÆÆ");			
-		gi.configstring (CONFIG_JUMP_ANTIGLUE_DISABLED,"Antiglue   Î¯Á");
 		gi.configstring (CONFIG_CP_ON,va(              "  Chkpts: %s",SpecNR[(int)(mset_vars->checkpoint_total)]));
 		gi.configstring (CONFIG_CP_OFF,                "              ");
         gi.configstring (CONFIG_JUMP_RACE_ON,          "    Race:     ");

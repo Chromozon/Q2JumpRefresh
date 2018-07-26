@@ -598,8 +598,6 @@ void P_FallingDamage (edict_t *ent)
 			}
 			else
 				ent->s.event = EV_FALL;
-			if (delta >= 100)
-				ThrowUpNow(ent);
 		}
 		ent->pain_debounce_time = level.time;	// no normal pain sound
 		damage = (delta-30)/2;

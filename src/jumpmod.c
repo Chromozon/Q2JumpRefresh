@@ -1098,13 +1098,6 @@ zbotcmd_t zbotCommands[] =
     CMDTYPE_NUMBER,
     &aset_vars->ADMIN_UPDATESCORES_LEVEL
 	},
-  { 
-	1,20,4,
-    "ADMIN_THROWUP_LEVEL", 
-    CMDWHERE_CFGFILE | CMD_ASET, 
-    CMDTYPE_NUMBER,
-    &aset_vars->ADMIN_THROWUP_LEVEL
-	},
 /*  { 
 	1,20,4,
     "ADMIN_FORCETEAM_LEVEL", 
@@ -5269,8 +5262,6 @@ void List_Admin_Commands(edict_t *ent)
 			gi.cprintf(ent,PRINT_HIGH,"mkadmin unadminuser ");
 		if (i == aset_vars->ADMIN_SLAP_LEVEL)
 			gi.cprintf(ent,PRINT_HIGH,"slap ");
-		if (i == aset_vars->ADMIN_THROWUP_LEVEL)
-			gi.cprintf(ent,PRINT_HIGH,"throwup ");
 		if (i == aset_vars->ADMIN_MAPVOTE_LEVEL)
 			gi.cprintf(ent,PRINT_HIGH,"mvote ");
 		if (i == aset_vars->ADMIN_CVOTE_LEVEL)
@@ -7067,7 +7058,6 @@ void SetDefaultValues(void)
 
 	aset_vars->ADMIN_SLAP_LEVEL			=4;
 	aset_vars->ADMIN_ADDTIME_LEVEL		=4;
-	aset_vars->ADMIN_THROWUP_LEVEL		=4;
 //	aset_vars->ADMIN_FORCETEAM_LEVEL	=4;
 	aset_vars->ADMIN_BRING_LEVEL		=4;
 	aset_vars->ADMIN_GOTO_LEVEL			=4;
@@ -10545,7 +10535,6 @@ void SlapClient(edict_t *ent)
 	if (targ->client->resp.ctf_team==CTF_TEAM2 || gametype->value==GAME_CTF)
 	{
 		gi.cprintf(ent, PRINT_HIGH, "You can not slap players on Hard Team.\n");
-		//ThrowUpNow(targ,ent);
 		return;
 	}
 	if (targ->client->resp.ctf_team==CTF_NOTEAM)

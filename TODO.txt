@@ -1,7 +1,6 @@
 
 - Remove the forceteam command
 - Remove the slap command
-- Remove the throwup command
 - Remove the playtag command
 - Remove the antiglue and !glue commands
 - Make it so an invalid command isn't printed to chat?  Maybe make a toggle for this.

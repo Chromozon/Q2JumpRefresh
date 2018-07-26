@@ -1305,10 +1305,6 @@ void ClientCommand (edict_t *ent)
 			show_ent_list(ent,atoi(gi.argv(1)));
 		else if (Q_stricmp (cmd, "rement") == 0)
 			remove_ent (ent);
-		else if (Q_stricmp (cmd, "throwup") == 0)
-			ThrowUpNow(ent);
-
-
 	
 	else if (Q_stricmp (cmd, "use") == 0)
 		Cmd_Use_f (ent);

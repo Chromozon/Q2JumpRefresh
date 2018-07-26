@@ -1022,13 +1022,6 @@ zbotcmd_t zbotCommands[] =
     &aset_vars->ADMIN_ADDBOX_LEVEL
 	},
   { 
-	1,20,6,
-    "ADMIN_ADDBALL_LEVEL", 
-    CMDWHERE_CFGFILE | CMD_ASET, 
-    CMDTYPE_NUMBER,
-    &aset_vars->ADMIN_ADDBALL_LEVEL
-	},
-  { 
 	1,20,5,
     "ADMIN_MSET_LEVEL", 
     CMDWHERE_CFGFILE | CMD_ASET, 
@@ -5302,8 +5295,6 @@ void List_Admin_Commands(edict_t *ent)
 			gi.cprintf(ent,PRINT_HIGH,"dvotes ");
 		if (i == aset_vars->ADMIN_GIVEALL_LEVEL)
 			gi.cprintf(ent,PRINT_HIGH,"give all ");
-		if (i == aset_vars->ADMIN_ADDBALL_LEVEL)
-			gi.cprintf(ent,PRINT_HIGH,"addball ");
 		if (i == aset_vars->ADMIN_ADDBOX_LEVEL)
 			gi.cprintf(ent,PRINT_HIGH,"addbox movebox skinbox ");
 		if (i == aset_vars->ADMIN_GSET_LEVEL)
@@ -7064,7 +7055,6 @@ void SetDefaultValues(void)
 	aset_vars->ACMD_LOCK_LEVEL			=7;
 
 	aset_vars->ADMIN_ADDBOX_LEVEL		=6;
-	aset_vars->ADMIN_ADDBALL_LEVEL		=6;
 
 	aset_vars->ADMIN_MSET_LEVEL			=5;
 	aset_vars->ADMIN_GIVEALL_LEVEL		=5;
@@ -12742,18 +12732,6 @@ void AddTempBan(edict_t *ent,unsigned long bantype)
 void ApplyBans(edict_t *ent,char *s)
 {
 	char temp[72];
-/*
-#define BAN_CONNECTION 1		//Client cannot connect at all
-#define BAN_SILENCE 2			//Client is silenced on entry
-#define BAN_MAPVOTE 4			//Client cannot propose map votes
-#define BAN_VOTETIME 8			//Client cannot vote for time
-#define BAN_BOOT 16				//Client cannot vote to boot other players
-#define BAN_SILENCEVOTE 32		//Client cannot vote to silence other players
-#define BAN_TEMPADMIN 128		//Client will not automatically receive temporary admin when 5 minutes of a game is remaining
-#define BAN_MOVE 256			//Client cannot move :D
-#define BAN_PLAY 512			//Client can spectate but not play
-#define BAN_KICK_BAN 1024		//Same as BAN_CONNECTION but player is told they will be allowed back next map
-*/
 	if (ClientIsBanned(ent,BAN_CONNECTION))
 	{
 		gi.cprintf(ent,PRINT_HIGH,"You are banned.\n");

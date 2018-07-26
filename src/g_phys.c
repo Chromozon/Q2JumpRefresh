@@ -557,156 +557,6 @@ qboolean SV_Push (edict_t *pusher, vec3_t move, vec3_t amove)
 	return true;
 }
 
-/*qboolean SV_PushBall (edict_t *pusher, edict_t* ball, vec3_t move, vec3_t amove)
-{
-	int			i, e;
-	edict_t		*check, *block;
-	vec3_t		mins, maxs;
-	pushed_t	*p;
-	vec3_t		org, org2, move2, forward, right, up;
-
-	// clamp the move to 1/8 units, so the position will
-	// be accurate for client side prediction
-	for (i=0 ; i<3 ; i++)
-	{
-		float	temp;
-		temp = move[i]*8.0;
-		if (temp > 0.0)
-			temp += 0.5;
-		else
-			temp -= 0.5;
-		move[i] = 0.125 * (int)temp;
-	}
-
-	// find the bounding box
-	for (i=0 ; i<3 ; i++)
-	{
-		mins[i] = pusher->absmin[i] + move[i];
-		maxs[i] = pusher->absmax[i] + move[i];
-	}
-
-// we need this for pushing things later
-	VectorSubtract (vec3_origin, amove, org);
-	AngleVectors (org, forward, right, up);
-
-// save the pusher's original position
-	pushed_p->ent = pusher;
-	VectorCopy (pusher->s.origin, pushed_p->origin);
-	VectorCopy (pusher->s.angles, pushed_p->angles);
-	if (pusher->client)
-		pushed_p->deltayaw = pusher->client->ps.pmove.delta_angles[YAW];
-	pushed_p++;
-
-// move the pusher to it's final position
-	VectorAdd (pusher->s.origin, move, pusher->s.origin);
-	VectorAdd (pusher->s.angles, amove, pusher->s.angles);
-	gi.linkentity (pusher);
-
-// see if any solid entities are inside the final position
-	check = g_edicts+1;
-	for (e = 1; e < globals.num_edicts; e++, check++)
-	{
-		if (!check->inuse)
-			continue;
-		if (check->movetype == MOVETYPE_PUSH
-		|| check->movetype == MOVETYPE_STOP
-		|| check->movetype == MOVETYPE_NONE
-		|| check->movetype == MOVETYPE_NOCLIP)
-			continue;
-
-		if (!check->area.prev)
-			continue;		// not linked in anywhere
-
-	// if the entity is standing on the pusher, it will definitely be moved
-		if (check->groundentity != pusher)
-		{
-			// see if the ent needs to be tested
-			if ( check->absmin[0] >= maxs[0]
-			|| check->absmin[1] >= maxs[1]
-			|| check->absmin[2] >= maxs[2]
-			|| check->absmax[0] <= mins[0]
-			|| check->absmax[1] <= mins[1]
-			|| check->absmax[2] <= mins[2] )
-				continue;
-
-			// see if the ent's bbox is inside the pusher's final position
-			if (!SV_TestEntityPosition (check))
-				continue;
-		}
-
-		if ((pusher->movetype == MOVETYPE_PUSH) || (check->groundentity == pusher))
-		{
-			// move this entity
-			pushed_p->ent = check;
-			VectorCopy (check->s.origin, pushed_p->origin);
-			VectorCopy (check->s.angles, pushed_p->angles);
-			pushed_p++;
-
-			// try moving the contacted entity 
-			VectorAdd (check->s.origin, move, check->s.origin);
-			if (check->client)
-			{	// FIXME: doesn't rotate monsters?
-				check->client->ps.pmove.delta_angles[YAW] += amove[YAW];
-			}
-
-			// figure movement due to the pusher's amove
-			VectorSubtract (check->s.origin, pusher->s.origin, org);
-			org2[0] = DotProduct (org, forward);
-			org2[1] = -DotProduct (org, right);
-			org2[2] = DotProduct (org, up);
-			VectorSubtract (org2, org, move2);
-			VectorAdd (check->s.origin, move2, check->s.origin);
-
-			// may have pushed them off an edge
-			if (check->groundentity != pusher)
-				check->groundentity = NULL;
-
-			block = SV_TestEntityPosition (check);
-			if (!block)
-			{	// pushed ok
-				gi.linkentity (check);
-				// impact?
-				continue;
-			}
-
-			// if it is ok to leave in the old position, do it
-			// this is only relevent for riding entities, not pushed
-			// FIXME: this doesn't acount for rotation
-			VectorSubtract (check->s.origin, move, check->s.origin);
-			block = SV_TestEntityPosition (check);
-			if (!block)
-			{
-				pushed_p--;
-				continue;
-			}
-		}
-		
-		// save off the obstacle so we can call the block function
-		obstacle = check;
-
-		// move back any entities we already moved
-		// go backwards, so if the same entity was pushed
-		// twice, it goes back to the original position
-		for (p=pushed_p-1 ; p>=pushed ; p--)
-		{
-			VectorCopy (p->origin, p->ent->s.origin);
-			VectorCopy (p->angles, p->ent->s.angles);
-			if (p->ent->client)
-			{
-				p->ent->client->ps.pmove.delta_angles[YAW] = p->deltayaw;
-			}
-			gi.linkentity (p->ent);
-		}
-		return false;
-	}
-
-//FIXME: is there a better way to handle this?
-	// see if anything we moved has touched a trigger
-	for (p=pushed_p-1 ; p>=pushed ; p--)
-		G_TouchTriggers (p->ent);
-
-	return true;
-}*/
 
 /*
 ================
@@ -1001,10 +851,6 @@ void SV_Physics_Step (edict_t *ent)
 	float		friction;
 	edict_t		*groundentity;
 	int			mask;
-	int			ball;
-
-	if (Q_stricmp(ent->classname, "jumpmodball") == 0)
-		ball = 1;
 
 	// airborn monsters should always check for ground
 	if (!ent->groundentity)
@@ -1072,8 +918,6 @@ void SV_Physics_Step (edict_t *ent)
 				if (speed)
 				{
 					friction = sv_friction;
-					if (1 == ball)
-						friction = 1;
 
 					control = speed < sv_stopspeed ? sv_stopspeed : speed;
 					newspeed = speed - FRAMETIME*control*friction;

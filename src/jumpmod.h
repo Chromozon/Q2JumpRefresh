@@ -1,28 +1,27 @@
 #pragma once
 
-//defines
-#define MAX_USERS 4096
-#define MAX_HIGHSCORES 15
-#define CTF_VERSION_S		"1.21ger"
-#define		HOOK_READY	0
-#define		HOOK_OUT	1
-#define		HOOK_ON		2
-#define MAX_MAPS           3072    // 084_h2
-#define MAX_MAPNAME_LEN    32 
-#define MAX_MANUAL           32 
-#define MAX_MANUAL_LEN    128 
-#define ML_ROTATE_SEQ          0 
-#define ML_ROTATE_RANDOM       1 
-#define ML_ROTATE_NUM_CHOICES  2
-#define MAX_BANS 64
-//#define MAX_VOTES 3  // _h2
-
-
+// Constants
+#define JUMP_VERSION_S "2.0slip"
+#define MAX_MAPS 3072
+#define MAX_MAPNAME_LEN 32
 #define MAX_ADMINS 128
-#define MAX_RECORD_FRAMES 10000
-#define GAME_JUMP 0
-#define GAME_CTF 1
-#define GAME_ROCKET 2
+#define MAX_RECORD_FRAMES 10000 // Max frames to record for each replay; 10 frames = 1 second
+#define MAX_USERS 4096 // TODO remove
+#define MAX_BANS 64
+
+
+// GUI constants
+#define MAX_HIGHSCORES 15
+
+// Unknown constants
+// TODO look at
+#define MAX_MANUAL 32
+#define MAX_MANUAL_LEN 128
+#define GAME_CTF 1 // TODO can remove this
+
+#define	HOOK_READY 0
+#define	HOOK_OUT 1
+#define	HOOK_ON 2
 
 //Things to include...
 #define RACESPARK
@@ -513,7 +512,6 @@ typedef struct
 	int ADMIN_STUFF_LEVEL		;
 	
 	int ADMIN_ADDBOX_LEVEL		;
-	int ADMIN_ADDBALL_LEVEL		;
 
 	int ADMIN_MSET_LEVEL		;
 	int ADMIN_GIVEALL_LEVEL		;

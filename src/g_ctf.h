@@ -1,29 +1,8 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
 #pragma once
 
-#define CTF_VSTRING2(x) #x
-#define CTF_VSTRING(x) CTF_VSTRING2(x)
-#define CTF_STRING_VERSION CTF_VERSION_S
 
-//#define STAT_CTF_TEAM1_PIC			17
 #define CONFIG_JUMP_KEY_FORWARD	(CS_AIRACCEL-1)
 #define CONFIG_JUMP_KEY_LEFT	(CS_AIRACCEL-2)
 //#define CONFIG_JUMP_KEY_FPS	(CS_AIRACCEL-3)
@@ -243,7 +222,6 @@ void CTFID_f(edict_t *ent);
 void CTFSay_Team(edict_t *who, char *msg);
 void CTFFlagSetup(edict_t *ent);
 void CTFResetFlag(int ctf_team);
-void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker);
 void CTFCheckHurtCarrier(edict_t *targ, edict_t *attacker);
 
 // GRAPPLE

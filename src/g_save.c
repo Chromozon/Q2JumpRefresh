@@ -213,7 +213,7 @@ void InitGame (void)
 
 	// latched vars
 	sv_cheats = gi.cvar ("cheats", "0", CVAR_SERVERINFO|CVAR_LATCH);
-	gi.cvar ("gamename", va("Q2JUMP %s",CTF_VERSION_S) , CVAR_SERVERINFO | CVAR_LATCH);
+	gi.cvar ("gamename", va("Q2JUMP %s",JUMP_VERSION_S) , CVAR_SERVERINFO | CVAR_LATCH);
 	gi.cvar ("gamedate", __DATE__ , CVAR_SERVERINFO | CVAR_LATCH);
 
 	maxclients = gi.cvar ("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
@@ -235,7 +235,7 @@ void InitGame (void)
 
 
 	// change anytime vars
-	jumpmod_version = gi.cvar ("JumpMod", CTF_VERSION_S, CVAR_SERVERINFO);
+	jumpmod_version = gi.cvar ("JumpMod", JUMP_VERSION_S, CVAR_SERVERINFO);
 	dmflags = gi.cvar ("dmflags", "0", CVAR_SERVERINFO);
 	fraglimit = gi.cvar ("fraglimit", "0", CVAR_SERVERINFO);
 

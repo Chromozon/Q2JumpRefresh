@@ -548,7 +548,6 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 			self->client->resp.ctf_state = 0;
 		}
 
-//		CTFFragBonuses(self, inflictor, attacker);
 //ZOID
 //pooy		TossClientWeapon (self);
 		hook_reset(self->client->hook);

@@ -1186,11 +1186,6 @@ void ClientCommand (edict_t *ent)
 
 		if (Q_stricmp (cmd, "addmap") == 0)
 			AddMap (ent);
-		else if (Q_stricmp (cmd, "addball") == 0)
-		{
-			if (!level.status)
-				weapon_ball_fire (ent);
-		}
 		else if (Q_stricmp (cmd, "store") == 0)
 		{
 			if (mset_vars->tourney)

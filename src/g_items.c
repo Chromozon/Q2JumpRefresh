@@ -3956,13 +3956,3 @@ void SP_jump_clip (edict_t *ent)
 	ent->dmg = 0;
 	gi.linkentity (ent);
 }
-
-/*void SP_misc_ball (edict_t *ent)
-{
-	ent->classname = "misc_ball";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_NOT;
-
-	spawn_ball(ent);
-	gi.linkentity(ent);
-}*/

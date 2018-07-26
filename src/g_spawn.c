@@ -29,9 +29,6 @@ typedef struct
 
 
 
-//ww +ed ents
-//void SP_misc_ball (edict_t *ent);
-
 spawn_t	spawns[] = {
 	{"jump_clip", SP_jump_clip},
 	{"jump_time", SP_jump_time},
@@ -181,9 +178,6 @@ spawn_t	spawns[] = {
 	{"turret_base", SP_turret_base},
 	{"turret_driver", SP_turret_driver},
 #endif
-
-	//new ents +ed by ww
-//	{"misc_ball", SP_misc_ball},
 
 	{NULL, NULL}
 };

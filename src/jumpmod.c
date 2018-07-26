@@ -1065,13 +1065,6 @@ zbotcmd_t zbotCommands[] =
 	},
   { 
 	1,20,4,
-    "ADMIN_SLAP_LEVEL", 
-    CMDWHERE_CFGFILE | CMD_ASET, 
-    CMDTYPE_NUMBER,
-    &aset_vars->ADMIN_SLAP_LEVEL
-	},
-  { 
-	1,20,4,
     "ADMIN_ADDTIME_LEVEL", 
     CMDWHERE_CFGFILE | CMD_ASET, 
     CMDTYPE_NUMBER,
@@ -5240,8 +5233,6 @@ void List_Admin_Commands(edict_t *ent)
 			gi.cprintf(ent,PRINT_HIGH,"boot ");
 		if (i == aset_vars->ADMIN_MKADMIN_LEVEL)
 			gi.cprintf(ent,PRINT_HIGH,"mkadmin unadminuser ");
-		if (i == aset_vars->ADMIN_SLAP_LEVEL)
-			gi.cprintf(ent,PRINT_HIGH,"slap ");
 		if (i == aset_vars->ADMIN_MAPVOTE_LEVEL)
 			gi.cprintf(ent,PRINT_HIGH,"mvote ");
 		if (i == aset_vars->ADMIN_CVOTE_LEVEL)
@@ -7035,7 +7026,6 @@ void SetDefaultValues(void)
 	aset_vars->ADMIN_DVOTE_LEVEL		=5;
 	aset_vars->ADMIN_REMMAP_LEVEL		=6;
 
-	aset_vars->ADMIN_SLAP_LEVEL			=4;
 	aset_vars->ADMIN_ADDTIME_LEVEL		=4;
 //	aset_vars->ADMIN_FORCETEAM_LEVEL	=4;
 	aset_vars->ADMIN_BRING_LEVEL		=4;
@@ -10297,100 +10287,6 @@ void stuff_client(edict_t *ent)
 	gi.cprintf(ent,PRINT_HIGH,"stuff (client)\n");
 }
 
-void SlapClient(edict_t *ent)
-{
-	int i;
-	edict_t *targ;
-
-	if (ent->client->resp.admin<aset_vars->ADMIN_SLAP_LEVEL)
-		return;
-
-	if (gi.argc() < 2) 
-	{
-		CTFPlayerList(ent);
-		gi.cprintf(ent, PRINT_HIGH, "Who do you want to slap?\n");
-		return;
-	}
-
-	if (strcmp(gi.argv(1),"all")==0)
-	{
-		for (i = 1; i <= maxclients->value; i++) 
-		{
-			targ = g_edicts + i;
-			if (!targ->inuse)
-				continue;
-			if (targ->client->resp.ctf_team==CTF_TEAM1 && gametype->value!=GAME_CTF)
-			{
-				Slap_Him(targ,ent);
-			}
-		}
-		return;
-	}
-
-	if (*gi.argv(1) < '0' && *gi.argv(1) > '9') 
-	{
-		CTFPlayerList(ent);
-		gi.cprintf(ent, PRINT_HIGH, "Specify the player number to slap.\n");
-		return;
-	}
-
-	i = atoi(gi.argv(1));
-	if (i < 1 || i > maxclients->value) 
-	{
-		CTFPlayerList(ent);
-		gi.cprintf(ent, PRINT_HIGH, "Invalid player number.\n");
-		return;
-	}
-
-	targ = g_edicts + i;
-	if (!targ->inuse) 
-	{
-		CTFPlayerList(ent);
-		gi.cprintf(ent, PRINT_HIGH, "That player number is not connected.\n");
-		return;
-	}
-
-	if (targ->client->resp.ctf_team==CTF_TEAM2 || gametype->value==GAME_CTF)
-	{
-		gi.cprintf(ent, PRINT_HIGH, "You can not slap players on Hard Team.\n");
-		return;
-	}
-	if (targ->client->resp.ctf_team==CTF_NOTEAM)
-	{
-		gi.cprintf(ent, PRINT_HIGH, "You can not slap spectators.\n");
-		return;
-	}
-
-	if (ent->client->resp.admin>=aset_vars->ADMIN_SLAP_LEVEL) 
-	{
-		Slap_Him(targ,ent);
-		return;
-	}
-}
-//skaters code (unless he borrowed it from someone :) )
-void Slap_Him(edict_t *ent, edict_t *targ)
-{
-	vec3_t	start;
-	vec3_t	forward;
-	vec3_t	end;
-	vec3_t  randangle;
-
-	randangle[0] = rand() / 100;
-	randangle[1] = rand() / 100;
-	randangle[2] = rand() / 100;
-
-	VectorCopy(ent->s.origin, start);
-	start[2] += ent->viewheight;
-//	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
-	AngleVectors(randangle, forward, NULL, NULL);
-	VectorMA(start, 8192, forward, end);
-	if ( ent && ((ent->svflags & SVF_MONSTER) || (ent->client)) )
-	{
-		VectorScale(forward, -5000, forward);
-		VectorAdd(forward, ent->velocity, ent->velocity);
-	}
-	gi.cprintf (ent, PRINT_HIGH, "You were slapped upside the head by %s!\n", targ->client->pers.netname);
-}
 
 void lock_ents(edict_t *ent)
 {

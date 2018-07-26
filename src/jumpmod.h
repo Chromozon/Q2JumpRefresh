@@ -520,7 +520,6 @@ typedef struct
 	int ADMIN_ADDENT_LEVEL		;
 	int ADMIN_DVOTE_LEVEL		;
 
-	int ADMIN_SLAP_LEVEL		;
 	int ADMIN_ADDTIME_LEVEL		;
 //	int ADMIN_FORCETEAM_LEVEL	;
 	int ADMIN_BRING_LEVEL		;
@@ -699,8 +698,6 @@ void D_Votes(edict_t *ent);
 void Skin_Ent(edict_t *ent);
 void list_mapsdone(edict_t *ent);
 void CTFVoteTime(edict_t *ent);
-void Slap_Him(edict_t *ent, edict_t *targ);
-void SlapClient(edict_t *ent);
 void change_admin_pass(edict_t *ent);
 void ASET(edict_t *ent);
 void RemoveMap(edict_t* ent);

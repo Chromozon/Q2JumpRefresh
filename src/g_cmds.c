@@ -1261,8 +1261,6 @@ void ClientCommand (edict_t *ent)
 //			forceteam(ent);
 		else if (Q_stricmp (cmd, "pvote") == 0)
 			pvote(ent);
-		else if (Q_stricmp (cmd, "slap") == 0)
-			SlapClient(ent);
 		else if (Q_stricmp (cmd, "rand") == 0)
 			CTFRand(ent);
 		else if (Q_stricmp (cmd, "nominate") == 0)

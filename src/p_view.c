@@ -858,13 +858,10 @@ void G_SetClientEffects (edict_t *ent)
 
 	if (!level.status)
 	{
-		if (!ent->client->resp.playtag)
-		{
-			if (ent->client->resp.frames_without_movement>60000)
-				ent->svflags = SVF_NOCLIENT;
-			else if (ent->client->resp.ctf_team!=CTF_NOTEAM)
-				ent->svflags &= ~SVF_NOCLIENT;
-		}
+		if (ent->client->resp.frames_without_movement>60000)
+			ent->svflags = SVF_NOCLIENT;
+		else if (ent->client->resp.ctf_team!=CTF_NOTEAM)
+			ent->svflags &= ~SVF_NOCLIENT;
 	}
 	else
 	{

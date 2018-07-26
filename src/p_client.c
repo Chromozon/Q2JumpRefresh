@@ -504,8 +504,6 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 {
 	int		n;
 
-	if (self->client->resp.playtag)
-		TagLeave(self);
 	VectorClear (self->avelocity);
 
 	self->gravity = 1.0;

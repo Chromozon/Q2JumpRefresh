@@ -904,19 +904,7 @@ static int admin_rainbow[] = {
 void CTFEffects(edict_t *player)
 {
 	int lvl;
-	if (player->client->resp.tagged)
-	{
-		player->s.effects |= EF_COLOR_SHELL; // red
-		player->s.renderfx |= RF_SHELL_DOUBLE;
-		player->s.effects |= 512;
-	}
-	else if (player->client->resp.playtag)
-	{
-		player->s.effects |= EF_COLOR_SHELL; // red
-		player->s.renderfx |= RF_SHELL_DOUBLE;
-	}
-	else
-{
+
 	player->s.effects &= ~(EF_FLAG1 | EF_FLAG2);
 
 	player->s.modelindex3 = 0;
@@ -978,8 +966,6 @@ void CTFEffects(edict_t *player)
 				player->s.effects |= mset_vars->best_time_glow;
 		}
 	}
-}
-	
 }
 
 // called when we enter the intermission

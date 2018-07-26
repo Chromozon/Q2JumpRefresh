@@ -614,8 +614,6 @@ void CheckDMRules (void)
 	gclient_t	*cl;
 	int check;
 	edict_t *e2;
-	int num_tagged = 0;
-	qboolean got_tag = false;
 	int leveltimeint;	// hann
 	int timeleft;		// hann
 
@@ -678,33 +676,6 @@ void CheckDMRules (void)
 					}  // hann
 				} // hann
 
-
-				if (mset_vars->playtag)
-				{
-					//playtag
-					for (i=0 ; i<maxclients->value ; i++)
-					{
-						cl = game.clients + i;
-						e2 = g_edicts + i+1;
-	
-						if (!e2->inuse)
-							continue;
-		
-						if (cl->resp.playtag) 
-						{
-							if (cl->resp.tagged)
-								got_tag = true;
-							num_tagged++;
-							if (cl->resp.ctf_team!=CTF_TEAM2)
-							{
-								TagLeave(e2);
-							}
-						}
-					}
-					if ((num_tagged>1) && (!got_tag))
-						NewTag();		
-				}
-				
 /*				if (map_allow_voting)
 				if ((level.time+5) >= (mset_vars->timelimit*60)+(map_added_time*60))
 				{
@@ -1035,12 +1006,6 @@ void G_RunFrame (void)
 			if (gset_vars->flashlight)
 			if (ent->client->resp.flashlight)
 				SendFlashLight(ent);
-
-			//tag
-			if (mset_vars->playtag)
-			if (ent->client->resp.tagged)
-				PassTag(ent);
-
 
 			if(getCommandFromQueue(ent, &command, &data, &str))
 			{

@@ -1258,9 +1258,6 @@ typedef struct
 	int			rep_repeat;
 	int			debug;
 	// ======================
-	qboolean	playtag;
-	qboolean	tagged;
-	int			tag_time;
 	char		admin_name[128];
 	vec3_t		takeoff_position;
 	int			inair;

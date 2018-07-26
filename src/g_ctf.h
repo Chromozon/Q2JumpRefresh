@@ -287,6 +287,5 @@ void JumpModScoreboardMessage(edict_t *ent, edict_t *killer);
 void CTFWinElection(int pvote, edict_t* pvoter);
 qboolean CTFBeginElection(edict_t *ent, elect_t type, char *msg, qboolean require_max);
 qboolean IsString(char* string);
-void PassTag(edict_t *from);
 void Generate_Highlight_List(edict_t *ent);
 void CTFAutoJoinTeam(edict_t *ent, int desired_team);

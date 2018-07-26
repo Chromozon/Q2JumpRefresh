@@ -783,11 +783,6 @@ void Cmd_Kill_f (edict_t *ent)
 	}
 	if (ent->client->resp.ctf_team==CTF_TEAM2 || (gametype->value==GAME_CTF && ent->client->resp.ctf_team==CTF_TEAM1))
 	{
-		if (ent->client->resp.playtag)
-		{
-			gi.cprintf(ent,PRINT_HIGH,"Cannot kill while playing TAG.\n");
-			return;
-		}
 		Kill_Hard(ent);
 		ent->client->respawn_time = level.framenum + mset_vars->kill_delay;
 		return;
@@ -1321,11 +1316,6 @@ void ClientCommand (edict_t *ent)
 	else if (Q_stricmp (cmd, "updatescores") == 0)
 		Cmd_UpdateScores(ent);
 	// ========================================
-	else if (Q_stricmp (cmd, "playtag") == 0)
-	{
-		if (mset_vars->playtag)
-			PlayTag (ent);
-	}
 	else if (Q_stricmp (cmd, "score") == 0)
 	{
 		if (ent->client->showscores==1)

@@ -425,7 +425,6 @@ typedef struct
 	unsigned int tourney;
 	unsigned int rocket;
 	unsigned int cmsg;
-	unsigned int playtag;
 	char edited_by[256];
 	unsigned int gravity;
 	unsigned int droptofloor;
@@ -667,7 +666,6 @@ void WriteMapList(void);
 int closest_ent(edict_t *ent);
 
 void ServerError(char *error);
-void TagLeave(edict_t *ent);
 void SelectSpawnPointFromDemo(edict_t *ent, vec3_t origin, vec3_t angles);
 void OverTime_GiveAll(edict_t *temp, qboolean rocket);
 
@@ -708,7 +706,6 @@ void ASET(edict_t *ent);
 void RemoveMap(edict_t* ent);
 void Cmd_Debug(edict_t *ent);
 void Cmd_UpdateScores(edict_t* ent);
-void PlayTag(edict_t *ent);
 void cmsg(edict_t *ent);
 void ShowPlayerMaps(edict_t *ent);
 void FlashLight(edict_t *ent);
@@ -720,9 +717,7 @@ int RemoveAllItems(void);
 void ForceEveryoneToHard(void);
 int CheckOverTimeLastManRules(void);
 int CheckOverTimeRules(void);
-void NewTag(void);
 void SendFlashLight(edict_t *ent);
-void PassTag(edict_t *from);
 void UpdateVoteMenu(void);
 void Ghost_Play_Frame(void);
 void Generate_Highlight_List(edict_t *ent);

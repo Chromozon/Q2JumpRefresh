@@ -166,13 +166,6 @@ zbotcmd_t zbotCommands[] =
     &mset_vars->kill_delay,
   },
   { 
-	0,1,0,
-    "playtag", 
-    CMDWHERE_CFGFILE | CMD_MSET, 
-    CMDTYPE_NUMBER,
-    &mset_vars->playtag,
-  },
-  { 
 	-100,100,5,
     "regen",
     CMDWHERE_CFGFILE | CMD_MSET, 
@@ -399,13 +392,6 @@ zbotcmd_t zbotCommands[] =
     CMDWHERE_CFGFILE | CMD_GSET | CMD_GSETMAP, 
     CMDTYPE_NUMBER,
     &gset_vars->mset->kill_delay,
-  },
-  { 
-	0,1,0,
-    "gplaytag", 
-    CMDWHERE_CFGFILE | CMD_GSET | CMD_GSETMAP, 
-    CMDTYPE_NUMBER,
-    &gset_vars->mset->playtag,
   },
   { 
 	-100,100,5,
@@ -3349,8 +3335,6 @@ void hook_fire (edict_t *ent) {
 	if (!gset_vars->hook)
 		return;
 
-	if	(ent->client->resp.playtag)
-		return;
 	if (!level.status)
 	{
 		if (
@@ -4375,58 +4359,54 @@ void apply_time(edict_t *other, edict_t *ent)
 	Stop_Recording(other);
 	if (((other->client->resp.item_timer_allow) || (other->client->resp.ctf_team==CTF_TEAM2)) || (gametype->value==GAME_CTF && other->client->resp.ctf_team==CTF_TEAM1))
 	{
-	if (!other->client->resp.finished)
-	{
-		//stop recording, setup for new one
-		if (other->client->resp.auto_record_on)
-		{
-			autorecord_newtime(other);
-			if (other->client->resp.auto_recording)
-				autorecord_stop(other);			
-		}
+        if (!other->client->resp.finished)
+        {
+            //stop recording, setup for new one
+            if (other->client->resp.auto_record_on)
+            {
+                autorecord_newtime(other);
+                if (other->client->resp.auto_recording)
+                    autorecord_stop(other);
+            }
+
+            other->client->resp.finished = true;
+            other->client->resp.score++;
+            other->client->resp.got_time = true;
 
 
-		other->client->resp.finished = true;
-		other->client->resp.score++;
-		other->client->resp.got_time = true;
-		
+            other->client->resp.item_timer = add_item_to_queue(other, other->client->resp.item_timer, other->client->resp.item_timer_penalty, other->client->pers.netname, ent->item->pickup_name);
+            if (((other->client->resp.item_timer + 0.0001) < level_items.item_time) || (level_items.item_time == 0))
+            {
+                level_items.jumps = other->client->resp.jumps;
+                level_items.item_time = other->client->resp.item_timer;
+                strcpy(level_items.item_owner, other->client->pers.netname);
+                strcpy(level_items.item_name, ent->item->pickup_name);
+                level_items.fastest_player = other;
+                Save_Current_Recording(other);
 
-		other->client->resp.item_timer = add_item_to_queue(other,other->client->resp.item_timer,other->client->resp.item_timer_penalty,other->client->pers.netname,ent->item->pickup_name);
-		if (((other->client->resp.item_timer+0.0001)<level_items.item_time) || (level_items.item_time==0))
-		{
-			level_items.jumps = other->client->resp.jumps;
-			level_items.item_time = other->client->resp.item_timer;
-			strcpy(level_items.item_owner,other->client->pers.netname);
-			strcpy(level_items.item_name,ent->item->pickup_name);
-			level_items.fastest_player = other;
-			Save_Current_Recording(other);
-			
-			//give them admin
-			if (((other->client->resp.item_timer+0.0001)<maplist.times[level.mapnum][0].time) || (!maplist.times[level.mapnum][0].time))
-			{
-				if (!Neuro_RedKey_Overide && map_added_time<5)
-				{
-					gi.bprintf(PRINT_HIGH,"%s has set a 1st place, adding 5 minutes extra time.\n",other->client->pers.netname);
-					map_added_time += 5;
-					Update_Added_Time();
-				}
-				else
-				{
-					gi.bprintf(PRINT_HIGH,"%s has set a 1st place.\n",other->client->pers.netname);
-				}
-			}
-
-		}	
-	}
-		if	(!other->client->resp.playtag)
-		{
-			if (!Neuro_RedKey_Overide)
-			if ((gset_vars->jetpack))
-			{
-				strcpy(item_name,"jetpack");
-				give_item(other,item_name);
-			}
-		}
+                //give them admin
+                if (((other->client->resp.item_timer + 0.0001) < maplist.times[level.mapnum][0].time) || (!maplist.times[level.mapnum][0].time))
+                {
+                    if (!Neuro_RedKey_Overide && map_added_time < 5)
+                    {
+                        gi.bprintf(PRINT_HIGH, "%s has set a 1st place, adding 5 minutes extra time.\n", other->client->pers.netname);
+                        map_added_time += 5;
+                        Update_Added_Time();
+                    }
+                    else
+                    {
+                        gi.bprintf(PRINT_HIGH, "%s has set a 1st place.\n", other->client->pers.netname);
+                    }
+                }
+            }
+        }
+        if (!Neuro_RedKey_Overide) {
+        if ((gset_vars->jetpack))
+        {
+            strcpy(item_name, "jetpack");
+            give_item(other, item_name);
+        }
+    }
 	}
 }
 
@@ -7008,7 +6988,6 @@ void SetDefaultValues(void)
 	gset_vars->mset->ghost_model = 0;
 	gset_vars->mset->droptofloor = 1;
 	gset_vars->mset->gravity = 800;
-	gset_vars->mset->playtag = 0;
 	gset_vars->mset->cmsg = 0;
 	gset_vars->mset->rocket = 0;
 	gset_vars->mset->tourney = 0;
@@ -10253,167 +10232,6 @@ void Cmd_UpdateScores(edict_t* ent)
 }
 
 // ===================
-
-#define TAG_TIME 10;
-
-void NotifyOfNewTag(edict_t *ent)
-{
-	int i;
-	edict_t *e2;
-		for (i = 1; i <= maxclients->value; i++) 
-		{
-			e2 = g_edicts + i;
-			if (!e2->inuse)
-				continue;
-			if (e2!=ent)
-			if (e2->client->resp.playtag)
-			{
-				gi.centerprintf(e2,"%s has been TAGGED!\n\n\n\nYou have 10 seconds to run away!\n",ent->client->pers.netname);
-			}
-		}
-		gi.centerprintf(ent,"You have been TAGGED!\n\n\n\nYou have 10 seconds before you can TAG.\n",ent->client->pers.netname);
-		gi.positioned_sound (world->s.origin, world, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk1.wav"), 1, ATTN_NONE, 0);
-}
-
-void PassTag(edict_t *from)
-{
-	int i;
-	edict_t *e2;
-	edict_t *to = NULL;
-	if (from->client->resp.tag_time==level.time)
-	{
-		for (i = 1; i <= maxclients->value; i++) 
-		{
-			e2 = g_edicts + i;
-			if (!e2->inuse)
-				continue;
-			if (e2->client->resp.playtag)
-			{
-				gi.centerprintf(e2,"\nTAG BEGINS!\n");
-			}
-		}
-	}
-	else if (from->client->resp.tag_time<level.time)
-	{
-
-	to = findradius(to, from->s.origin, 10);
-	if (to==from)
-	to = findradius(to, from->s.origin, 10);
-	if (to!=NULL)
-	{
-		from->client->resp.tagged = false;
-		from->client->resp.tag_time = 0;
-
-		to->client->resp.tagged = true;
-		to->client->resp.tag_time = level.time + TAG_TIME;
-
-		NotifyOfNewTag(to);
-	}
-	}
-
-}
-
-void NewTag(void)
-{
-	int i;
-	int j = 0;
-	edict_t *e2;
-	int temp;
-	int tag_list[32];
-		for (i = 1; i <= maxclients->value; i++) 
-		{
-			e2 = g_edicts + i;
-			if (!e2->inuse)
-				continue;
-			if (e2->client->resp.playtag)
-			{
-				e2->client->resp.tagged = false;
-				e2->client->resp.tag_time = 0;
-				tag_list[j] = i;
-				j++;
-			}
-		}
-		//j = num tagged
-		if (j>1)
-		{
-			//do a new tag round
-			temp = random() * j;
-			e2 = g_edicts + tag_list[temp];
-			//e2 is our new tagged person
-			e2->client->resp.tagged = true;
-			e2->client->resp.tag_time = level.time + TAG_TIME;
-			NotifyOfNewTag(e2);
-		}
-}
-
-void TagJoin(edict_t *ent)
-{
-	int i;
-	edict_t *e2;
-	qboolean got_tag = false;
-
-	gi.cprintf(ent,PRINT_HIGH, "        Joined the game of TAG.\n"); 
-		for (i = 1; i <= maxclients->value; i++) 
-		{
-			e2 = g_edicts + i;
-			if (!e2->inuse)
-				continue;
-			if (e2->client->resp.playtag)
-			if (e2!=ent)
-			{
-				gi.cprintf(e2,PRINT_HIGH, "        %s has joined the game of TAG.\n", 
-					ent->client->pers.netname);
-
-				if (e2->client->resp.tagged)
-					got_tag = true;
-			}
-		}
-
-	ent->client->resp.playtag = true;
-	ent->client->resp.tagged = false;
-	ent->client->resp.tag_time = 0;
-	if (!got_tag)
-		NewTag();
-}
-
-void TagLeave(edict_t *ent)
-{
-	int i;
-	edict_t *e2;
-	qboolean was_tagged;
-	
-	gi.cprintf(ent,PRINT_HIGH, "        Left the game of TAG.\n"); 
-		for (i = 1; i <= maxclients->value; i++) 
-		{
-			e2 = g_edicts + i;
-			if (!e2->inuse)
-				continue;
-			if (e2->client->resp.playtag)
-			if (e2!=ent)
-			{
-				gi.cprintf(e2,PRINT_HIGH, "        %s has left the game of TAG.\n", 
-					ent->client->pers.netname);
-			}
-		}
-	ent->client->resp.playtag = false;
-	was_tagged = ent->client->resp.tagged;
-	ent->client->resp.tagged = false;
-	ent->client->resp.tag_time = 0;
-	if (was_tagged)
-		NewTag();
-}
-
-void PlayTag(edict_t *ent)
-{
-	//make sure we are on hard
-	if (ent->client->resp.ctf_team!=CTF_TEAM2)
-		return;
-	if (!ent->client->resp.playtag)
-		TagJoin(ent);
-	else
-		TagLeave(ent);
-}
-
 
 
 int GetMID(char *mapname)

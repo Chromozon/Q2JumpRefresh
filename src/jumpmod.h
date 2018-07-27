@@ -405,15 +405,15 @@ extern zbotcmd_t zbotCommands[];
 
 typedef struct
 {
-	unsigned int	timelimit;
-	unsigned int	blaster;
-	unsigned int	weapons;
-	unsigned int	slowdoors;	
-	unsigned int	fastdoors;	
-	unsigned int	fasttele;
-	unsigned int	damage;
-	unsigned int	health;
-	unsigned int	regen;
+	unsigned int timelimit;
+	unsigned int blaster;
+	unsigned int weapons;
+	unsigned int slowdoors;	
+	unsigned int fastdoors;	
+	unsigned int fasttele;
+	unsigned int damage;
+	unsigned int health;
+	unsigned int regen;
 	unsigned int ghost;
 	unsigned int kill_delay;
 	unsigned int best_time_glow;

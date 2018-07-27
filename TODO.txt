@@ -1,4 +1,14 @@
 
 - Remove the forceteam command
-- Remove the antiglue and !glue commands
 - Make it so an invalid command isn't printed to chat?  Maybe make a toggle for this.
+- There is this "tourney" mode which seems to be unused.
+- The function "SelectSpawnPoint" can be cleaned up.  Currently it looks for the red/blue team spawn points, then deathmatch, then info_play_start.
+- The "apply_time" function has a funky way of determining first place; could use cleanup overall.
+- The kill and recall functions share some logic and have CTF overtime logic cluttering them up.
+
+- There are a bunch of variables that have to deal with map completion time, but many seem unused:
+	float			item_timer; // map completion time
+	float			item_timer_penalty;
+	int			item_timer_penalty_delay;
+	float			stored_item_timer;
+	qboolean	item_timer_allow;

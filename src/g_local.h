@@ -1208,14 +1208,14 @@ typedef struct
 	int			store;
 
 	int client_think_begin;
-	float			item_timer;
+	float			item_timer; // map completion time
 	float			item_timer_penalty;
 	int			item_timer_penalty_delay;
 	float			stored_item_timer;
 	qboolean	item_timer_allow;
 	int			num_votes;
 	qboolean	got_time;
-	qboolean	finished;
+	qboolean	finished; // set to true when a run is completed; used to ignore weapon pickups after you've already gotten a time
 	int			jumps;
 	qboolean	hide_jumpers;
 	qboolean	mute_cps;

@@ -1,34 +1,22 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
+// This file has a lot of helper functions and game constant defines.
+// Jumpmod should not need to touch this file; add functionality to other files.
+// 
+// Changes made:
+//   - Added <ctype.h> header file for some math functions
+//   - Changed qboolean from an enum to an int
+//
 #pragma once
 
 // q_shared.h -- included first by ALL program modules
 
 #ifdef _WIN32
 // unknown pragmas are SUPPOSED to be ignored, but....
-//#pragma warning(disable : 4136)     // X86
-//#pragma warning(disable : 4051)     // ALPHA
+#pragma warning(disable : 4244)     // MIPS
+#pragma warning(disable : 4136)     // X86
+#pragma warning(disable : 4051)     // ALPHA
 
-//#pragma warning(disable : 4018)     // signed/unsigned mismatch
-#pragma warning(disable : 4244) // conversion from type to type, possible loss of data TODO
-#pragma warning(disable : 4305) // truncation from double to float; happens when you do "float val = 12.0" without the f appended to the number
+#pragma warning(disable : 4018)     // signed/unsigned mismatch
+#pragma warning(disable : 4305)		// truncation from const double to float
 
 #endif
 
@@ -53,8 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define idaxp	0
 #endif
 
-typedef unsigned char 		byte;
-
+typedef unsigned char byte;
 typedef int qboolean;
 
 
@@ -174,7 +161,6 @@ void ClearBounds (vec3_t mins, vec3_t maxs);
 void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs);
 int VectorCompare (vec3_t v1, vec3_t v2);
 vec_t VectorLength (vec3_t v);
-vec_t VectorLength2 (vec3_t v);
 void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross);
 vec_t VectorNormalize (vec3_t v);		// returns vector length
 vec_t VectorNormalize2 (vec3_t v, vec3_t out);
@@ -1033,8 +1019,6 @@ typedef enum
 #define DF_INFINITE_AMMO	0x00002000	// 8192
 #define DF_QUAD_DROP		0x00004000	// 16384
 #define DF_FIXED_FOV		0x00008000	// 32768
-//LAC
-#define DF_MAP_LIST         65536 
 
 // RAFAEL
 #define	DF_QUADFIRE_DROP	0x00010000	// 65536
@@ -1114,7 +1098,6 @@ ROGUE - VERSIONS
 #define	CS_ITEMS			(CS_LIGHTS+MAX_LIGHTSTYLES)
 #define	CS_PLAYERSKINS		(CS_ITEMS+MAX_ITEMS)
 #define CS_GENERAL			(CS_PLAYERSKINS+MAX_CLIENTS)
-#define CS_JUMP				(CS_GENERAL+128)
 #define	MAX_CONFIGSTRINGS	(CS_GENERAL+MAX_GENERAL)
 
 

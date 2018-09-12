@@ -32,8 +32,7 @@ INTERMISSION
 void MoveClientToIntermission (edict_t *ent)
 {
 	if (deathmatch->value || coop->value)
-		ent->client->showscores = 2;
-		ent->client->showscores = 0;
+		ent->client->showscores = true;
 	VectorCopy (level.intermission_origin, ent->s.origin);
 	ent->client->ps.pmove.origin[0] = level.intermission_origin[0]*8;
 	ent->client->ps.pmove.origin[1] = level.intermission_origin[1]*8;
@@ -45,11 +44,6 @@ void MoveClientToIntermission (edict_t *ent)
 	ent->client->ps.rdflags &= ~RDF_UNDERWATER;
 
 	// clean up powerup info
-
-  /*ATTILA begin*/
-  ent->client->Jet_framenum = 0;
-  ent->client->Jet_remaining = 0;
-  /*ATTILA end*/
 	ent->client->quad_framenum = 0;
 	ent->client->invincible_framenum = 0;
 	ent->client->breather_framenum = 0;
@@ -70,7 +64,7 @@ void MoveClientToIntermission (edict_t *ent)
 
 	if (deathmatch->value || coop->value)
 	{
-		BestTimesScoreboardMessage (ent, NULL);
+		DeathmatchScoreboardMessage (ent, NULL);
 		gi.unicast (ent, true);
 	}
 
@@ -80,9 +74,6 @@ void BeginIntermission (edict_t *targ)
 {
 	int		i, n;
 	edict_t	*ent, *client;
-	char	stored[128];
-
-//	debug_log ("CHECKPOINT: Function: BeginIntermission Line: 85 File: p_hud.c");
 
 	if (level.intermissiontime)
 		return;		// allready activated
@@ -94,53 +85,7 @@ void BeginIntermission (edict_t *targ)
 
 	game.autosaved = false;
 
-	//pooy
-	
-//	Besttimes_all();
-	//increase maplist count
-	maplist.update[level.mapnum]++;
-	write_tourney_file(level.mapname,level.mapnum);
-	WriteMapList();
-	UpdateTimes(level.mapnum);
-//	debug_log ("CHECKPOINT: Function: BeginIntermission Line: 105 File: p_hud.c");
-/*	for (i=0;i<maplist.nummaps;i++)
-		if (strcmp(maplist.mapnames[i],level.mapname)==0)
-		{
-			UpdateTimes(i);
-			break;
-		}*/
-	UpdateScores();
-	write_users_file();
-    sort_users();
-	
-	Lastseen_Save();
-
-//	debug_log ("CHECKPOINT: Function: BeginIntermission Line: 115 File: p_hud.c");
-	//html stuff
-	if (gset_vars->html_create)
-	{
-		CreateHTML (NULL,HTML_PLAYERS_SCORES,0);
-		CreateHTML (NULL,HTML_MAPS,0);
-		CreateHTML (NULL,HTML_BESTSCORES,0);
-		CreateHTML (NULL,HTML_FIRST,0);
-		CreateHTML (NULL,HTML_PLAYERS_PERCENTAGE,0);	
-		CreateHTML (NULL,HTML_INDIVIDUAL_MAP,level.mapnum);
-		for (i=0;i<MAX_USERS;i++)
-		{
-			if (tourney_record[i].fresh)
-				CreateHTML (NULL,HTML_INDIVIDUALS,tourney_record[i].uid);
-		}
-
-	}
-
-//	debug_log ("CHECKPOINT: Function: BeginIntermission Line: 133 File: p_hud.c");
-
-	if (level_items.item_time)
-	{
-		gi.bprintf(PRINT_HIGH,"Fastest Time this map : %s in %1.3f seconds using %d jumps.\n",level_items.item_owner,level_items.item_time,level_items.jumps);
-	}
 	// respawn any dead clients
-
 	for (i=0 ; i<maxclients->value ; i++)
 	{
 		client = g_edicts + 1 + i;
@@ -148,11 +93,7 @@ void BeginIntermission (edict_t *targ)
 			continue;
 		if (client->health <= 0)
 			respawn(client);
-		if (client->client->resp.auto_record_on)
-			autorecord_stop(client);
 	}
-
-//	debug_log ("CHECKPOINT: Function: BeginIntermission Line: 153 File: p_hud.c");
 
 	level.intermissiontime = level.time;
 	level.changemap = targ->map;
@@ -205,8 +146,6 @@ void BeginIntermission (edict_t *targ)
 		}
 	}
 
-//	debug_log ("CHECKPOINT: Function: BeginIntermission Line: 206 File: p_hud.c");
-
 	VectorCopy (ent->s.origin, level.intermission_origin);
 	VectorCopy (ent->s.angles, level.intermission_angle);
 
@@ -244,7 +183,7 @@ void DeathmatchScoreboardMessage (edict_t *ent, edict_t *killer)
 
 //ZOID
 	if (ctf->value) {
-		JumpModScoreboardMessage (ent, killer);
+		CTFScoreboardMessage (ent, killer);
 		return;
 	}
 //ZOID
@@ -338,13 +277,6 @@ void DeathmatchScoreboard (edict_t *ent)
 	gi.unicast (ent, true);
 }
 
-//pooy
-void BestTimesScoreboard (edict_t *ent)
-{
-	BestTimesScoreboardMessage (ent, ent->enemy);
-	gi.unicast (ent, true);
-}
-
 
 /*
 ==================
@@ -367,39 +299,16 @@ void Cmd_Score_f (edict_t *ent)
 
 	if (ent->client->showscores)
 	{
-		ent->client->showscores = 0;
+		ent->client->showscores = false;
 		ent->client->update_chase = true;
 		return;
 	}
 
-	ent->client->showscores = 1;
+	ent->client->showscores = true;
 
 	DeathmatchScoreboard (ent);
 }
 
-void Cmd_Score2_f (edict_t *ent)
-{
-	ent->client->showinventory = false;
-	ent->client->showhelp = false;
-//ZOID
-	if (ent->client->menu)
-		PMenu_Close(ent);
-//ZOID
-
-	if (!deathmatch->value && !coop->value)
-		return;
-
-	if (ent->client->showscores>=2)
-	{
-		ent->client->showscores = 0;
-		ent->client->update_chase = true;
-		return;
-	}
-
-	ent->client->showscores = 2;
-
-	BestTimesScoreboard (ent);
-}
 
 /*
 ==================
@@ -462,7 +371,7 @@ void Cmd_Help_f (edict_t *ent)
 	}
 
 	ent->client->showinventory = false;
-	ent->client->showscores = 0;
+	ent->client->showscores = false;
 
 	if (ent->client->showhelp && (ent->client->resp.game_helpchanged == game.helpchanged))
 	{
@@ -488,125 +397,28 @@ void G_SetStats (edict_t *ent)
 	gitem_t		*item;
 	int			index, cells;
 	int			power_armor_type;
-	int temp,temp2;
-	float gottime;
-	int thistime;
-	if (level.status==LEVEL_STATUS_OVERTIME)
-	{
-		if (level.overtime<=gset_vars->overtimewait)
-		{
-			ent->client->ps.stats[STAT_ITEM_TIMER] = gset_vars->overtimewait-level.overtime+1;
-			ent->client->ps.stats[STAT_ITEM_TIMER2] = 0;
-		}
-		else
-			ent->client->ps.stats[STAT_ITEM_TIMER] = ent->client->ps.stats[STAT_ITEM_TIMER2] = 0;
-	}
-	else
-	{
-
-		if ((ent->client->resp.ctf_team<CTF_TEAM1) && (ent->client->resp.replaying))
-		{
-			ent->client->ps.stats[STAT_ITEM_TIMER] = (int)(ent->client->resp.replay_frame/10);
-			ent->client->ps.stats[STAT_ITEM_TIMER2] = (int)((int)ent->client->resp.replay_frame%10);
-		}
-		else if (ent->client->resp.ctf_team<CTF_TEAM1)
-			ent->client->ps.stats[STAT_ITEM_TIMER] = ent->client->ps.stats[STAT_ITEM_TIMER2] = 0;
-		else if (!(!ent->client->chase_target))
-		{
-			gottime = ent->client->chase_target->client->resp.client_think_begin;
-			if (!ent->client->chase_target->client->resp.paused && gottime)
-			{
-				thistime = Sys_Milliseconds();
-				gottime = thistime - gottime;
-				gottime = floor(gottime/100); //x.x
-				ent->client->ps.stats[STAT_ITEM_TIMER] = (int)(gottime/10);
-				ent->client->ps.stats[STAT_ITEM_TIMER2] = (int)((int)gottime%10);
-			}
-			else
-			{
-				ent->client->ps.stats[STAT_ITEM_TIMER] = (int)(ent->client->chase_target->client->resp.item_timer);
-				ent->client->ps.stats[STAT_ITEM_TIMER2] = (int)((int)(ent->client->chase_target->client->resp.item_timer*10)%10);
-			}
-		}
-		else
-		{
-			gottime = ent->client->resp.client_think_begin;
-			if (!ent->client->resp.paused && gottime)
-			{
-				thistime = Sys_Milliseconds();
-				gottime = thistime - gottime;
-				gottime = floor(gottime/100); //x.x
-				ent->client->ps.stats[STAT_ITEM_TIMER] = (int)(gottime/10);
-				ent->client->ps.stats[STAT_ITEM_TIMER2] = (int)((int)gottime%10);
-
-			}
-			else
-			{
-				ent->client->ps.stats[STAT_ITEM_TIMER] = (int)(ent->client->resp.item_timer);
-				ent->client->ps.stats[STAT_ITEM_TIMER2] = (int)((int)(ent->client->resp.item_timer*10)%10);
-			}
-		}
-
-	}
-
-	ent->client->ps.stats[STAT_JUMP_MAPCOUNT] = CONFIG_JUMP_MAPCOUNT;
-	//pooy, send time left
-	ent->client->ps.stats[STAT_JUMP_ADDED_TIME] = CONFIG_JUMP_ADDED_TIME;
-	level.timeleft = 0;
-	switch (level.status)
-	{
-	case 0 :
-		level.timeleft = (mset_vars->timelimit*60)+(map_added_time*60)-level.time;		
-
-		temp = (
-			((mset_vars->timelimit*60)+
-			(map_added_time*60))
-			-level.time)/60;
-		//temp--;
-		temp2 = (int)(
-			((mset_vars->timelimit*60)+
-			(map_added_time*60))
-			-level.time)%60;
-		if (temp>0)
-			ent->client->ps.stats[STAT_TIME_LEFT] = temp;
-		else if (temp2>0)
-			ent->client->ps.stats[STAT_TIME_LEFT] = temp2;
-		else
-			ent->client->ps.stats[STAT_TIME_LEFT] = 0;
-	break;
-	case LEVEL_STATUS_OVERTIME :
-		
-		temp = ((((gset_vars->overtimelimit)*60)+gset_vars->overtimewait)-level.overtime+1)/60;
-		//temp--;
-		temp2 = (int)((((gset_vars->overtimelimit)*60)+gset_vars->overtimewait)-level.overtime+1)%60;
-		if (temp>0)
-			ent->client->ps.stats[STAT_TIME_LEFT] = temp;
-		else if (temp2>0)
-			ent->client->ps.stats[STAT_TIME_LEFT] = temp2;
-		else
-			ent->client->ps.stats[STAT_TIME_LEFT] = 0;
-	break;
-	case LEVEL_STATUS_VOTING:
-		
-		temp2 = (int)(gset_vars->votingtime-level.votingtime);
-		if (temp2>0)
-			ent->client->ps.stats[STAT_TIME_LEFT] = temp2;
-		else
-			ent->client->ps.stats[STAT_TIME_LEFT] = 0;
-	break;
-	}
 
 	//
 	// health
 	//
-	if (ent->health!=mset_vars->health && ent->health>0)
-		ent->client->ps.stats[STAT_HEALTH] = ent->health;
+	ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
+	ent->client->ps.stats[STAT_HEALTH] = ent->health;
+
+	//
+	// ammo
+	//
+	if (!ent->client->ammo_index /* || !ent->client->pers.inventory[ent->client->ammo_index] */)
+	{
+		ent->client->ps.stats[STAT_AMMO_ICON] = 0;
+		ent->client->ps.stats[STAT_AMMO] = 0;
+	}
 	else
-		ent->client->ps.stats[STAT_HEALTH] = 0;
-	ent->client->ps.stats[STAT_ARMOR] = 0;
-	ent->client->ps.stats[STAT_AMMO] = 0;
-
-
+	{
+		item = &itemlist[ent->client->ammo_index];
+		ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex (item->icon);
+		ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->ammo_index];
+	}
+	
 	//
 	// armor
 	//
@@ -622,18 +434,36 @@ void G_SetStats (edict_t *ent)
 		}
 	}
 
+	index = ArmorIndex (ent);
+	if (power_armor_type && (!index || (level.framenum & 8) ) )
+	{	// flash between power armor and other armor icon
+		ent->client->ps.stats[STAT_ARMOR_ICON] = gi.imageindex ("i_powershield");
+		ent->client->ps.stats[STAT_ARMOR] = cells;
+	}
+	else if (index)
+	{
+		item = GetItemByIndex (index);
+		ent->client->ps.stats[STAT_ARMOR_ICON] = gi.imageindex (item->icon);
+		ent->client->ps.stats[STAT_ARMOR] = ent->client->pers.inventory[index];
+	}
+	else
+	{
+		ent->client->ps.stats[STAT_ARMOR_ICON] = 0;
+		ent->client->ps.stats[STAT_ARMOR] = 0;
+	}
+
+	//
+	// pickup message
+	//
+	if (level.time > ent->client->pickup_msg_time)
+	{
+		ent->client->ps.stats[STAT_PICKUP_ICON] = 0;
+		ent->client->ps.stats[STAT_PICKUP_STRING] = 0;
+	}
+
 	//
 	// timers
 	//
-
-	
-
-/*  if ( Jet_Active(ent) )
-  {
-    ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex ("p_quad");
-    ent->client->ps.stats[STAT_TIMER] = ent->client->Jet_remaining/10;
-  } 
-  else
 	if (ent->client->quad_framenum > level.framenum)
 	{
 		ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex ("p_quad");
@@ -659,21 +489,16 @@ void G_SetStats (edict_t *ent)
 		ent->client->ps.stats[STAT_TIMER_ICON] = 0;
 		ent->client->ps.stats[STAT_TIMER] = 0;
 	}
-*/
+
 	//
 	// selected item
 	//
-/*	if (ent->client->pers.selected_item == -1)
+	if (ent->client->pers.selected_item == -1)
 		ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
 	else
 		ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex (itemlist[ent->client->pers.selected_item].icon);
-*/
-	//ent->client->ps.stats[STAT_SELECTED_ITEM] = ent->client->pers.selected_item;
 
-	if (ent->client->pers.weapon && ent->client->pers.weapon->ammo)
-		ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex (ent->client->pers.weapon->icon);
-	else
-		ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
+	ent->client->ps.stats[STAT_SELECTED_ITEM] = ent->client->pers.selected_item;
 
 	//
 	// layouts
@@ -696,12 +521,21 @@ void G_SetStats (edict_t *ent)
 			ent->client->ps.stats[STAT_LAYOUTS] |= 2;
 	}
 
-		if (ent->client->resp.ctf_team == CTF_TEAM1)
-			ent->client->ps.stats[STAT_FRAGS] =-1;
-		else if (ent->client->resp.ctf_team == CTF_TEAM2)
-			ent->client->ps.stats[STAT_FRAGS] = 0;
-		else
-			ent->client->ps.stats[STAT_FRAGS] = 1;
+	//
+	// frags
+	//
+	ent->client->ps.stats[STAT_FRAGS] = ent->client->resp.score;
+
+	//
+	// help icon / current weapon if not shown
+	//
+	if (ent->client->resp.helpchanged && (level.framenum&8) )
+		ent->client->ps.stats[STAT_HELPICON] = gi.imageindex ("i_help");
+	else if ( (ent->client->pers.hand == CENTER_HANDED || ent->client->ps.fov > 91)
+		&& ent->client->pers.weapon)
+		ent->client->ps.stats[STAT_HELPICON] = gi.imageindex (ent->client->pers.weapon->icon);
+	else
+		ent->client->ps.stats[STAT_HELPICON] = 0;
 
 //ZOID
 	SetCTFStats(ent);

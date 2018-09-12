@@ -33,14 +33,14 @@ pmenuhnd_t *PMenu_Open(edict_t *ent, pmenu_t *entries, int cur, int num, void *a
 		return NULL;
 
 	if (ent->client->menu) {
-		//gi.dprintf("warning, ent already has a menu\n");
+		gi.dprintf("warning, ent already has a menu\n");
 		PMenu_Close(ent);
 	}
 
-	hnd = (pmenuhnd_t*)malloc(sizeof(*hnd));
+	hnd = malloc(sizeof(*hnd));
 
 	hnd->arg = arg;
-	hnd->entries = (pmenu_s*)malloc(sizeof(pmenu_t) * num);
+	hnd->entries = malloc(sizeof(pmenu_t) * num);
 	memcpy(hnd->entries, entries, sizeof(pmenu_t) * num);
 	// duplicate the strings since they may be from static memory
 	for (i = 0; i < num; i++)
@@ -61,7 +61,7 @@ pmenuhnd_t *PMenu_Open(edict_t *ent, pmenu_t *entries, int cur, int num, void *a
 	else
 		hnd->cur = i;
 
-	ent->client->showscores = 1;
+	ent->client->showscores = true;
 	ent->client->inmenu = true;
 	ent->client->menu = hnd;
 
@@ -88,7 +88,7 @@ void PMenu_Close(edict_t *ent)
 		free(hnd->arg);
 	free(hnd);
 	ent->client->menu = NULL;
-	ent->client->showscores = 0;
+	ent->client->showscores = false;
 }
 
 // only use on pmenu's that have been called with PMenu_Open
@@ -119,7 +119,6 @@ void PMenu_Do_Update(edict_t *ent)
 	hnd = ent->client->menu;
 
 	strcpy(string, "xv 32 yv 8 picn inventory ");
-//	strcpy(string, "xv -96 yv 8 picn jven ");
 
 	for (i = 0, p = hnd->entries; i < hnd->num; i++, p++) {
 		if (!p->text || !*(p->text))
@@ -148,6 +147,7 @@ void PMenu_Do_Update(edict_t *ent)
 			sprintf(string + strlen(string), "string \"%s\" ", t);
 		alt = false;
 	}
+
 	gi.WriteByte (svc_layout);
 	gi.WriteString (string);
 }

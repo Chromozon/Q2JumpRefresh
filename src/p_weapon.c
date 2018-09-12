@@ -23,8 +23,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "m_player.h"
 
 
-qboolean	is_quad;
-byte		is_silenced;
+static qboolean	is_quad;
+static byte		is_silenced;
 
 
 void weapon_grenade_fire (edict_t *ent, qboolean held);
@@ -119,116 +119,39 @@ qboolean Pickup_Weapon (edict_t *ent, edict_t *other)
 {
 	int			index;
 	gitem_t		*ammo;
-	gitem_t		*item;
-	int			pickup;
 
-	index = ITEM_INDEX(ent->item);	
-	
-	if (gametype->value==GAME_CTF)
-		return false;
+	index = ITEM_INDEX(ent->item);
 
-	// team easy, just tell them what they would have gotten
-	if (other->client->resp.ctf_team==CTF_TEAM1) {
-		pickup = 0;
-
-		if (mset_vars->bfg == 1) { // bfg
-			if (Q_stricmp(ent->item->pickup_name,"BFG10K")==0)
-				pickup = 1;
-		}
-
-		if (mset_vars->rocket == 1 && pickup != 1) { // rockets
-			if (Q_stricmp(ent->item->pickup_name,"Rocket Launcher")==0 || Q_stricmp(ent->item->pickup_name,"Grenade Launcher")==0)
-				pickup = 1;
-		}
-
-		if (mset_vars->checkpoint_total > 0 && pickup != 1) { // cps
-			if (other->client->pers.checkpoints < mset_vars->checkpoint_total) {
-				if (trigger_timer(other, 5))
-					gi.cprintf(other,PRINT_HIGH,"You need %d checkpoint(s), you have %d, please restart.\n", mset_vars->checkpoint_total, other->client->pers.checkpoints);
-				pickup = 1;
-			}
-		}
-
-		if (pickup == 0) // no other quals
-			if (trigger_timer(other, 5))
-				gi.cprintf(other,PRINT_HIGH,"You would have got this weapon in %3.1f seconds.\n",other->client->resp.item_timer);
-	}
-
-	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) && other->client->pers.inventory[index])
+	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
+		&& other->client->pers.inventory[index])
 	{
 		if (!(ent->spawnflags & (DROPPED_ITEM | DROPPED_PLAYER_ITEM) ) )
 			return false;	// leave the weapon for others to pickup
 	}
 
-	if (level.status==LEVEL_STATUS_OVERTIME)
-	{
-		if (gset_vars->overtimetype==OVERTIME_FAST)
-		{
-			//this player wins, end overtime
-			gi.bprintf(PRINT_CHAT,"%s wins!\n",other->client->pers.netname);
-//			level.overtime = 0;
-			End_Overtime();
-			return false;
-		}
-	}
-
-	// give them the weapon... conditionally
-	if (!mset_vars->bfg == 1 && Q_stricmp (ent->item->pickup_name,"BFG10K")==0) {} // if no bfg jumps, dont give weapon
-
-	else if (!mset_vars->rocket && 
-		(Q_stricmp(ent->item->pickup_name,"Rocket Launcher")==0 || Q_stricmp(ent->item->pickup_name,"Grenade Launcher")==0)) {} // if no rockets or grenades, dont give weapon
-
-	else // otherwise give them weapon
-		other->client->pers.inventory[index]++;
+	other->client->pers.inventory[index]++;
 
 	if (!(ent->spawnflags & DROPPED_ITEM) )
 	{
-		// ammo supply for the weapon they picked up
+		// give them some ammo with it
 		ammo = FindItem (ent->item->ammo);
-
-		if ( (int)dmflags->value & DF_INFINITE_AMMO ) // give a lot of ammo of infinite flag is on
+		if ( (int)dmflags->value & DF_INFINITE_AMMO )
 			Add_Ammo (other, ammo, 1000);
-
-		else // give the normal amount
+		else
 			Add_Ammo (other, ammo, ammo->quantity);
 
-		if (! (ent->spawnflags & DROPPED_PLAYER_ITEM) ) {
-			if (deathmatch->value) {
+		if (! (ent->spawnflags & DROPPED_PLAYER_ITEM) )
+		{
+			if (deathmatch->value)
+			{
 				if ((int)(dmflags->value) & DF_WEAPONS_STAY)
 					ent->flags |= FL_RESPAWN;
 				else
-					SetRespawn (ent, 1);
+					SetRespawn (ent, 30);
 			}
 			if (coop->value)
 				ent->flags |= FL_RESPAWN;
 		}
-	}
-
-
-	// team hard, so apply the time
-	if (other->client->resp.ctf_team==CTF_TEAM2) {
-		pickup = 0;
-
-		if (mset_vars->bfg == 1) { // bfg
-			if (Q_stricmp(ent->item->pickup_name,"BFG10K")==0)
-				pickup = 1;
-		}
-
-		if (mset_vars->rocket == 1 && pickup != 1) { // rockets
-			if (Q_stricmp(ent->item->pickup_name,"Rocket Launcher")==0 || Q_stricmp(ent->item->pickup_name,"Grenade Launcher")==0)
-				pickup = 1;
-		}
-
-		if (mset_vars->checkpoint_total > 0 && pickup != 1) { // cps
-			if (other->client->pers.checkpoints < mset_vars->checkpoint_total) {
-				if (trigger_timer(other, 5))
-					gi.cprintf(other,PRINT_HIGH,"You need %d checkpoint(s), you have %d, please restart.\n", mset_vars->checkpoint_total, other->client->pers.checkpoints);
-				pickup = 1;
-			}
-		}
-
-		if (pickup == 0) // no other quals
-			apply_time(other,ent);
 	}
 
 	if (other->client->pers.weapon != ent->item && 
@@ -236,7 +159,7 @@ qboolean Pickup_Weapon (edict_t *ent, edict_t *other)
 		( !deathmatch->value || other->client->pers.weapon == FindItem("blaster") ) )
 		other->client->newweapon = ent->item;
 
-	return false; //leave the weapon there
+	return true;
 }
 
 
@@ -368,7 +291,7 @@ void Think_Weapon (edict_t *ent)
 	// call active weapon think routine
 	if (ent->client->pers.weapon && ent->client->pers.weapon->weaponthink)
 	{
-		is_quad = false;//(ent->client->quad_framenum > level.framenum);
+		is_quad = (ent->client->quad_framenum > level.framenum);
 		if (ent->client->silencer_shots)
 			is_silenced = MZ_SILENCED;
 		else
@@ -492,19 +415,45 @@ static void Weapon_Generic2 (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FI
 
 	if (ent->client->weaponstate == WEAPON_ACTIVATING)
 	{
-		ent->client->weaponstate = WEAPON_READY;
-		ent->client->ps.gunframe = FRAME_IDLE_FIRST;
+		if (ent->client->ps.gunframe == FRAME_ACTIVATE_LAST || instantweap->value)
+		{
+			ent->client->weaponstate = WEAPON_READY;
+			ent->client->ps.gunframe = FRAME_IDLE_FIRST;
+			return;
+		}
+
+		ent->client->ps.gunframe++;
 		return;
 	}
 
 	if ((ent->client->newweapon) && (ent->client->weaponstate != WEAPON_FIRING))
 	{
 		ent->client->weaponstate = WEAPON_DROPPING;
-		ChangeWeapon(ent);
+		if (instantweap->value) {
+			ChangeWeapon(ent);
+			return;
+		} else
+			ent->client->ps.gunframe = FRAME_DEACTIVATE_FIRST;
+
+		if ((FRAME_DEACTIVATE_LAST - FRAME_DEACTIVATE_FIRST) < 4)
+		{
+			ent->client->anim_priority = ANIM_REVERSE;
+			if(ent->client->ps.pmove.pm_flags & PMF_DUCKED)
+			{
+				ent->s.frame = FRAME_crpain4+1;
+				ent->client->anim_end = FRAME_crpain1;
+			}
+			else
+			{
+				ent->s.frame = FRAME_pain304+1;
+				ent->client->anim_end = FRAME_pain301;
+				
+			}
+		}
 		return;
 	}
 
-	if (ent->client->weaponstate == WEAPON_READY || (mset_vars->fast_firing == 1 && Q_stricmp(ent->client->pers.weapon->pickup_name, "Rocket Launcher") == 0))
+	if (ent->client->weaponstate == WEAPON_READY)
 	{
 		if ( ((ent->client->latched_buttons|ent->client->buttons) & BUTTON_ATTACK) )
 		{
@@ -594,8 +543,7 @@ static void Weapon_Generic2 (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FI
 //ZOID
 void Weapon_Generic (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST, int FRAME_IDLE_LAST, int FRAME_DEACTIVATE_LAST, int *pause_frames, int *fire_frames, void (*fire)(edict_t *ent))
 {
-	int oldstate;
-	oldstate = ent->client->weaponstate;
+	int oldstate = ent->client->weaponstate;
 
 	Weapon_Generic2 (ent, FRAME_ACTIVATE_LAST, FRAME_FIRE_LAST, 
 		FRAME_IDLE_LAST, FRAME_DEACTIVATE_LAST, pause_frames, 
@@ -651,7 +599,6 @@ void weapon_grenade_fire (edict_t *ent, qboolean held)
 	speed = GRENADE_MINSPEED + (GRENADE_TIMER - timer) * ((GRENADE_MAXSPEED - GRENADE_MINSPEED) / GRENADE_TIMER);
 	fire_grenade2 (ent, start, forward, damage, speed, timer, radius, held);
 
-	if (!mset_vars->rocket)
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
 
@@ -678,11 +625,11 @@ void weapon_grenade_fire (edict_t *ent, qboolean held)
 
 void Weapon_Grenade (edict_t *ent)
 {
-//	if (((ent->client->newweapon) && (ent->client->weaponstate == WEAPON_READY)) | (!mset_vars->weapons))
-//	{
-//		ChangeWeapon (ent);
-//		return;
-//	}
+	if ((ent->client->newweapon) && (ent->client->weaponstate == WEAPON_READY))
+	{
+		ChangeWeapon (ent);
+		return;
+	}
 
 	if (ent->client->weaponstate == WEAPON_ACTIVATING)
 	{
@@ -802,16 +749,6 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 	if (is_quad)
 		damage *= 4;
 
-	//anti super rocket jump code
-	if (!mset_vars->allowsrj)
-	{
-		if (ent->client->resp.last_fire_frame+gset_vars->weapon_fire_min_delay>ent->client->resp.cur_time)
-		{
-			return;
-		}
-		ent->client->resp.last_fire_frame = ent->client->resp.cur_time;
-	}
-
 	VectorSet(offset, 8, 8, ent->viewheight-8);
 	AngleVectors (ent->client->v_angle, forward, right, NULL);
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
@@ -819,8 +756,7 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 	VectorScale (forward, -2, ent->client->kick_origin);
 	ent->client->kick_angles[0] = -1;
 
-	if (mset_vars->weapons || mset_vars->rocket)
-		fire_grenade (ent, start, forward, damage, 600, 2.5, radius);
+	fire_grenade (ent, start, forward, damage, 600, 2.5, radius);
 
 	gi.WriteByte (svc_muzzleflash);
 	gi.WriteShort (ent-g_edicts);
@@ -831,7 +767,6 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
-	if (!mset_vars->rocket)
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
 }
@@ -868,15 +803,6 @@ void Weapon_RocketLauncher_Fire (edict_t *ent)
 		damage *= 4;
 		radius_damage *= 4;
 	}
-	//anti super rocket jump code
-	if (!mset_vars->allowsrj)
-	{
-		if (ent->client->resp.last_fire_frame+gset_vars->weapon_fire_min_delay>ent->client->resp.cur_time)
-		{
-			return;
-		}
-		ent->client->resp.last_fire_frame = ent->client->resp.cur_time;
-	}
 
 	AngleVectors (ent->client->v_angle, forward, right, NULL);
 
@@ -897,7 +823,6 @@ void Weapon_RocketLauncher_Fire (edict_t *ent)
 
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
-	if (!mset_vars->rocket)
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
 }
@@ -909,6 +834,7 @@ void Weapon_RocketLauncher (edict_t *ent)
 
 	Weapon_Generic (ent, 4, 12, 50, 54, pause_frames, fire_frames, Weapon_RocketLauncher_Fire);
 }
+
 
 /*
 ======================================================================
@@ -937,7 +863,17 @@ void Blaster_Fire (edict_t *ent, vec3_t g_offset, int damage, qboolean hyper, in
 	fire_blaster (ent, start, forward, damage, 1000, effect, hyper);
 
 	// send muzzle flash
+	gi.WriteByte (svc_muzzleflash);
+	gi.WriteShort (ent-g_edicts);
+	if (hyper)
+		gi.WriteByte (MZ_HYPERBLASTER | is_silenced);
+	else
+		gi.WriteByte (MZ_BLASTER | is_silenced);
+	gi.multicast (ent->s.origin, MULTICAST_PVS);
+
+	PlayerNoise(ent, start, PNOISE_WEAPON);
 }
+
 
 void Weapon_Blaster_Fire (edict_t *ent)
 {
@@ -947,10 +883,7 @@ void Weapon_Blaster_Fire (edict_t *ent)
 		damage = 15;
 	else
 		damage = 10;
-	if (mset_vars->blaster)
-	{
-		Blaster_Fire (ent, vec3_origin, damage, false, EF_BLASTER);
-	}
+	Blaster_Fire (ent, vec3_origin, damage, false, EF_BLASTER);
 	ent->client->ps.gunframe++;
 }
 
@@ -958,14 +891,8 @@ void Weapon_Blaster (edict_t *ent)
 {
 	static int	pause_frames[]	= {19, 32, 0};
 	static int	fire_frames[]	= {5, 0};
-	static int	fire_frames2[]	= {0, 0};
 
-	if (ent->client->resp.silence)
-		Weapon_Generic (ent, 4, 8, 52, 55, pause_frames, fire_frames2, Weapon_Blaster_Fire);
-	else
-	{	
-		Weapon_Generic (ent, 4, 8, 52, 55, pause_frames, fire_frames, Weapon_Blaster_Fire);
-	}
+	Weapon_Generic (ent, 4, 8, 52, 55, pause_frames, fire_frames, Weapon_Blaster_Fire);
 }
 
 
@@ -1008,8 +935,7 @@ void Weapon_HyperBlaster_Fire (edict_t *ent)
 				damage = 15;
 			else
 				damage = 20;
-			if (mset_vars->weapons)
-				Blaster_Fire (ent, offset, damage, true, effect);
+			Blaster_Fire (ent, offset, damage, true, effect);
 			if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 				ent->client->pers.inventory[ent->client->ammo_index]--;
 
@@ -1116,8 +1042,7 @@ void Machinegun_Fire (edict_t *ent)
 	AngleVectors (angles, forward, right, NULL);
 	VectorSet(offset, 0, 8, ent->viewheight-8);
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
-	if (mset_vars->weapons)
-		fire_bullet (ent, start, forward, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MOD_MACHINEGUN);
+	fire_bullet (ent, start, forward, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MOD_MACHINEGUN);
 
 	gi.WriteByte (svc_muzzleflash);
 	gi.WriteShort (ent-g_edicts);
@@ -1253,8 +1178,8 @@ void Chaingun_Fire (edict_t *ent)
 		u = crandom()*4;
 		VectorSet(offset, 0, r, u + ent->viewheight-8);
 		P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
-		if (mset_vars->weapons)
-			fire_bullet (ent, start, forward, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MOD_CHAINGUN);
+
+		fire_bullet (ent, start, forward, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MOD_CHAINGUN);
 	}
 
 	// send muzzle flash
@@ -1314,13 +1239,12 @@ void weapon_shotgun_fire (edict_t *ent)
 		damage *= 4;
 		kick *= 4;
 	}
-	if (mset_vars->weapons)
-	{
-		if (deathmatch->value)
-			fire_shotgun (ent, start, forward, damage, kick, 500, 500, DEFAULT_DEATHMATCH_SHOTGUN_COUNT, MOD_SHOTGUN);
-		else
-			fire_shotgun (ent, start, forward, damage, kick, 500, 500, DEFAULT_SHOTGUN_COUNT, MOD_SHOTGUN);
-	}
+
+	if (deathmatch->value)
+		fire_shotgun (ent, start, forward, damage, kick, 500, 500, DEFAULT_DEATHMATCH_SHOTGUN_COUNT, MOD_SHOTGUN);
+	else
+		fire_shotgun (ent, start, forward, damage, kick, 500, 500, DEFAULT_SHOTGUN_COUNT, MOD_SHOTGUN);
+
 	// send muzzle flash
 	gi.WriteByte (svc_muzzleflash);
 	gi.WriteShort (ent-g_edicts);
@@ -1370,12 +1294,10 @@ void weapon_supershotgun_fire (edict_t *ent)
 	v[YAW]   = ent->client->v_angle[YAW] - 5;
 	v[ROLL]  = ent->client->v_angle[ROLL];
 	AngleVectors (v, forward, NULL, NULL);
-	if (mset_vars->weapons)
-		fire_shotgun (ent, start, forward, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT/2, MOD_SSHOTGUN);
+	fire_shotgun (ent, start, forward, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT/2, MOD_SSHOTGUN);
 	v[YAW]   = ent->client->v_angle[YAW] + 5;
 	AngleVectors (v, forward, NULL, NULL);
-	if (mset_vars->weapons)
-		fire_shotgun (ent, start, forward, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT/2, MOD_SSHOTGUN);
+	fire_shotgun (ent, start, forward, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT/2, MOD_SSHOTGUN);
 
 	// send muzzle flash
 	gi.WriteByte (svc_muzzleflash);
@@ -1440,8 +1362,7 @@ void weapon_railgun_fire (edict_t *ent)
 
 	VectorSet(offset, 0, 7,  ent->viewheight-8);
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
-	if (mset_vars->weapons)
-		fire_rail (ent, start, forward, damage, kick);
+	fire_rail (ent, start, forward, damage, kick);
 
 	// send muzzle flash
 	gi.WriteByte (svc_muzzleflash);
@@ -1522,14 +1443,12 @@ void weapon_bfg_fire (edict_t *ent)
 
 	VectorSet(offset, 8, 8, ent->viewheight-8);
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
-	if (mset_vars->weapons || mset_vars->bfg)
-		fire_bfg (ent, start, forward, damage, 400, damage_radius);
+	fire_bfg (ent, start, forward, damage, 400, damage_radius);
 
 	ent->client->ps.gunframe++;
 
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
-	if (!mset_vars->bfg)
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index] -= 50;
 }
@@ -1544,12 +1463,3 @@ void Weapon_BFG (edict_t *ent)
 
 
 //======================================================================
-
-
-void Weapon_Finish (edict_t *ent)
-{
-	static int	pause_frames[]	= {25, 33, 42, 50, 0};
-	static int	fire_frames[]	= {5, 0};
-
-	Weapon_Generic (ent, 4, 12, 50, 54, pause_frames, fire_frames, weapon_railgun_fire);
-}

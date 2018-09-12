@@ -20,7 +20,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "g_local.h"
 
-static qboolean break_out_of_spawn;
 typedef struct
 {
 	char	*name;
@@ -28,18 +27,125 @@ typedef struct
 } spawn_t;
 
 
+void SP_item_health (edict_t *self);
+void SP_item_health_small (edict_t *self);
+void SP_item_health_large (edict_t *self);
+void SP_item_health_mega (edict_t *self);
+
+void SP_info_player_start (edict_t *ent);
+void SP_info_player_deathmatch (edict_t *ent);
+void SP_info_player_coop (edict_t *ent);
+void SP_info_player_intermission (edict_t *ent);
+
+void SP_func_plat (edict_t *ent);
+void SP_func_rotating (edict_t *ent);
+void SP_func_button (edict_t *ent);
+void SP_func_door (edict_t *ent);
+void SP_func_door_secret (edict_t *ent);
+void SP_func_door_rotating (edict_t *ent);
+void SP_func_water (edict_t *ent);
+void SP_func_train (edict_t *ent);
+void SP_func_conveyor (edict_t *self);
+void SP_func_wall (edict_t *self);
+void SP_func_object (edict_t *self);
+void SP_func_explosive (edict_t *self);
+void SP_func_timer (edict_t *self);
+void SP_func_areaportal (edict_t *ent);
+void SP_func_clock (edict_t *ent);
+void SP_func_killbox (edict_t *ent);
+
+void SP_trigger_always (edict_t *ent);
+void SP_trigger_once (edict_t *ent);
+void SP_trigger_multiple (edict_t *ent);
+void SP_trigger_relay (edict_t *ent);
+void SP_trigger_push (edict_t *ent);
+void SP_trigger_hurt (edict_t *ent);
+void SP_trigger_key (edict_t *ent);
+void SP_trigger_counter (edict_t *ent);
+void SP_trigger_elevator (edict_t *ent);
+void SP_trigger_gravity (edict_t *ent);
+void SP_trigger_monsterjump (edict_t *ent);
+
+void SP_target_temp_entity (edict_t *ent);
+void SP_target_speaker (edict_t *ent);
+void SP_target_explosion (edict_t *ent);
+void SP_target_changelevel (edict_t *ent);
+void SP_target_secret (edict_t *ent);
+void SP_target_goal (edict_t *ent);
+void SP_target_splash (edict_t *ent);
+void SP_target_spawner (edict_t *ent);
+void SP_target_blaster (edict_t *ent);
+void SP_target_crosslevel_trigger (edict_t *ent);
+void SP_target_crosslevel_target (edict_t *ent);
+void SP_target_laser (edict_t *self);
+void SP_target_help (edict_t *ent);
+void SP_target_actor (edict_t *ent);
+void SP_target_lightramp (edict_t *self);
+void SP_target_earthquake (edict_t *ent);
+void SP_target_character (edict_t *ent);
+void SP_target_string (edict_t *ent);
+
+void SP_worldspawn (edict_t *ent);
+void SP_viewthing (edict_t *ent);
+
+void SP_light (edict_t *self);
+void SP_light_mine1 (edict_t *ent);
+void SP_light_mine2 (edict_t *ent);
+void SP_info_null (edict_t *self);
+void SP_info_notnull (edict_t *self);
+void SP_path_corner (edict_t *self);
+void SP_point_combat (edict_t *self);
+
+void SP_misc_explobox (edict_t *self);
+void SP_misc_banner (edict_t *self);
+void SP_misc_satellite_dish (edict_t *self);
+void SP_misc_actor (edict_t *self);
+void SP_misc_gib_arm (edict_t *self);
+void SP_misc_gib_leg (edict_t *self);
+void SP_misc_gib_head (edict_t *self);
+void SP_misc_insane (edict_t *self);
+void SP_misc_deadsoldier (edict_t *self);
+void SP_misc_viper (edict_t *self);
+void SP_misc_viper_bomb (edict_t *self);
+void SP_misc_bigviper (edict_t *self);
+void SP_misc_strogg_ship (edict_t *self);
+void SP_misc_teleporter (edict_t *self);
+void SP_misc_teleporter_dest (edict_t *self);
+void SP_misc_blackhole (edict_t *self);
+void SP_misc_eastertank (edict_t *self);
+void SP_misc_easterchick (edict_t *self);
+void SP_misc_easterchick2 (edict_t *self);
+
+void SP_monster_berserk (edict_t *self);
+void SP_monster_gladiator (edict_t *self);
+void SP_monster_gunner (edict_t *self);
+void SP_monster_infantry (edict_t *self);
+void SP_monster_soldier_light (edict_t *self);
+void SP_monster_soldier (edict_t *self);
+void SP_monster_soldier_ss (edict_t *self);
+void SP_monster_tank (edict_t *self);
+void SP_monster_medic (edict_t *self);
+void SP_monster_flipper (edict_t *self);
+void SP_monster_chick (edict_t *self);
+void SP_monster_parasite (edict_t *self);
+void SP_monster_flyer (edict_t *self);
+void SP_monster_brain (edict_t *self);
+void SP_monster_floater (edict_t *self);
+void SP_monster_hover (edict_t *self);
+void SP_monster_mutant (edict_t *self);
+void SP_monster_supertank (edict_t *self);
+void SP_monster_boss2 (edict_t *self);
+void SP_monster_jorg (edict_t *self);
+void SP_monster_boss3_stand (edict_t *self);
+
+void SP_monster_commander_body (edict_t *self);
+
+void SP_turret_breach (edict_t *self);
+void SP_turret_base (edict_t *self);
+void SP_turret_driver (edict_t *self);
+
 
 spawn_t	spawns[] = {
-	{"jump_clip", SP_jump_clip},
-	{"jump_time", SP_jump_time},
-	{"jump_score", SP_jump_score},
-	{"jumpmod_effect", SP_effect},
-	{"jumpbox_small", SP_jumpbox_small},
-	{"jumpbox_medium", SP_jumpbox_medium},
-	{"jumpbox_large", SP_jumpbox_large},
-    {"cpbox_small", SP_cpbox_small},
-	{"cpbox_medium", SP_cpbox_medium},
-	{"cpbox_large", SP_cpbox_large},
 	{"item_health", SP_item_health},
 	{"item_health_small", SP_item_health_small},
 	{"item_health_large", SP_item_health_large},
@@ -130,7 +236,7 @@ spawn_t	spawns[] = {
 	{"misc_gib_leg", SP_misc_gib_leg},
 	{"misc_gib_head", SP_misc_gib_head},
 #if 0 // remove monster code
-    { "misc_insane", SP_misc_insane },
+	{"misc_insane", SP_misc_insane},
 #endif
 	{"misc_deadsoldier", SP_misc_deadsoldier},
 	{"misc_viper", SP_misc_viper},
@@ -150,7 +256,7 @@ spawn_t	spawns[] = {
 
 #if 0 // remove monster code
 	{"monster_berserk", SP_monster_berserk},
-    { "monster_gladiator", SP_monster_gladiator },
+	{"monster_gladiator", SP_monster_gladiator},
 	{"monster_gunner", SP_monster_gunner},
 	{"monster_infantry", SP_monster_infantry},
 	{"monster_soldier_light", SP_monster_soldier_light},
@@ -166,13 +272,13 @@ spawn_t	spawns[] = {
 	{"monster_brain", SP_monster_brain},
 	{"monster_floater", SP_monster_floater},
 	{"monster_hover", SP_monster_hover},
-    { "monster_mutant", SP_monster_mutant },
+	{"monster_mutant", SP_monster_mutant},
 	{"monster_supertank", SP_monster_supertank},
 	{"monster_boss2", SP_monster_boss2},
 	{"monster_boss3_stand", SP_monster_boss3_stand},
 	{"monster_jorg", SP_monster_jorg},
 
-    { "monster_commander_body", SP_monster_commander_body },
+	{"monster_commander_body", SP_monster_commander_body},
 
 	{"turret_breach", SP_turret_breach},
 	{"turret_base", SP_turret_base},
@@ -237,7 +343,7 @@ char *ED_NewString (char *string)
 	
 	l = strlen(string) + 1;
 
-	newb = (char*)gi.TagMalloc (l, TAG_LEVEL);
+	newb = gi.TagMalloc (l, TAG_LEVEL);
 
 	new_p = newb;
 
@@ -269,7 +375,7 @@ Takes a key/value pair and sets the binary values
 in an edict
 ===============
 */
-void ED_ParseField (char *key, char *value, edict_t *ent,int add)
+void ED_ParseField (char *key, char *value, edict_t *ent)
 {
 	field_t	*f;
 	byte	*b;
@@ -325,7 +431,7 @@ Parses an edict out of the given string, returning the new position
 ed should be a properly initialized empty edict.
 ====================
 */
-char *ED_ParseEdict (char *data, edict_t *ent, int add)
+char *ED_ParseEdict (char *data, edict_t *ent)
 {
 	qboolean	init;
 	char		keyname[256];
@@ -342,28 +448,17 @@ char *ED_ParseEdict (char *data, edict_t *ent, int add)
 		if (com_token[0] == '}')
 			break;
 		if (!data)
-		{
-			break_out_of_spawn = true;
-			break;
-			//gi.error ("ED_ParseEntity: EOF without closing brace");
-		}
+			gi.error ("ED_ParseEntity: EOF without closing brace");
 
 		strncpy (keyname, com_token, sizeof(keyname)-1);
 		
 	// parse value	
 		com_token = COM_Parse (&data);
 		if (!data)
-		{
-			break_out_of_spawn = true;
-			break;
-//			gi.error ("ED_ParseEntity: EOF without closing brace");
-		}
+			gi.error ("ED_ParseEntity: EOF without closing brace");
+
 		if (com_token[0] == '}')
-		{
-			break_out_of_spawn = true;
-			break;
-//			gi.error ("ED_ParseEntity: closing brace without data");
-		}
+			gi.error ("ED_ParseEntity: closing brace without data");
 
 		init = true;	
 
@@ -371,7 +466,8 @@ char *ED_ParseEdict (char *data, edict_t *ent, int add)
 	// and are immediately discarded by quake
 		if (keyname[0] == '_')
 			continue;
-		ED_ParseField (keyname, com_token, ent, add);
+
+		ED_ParseField (keyname, com_token, ent);
 	}
 
 	if (!init)
@@ -441,127 +537,40 @@ Creates a server's entity / program execution context by
 parsing textual entity definitions out of an ent file.
 ==============
 */
-void ClearEnt(int remnum);
-qboolean Neuro_RedKey_Overide;
 void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 {
-	FILE		*fe_add;
-	FILE		*fe_rem;
-	qboolean done_spawn;
-	long		lSize;
-	char		*buffer2;
-	char		file_loc[256];
-	char		file_loc2[256];
-	char		rent[256];
 	edict_t		*ent;
 	int			inhibit;
 	char		*com_token;
 	int			i;
-	cvar_t	*game_dir;
-	int			addent_count;
-	int v;
-	char text[128];
+	float		skill_level;
 
-	if (removed_map)
-	{
-//		gi.cprintf(ent,PRINT_HIGH,"A map has been removed so server is being restarted\n");
-		gi.AddCommandString("set sv_allow_map 1\n");
-		gi.AddCommandString("map forkjumping\n");
-		removed_map = false;
-	}
-	//reset added time
-	map_added_time = 0;
-	map_allow_voting = true;
-	level_items.locked = false;
+	skill_level = floor (skill->value);
+	if (skill_level < 0)
+		skill_level = 0;
+	if (skill_level > 3)
+		skill_level = 3;
+	if (skill->value != skill_level)
+		gi.cvar_forceset("skill", va("%f", skill_level));
 
-	clear_uid_info(-1);
-
-sprintf(text,"==== SpawnEntities (Entry) ====");
-debug_log(text);
-
-	break_out_of_spawn = false;
-
-		
-sprintf(text,"==== SpawnEntities (SaveClientData) ====");
-debug_log(text);
-	
 	SaveClientData ();
+
 	gi.FreeTags (TAG_LEVEL);
+
 	memset (&level, 0, sizeof(level));
 	memset (g_edicts, 0, game.maxentities * sizeof (g_edicts[0]));
 
-	//get current map number
 	strncpy (level.mapname, mapname, sizeof(level.mapname)-1);
-	for (i=0;i<maplist.nummaps;i++)
-		if (strcmp(maplist.mapnames[i],level.mapname)==0)
-		{
-			level.mapnum = i;
-			break;
-		}
-
-
-	//clear jump box values
-	for (i=0;i<10;i++)
-		level.jumpboxes[i] = 0;
-
-
-	level.got_spawn = false;
 	strncpy (game.spawnpoint, spawnpoint, sizeof(game.spawnpoint)-1);
+
+	// set client fields on player ents
 	for (i=0 ; i<game.maxclients ; i++)
 		g_edicts[i+1].client = game.clients + i;
 
 	ent = NULL;
 	inhibit = 0;
-	gametype->value = 0;
 
-	game_dir = gi.cvar("game", "", 0);
-	sprintf(file_loc2,"%s/ent/%s.add",game_dir->string,mapname);
-	fe_add = fopen ( file_loc2 , "rb" );
-
-
-sprintf(text,"==== SpawnEntities (Loading Config file) ====");
-debug_log(text);
-	CopyGlobalToLocal();
-	sprintf(file_loc,"%s/ent/%s.cfg",game_dir->string,mapname);
-	readCfgFile(file_loc);
-
-sprintf(text,"==== SpawnEntities (Loading Entity File) ====");
-debug_log(text);
-
-	if (fe_add!=NULL)
-	{
-		fseek (fe_add , 0 , SEEK_END);
-		lSize = ftell (fe_add);
-		rewind (fe_add);   
-		buffer2 = (char*)malloc (lSize);
-		if (buffer2 == NULL)
-		{
-			fclose (fe_add);
-			goto done2;
-		}
-		fread (buffer2,1,lSize,fe_add);   
-		fclose(fe_add);
-	}
-	done2:
-
-sprintf(text,"==== SpawnEntities (Loading Remove File) ====");
-debug_log(text);
-
-	Load_Remove_File(mapname);
-
-sprintf(text,"==== SpawnEntities (Clearing Entities) ====");
-debug_log(text);
-
-	for (i=0;i<MAX_ENTS;i++)
-	{
-		ClearEnt(i);
-	}
-
-sprintf(text,"==== SpawnEntities (Processing Main Entities) ====");
-debug_log(text);
-
-Neuro_RedKey_Overide = false;
-done_spawn = false;
+// parse ents
 	while (1)
 	{
 		// parse the opening brace	
@@ -569,140 +578,49 @@ done_spawn = false;
 		if (!entities)
 			break;
 		if (com_token[0] != '{')
-		{
-			ServerError("ED_LoadFromFile failed");
-		}
+			gi.error ("ED_LoadFromFile: found %s when expecting {",com_token);
 
 		if (!ent)
 			ent = g_edicts;
 		else
 			ent = G_Spawn ();
-		entities = ED_ParseEdict (entities, ent,0);
+		entities = ED_ParseEdict (entities, ent);
 		
+		// yet another map hack
+		if (!stricmp(level.mapname, "command") && !stricmp(ent->classname, "trigger_once") && !stricmp(ent->model, "*27"))
+			ent->spawnflags &= ~SPAWNFLAG_NOT_HARD;
+
 		// remove things (except the world) from different skill levels or deathmatch
 		if (ent != g_edicts)
 		{
-			if (( ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH ))
+			if (deathmatch->value)
 			{
-				G_FreeEdict (ent);	
-				inhibit++;
-				continue;
-			}
-
-			if ((strstr(ent->classname,"item_flag_team2"))	||	(strstr(ent->classname,"item_flag_team1")))
-				gametype->value = 1;
-
-			if (strstr(ent->classname,"key_red_key"))
-			{
-				//red key disables jetpack and admin handout
-				Neuro_RedKey_Overide = true;
-			}
-
-			if (mset_vars->singlespawn)
-			if (strstr(ent->classname,"info_player_deathmatch"))
-			{
-				if (!done_spawn)
-				{
-					done_spawn = true;
-				}
-				else
+				if ( ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH )
 				{
 					G_FreeEdict (ent);	
 					inhibit++;
-					continue;					
+					continue;
 				}
 			}
-
-			if (Can_Remove_Entity(ent->classname))
+			else
 			{
-				G_FreeEdict (ent);	
-				inhibit++;
-				continue;
+				if ( /* ((coop->value) && (ent->spawnflags & SPAWNFLAG_NOT_COOP)) || */
+					((skill->value == 0) && (ent->spawnflags & SPAWNFLAG_NOT_EASY)) ||
+					((skill->value == 1) && (ent->spawnflags & SPAWNFLAG_NOT_MEDIUM)) ||
+					(((skill->value == 2) || (skill->value == 3)) && (ent->spawnflags & SPAWNFLAG_NOT_HARD))
+					)
+					{
+						G_FreeEdict (ent);	
+						inhibit++;
+						continue;
+					}
 			}
-			ent->spawnflags &= ~(SPAWNFLAG_NOT_EASY|SPAWNFLAG_NOT_MEDIUM|SPAWNFLAG_NOT_HARD|SPAWNFLAG_NOT_COOP|SPAWNFLAG_NOT_DEATHMATCH);
-		}
-
-		ED_CallSpawn (ent);
-	}	
-
-
-sprintf(text,"==== SpawnEntities (Processing Added Entities) ====");
-debug_log(text);
-
-	addent_count = 0;
-	if ((fe_add!=NULL) && (buffer2!=NULL))
-	while (1)
-	{
-
-		// parse the opening brace	
-		com_token = COM_Parse (&buffer2);
-		if (!buffer2)
-			break;
-		
-		if (com_token[0] != '{')
-		{
-			gi.dprintf("Error with Entity file, exiting\n");
-//			if (ent)
-//				G_FreeEdict (ent);	
-			break;
-//			gi.error ("ED_LoadFromFile: found %s when expecting {",com_token);
-		}
-		if (!ent)
-			ent = g_edicts;
-		else
-			ent = G_Spawn ();
-
-		buffer2 = ED_ParseEdict (buffer2, ent,addent_count);
-
-		if (strcmp(ent->classname,"info_player_deathmatch")==0)
-		{
-			level.got_spawn = true;
-		}
-
-		if (break_out_of_spawn)
-		{
-			gi.dprintf("Error with Entity file, exiting\n");
-			if (ent)
-			G_FreeEdict (ent);
-			ent = NULL;
-			break;
-		}
-
-		// remove things (except the world) from different skill levels or deathmatch
-		if (ent != g_edicts)
-		{
-			
-			if ( ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH )
-			{
-				G_FreeEdict (ent);	
-				inhibit++;
-				continue;
-			}
-
-			if (
-				(strstr(ent->classname,"item_flag_team2"))
-				||
-				(strstr(ent->classname,"item_flag_team1"))
-				)
-			{
-				gametype->value = 1;
-			}
-			if ((addent_count<MAX_ENTS))
-			{
-				level_items.ents[addent_count] = ent;
-			}
-			addent_count++;
 
 			ent->spawnflags &= ~(SPAWNFLAG_NOT_EASY|SPAWNFLAG_NOT_MEDIUM|SPAWNFLAG_NOT_HARD|SPAWNFLAG_NOT_COOP|SPAWNFLAG_NOT_DEATHMATCH);
 		}
 
 		ED_CallSpawn (ent);
 	}	
-
-sprintf(text,"==== SpawnEntities (Removing Entities) ====");
-debug_log(text);
-
-	remall_Apply();
 
 	gi.dprintf ("%i entities inhibited\n", inhibit);
 
@@ -710,50 +628,10 @@ debug_log(text);
 
 	PlayerTrail_Init ();
 
-	//ZOID
+//ZOID
 	CTFSpawn();
-	//ZOID
-
-sprintf(text,"==== SpawnEntities (Loading Recording) ====");
-debug_log(text);
-	
-	read_top10_tourney_log(level.mapname);
-	UpdateTimes(level.mapnum);
-/*	for (i=0;i<maplist.nummaps;i++)
-		if (strcmp(maplist.mapnames[i],level.mapname)==0)
-		{
-			UpdateTimes(i);
-			break;
-		}
-*/	UpdateScores();
-    sort_users();
-
-	open_tourney_file(level.mapname,false);
-	Update_Highscores(10);
-	Load_Recording();
-
-	SetSpinnyThing();
-	for (i=1;i<MAX_HIGHSCORES;i++)
-		Load_Individual_Recording(i,level_items.stored_item_times[i].uid);
-
-	//backup to dj3 demo
-	if (level_items.recorded_time_frames[0] && level_items.stored_item_times[0].time>0)
-		Copy_Recording(level_items.stored_item_times[0].uid);
-
-	UpdateVoteMaps();
-	Update_Skill();	
-	admin_overide_vote_maps = false;
-	nominated_map = false;
-	GenerateVoteMaps();
-	Update_Next_Maps();
-	if (gametype->value==GAME_CTF)
-	{
-		gi.configstring (CONFIG_JUMP_TEAM_EASY,        "    team  RED");
-		gi.configstring (CONFIG_JUMP_TEAM_HARD,        "    team BLUE");
-	}
-	
+//ZOID
 }
-
 
 
 //===================================================================
@@ -827,7 +705,7 @@ char *single_statusbar =
 // timer
 "if 9 "
 "	xv	262 "
-"	num	3	10 "
+"	num	2	10 "
 "	xv	296 "
 "	pic	9 "
 "endif "
@@ -885,7 +763,7 @@ char *dm_statusbar =
 // timer
 "if 9 "
 "	xv	246 "
-"	num	3	10 "
+"	num	2	10 "
 "	xv	296 "
 "	pic	9 "
 "endif "
@@ -913,24 +791,17 @@ Only used for the world.
 "gravity"	800 is default gravity
 "message"	text to print at user logon
 */
-prev_levels_t prev_levels[10];
-
 void SP_worldspawn (edict_t *ent)
 {
-	int i;
-	char this_map[64];
-	char str[2048];
-	qboolean gottype = false;
-	char temp[50];
-    const char *SpecNR[64] = {"°", "±", "²", "³", "´", "µ", "¶", "·", "¸", "¹", "±°", "±", "±²", "±³", "±´", "±µ", "±¶", "±·", "±¸", "±¹", "²°", "²±", "²²", "²³", "²´", "²µ", "²¶", "²·", "²¸", "²¹", "³°", "³±"};
-
 	ent->movetype = MOVETYPE_PUSH;
 	ent->solid = SOLID_BSP;
 	ent->inuse = true;			// since the world doesn't use G_Spawn()
 	ent->s.modelindex = 1;		// world model is always index 1
-    //---------------
+
+	//---------------
 
 	// reserve some spots for dead player bodies for coop / deathmatch
+	InitBodyQue ();
 
 	// set configstrings for items
 	SetItemNames ();
@@ -962,6 +833,19 @@ void SP_worldspawn (edict_t *ent)
 
 	gi.configstring (CS_MAXCLIENTS, va("%i", (int)(maxclients->value) ) );
 
+	// status bar program
+	if (deathmatch->value)
+//ZOID
+		if (ctf->value) {
+			gi.configstring (CS_STATUSBAR, ctf_statusbar);
+			CTFPrecache();
+		} else
+//ZOID
+			gi.configstring (CS_STATUSBAR, dm_statusbar);
+	else
+		gi.configstring (CS_STATUSBAR, single_statusbar);
+
+	//---------------
 
 
 	// help icon for statusbar
@@ -971,13 +855,9 @@ void SP_worldspawn (edict_t *ent)
 	gi.imageindex ("field_3");
 
 	if (!st.gravity)
-	{
 		gi.cvar_set("sv_gravity", "800");
-	}
 	else
-	{
 		gi.cvar_set("sv_gravity", st.gravity);
-	}
 
 	snd_fry = gi.soundindex ("player/fry.wav");	// standing in lava / slime
 
@@ -995,23 +875,23 @@ void SP_worldspawn (edict_t *ent)
 	gi.soundindex ("items/respawn1.wav");
 
 	// sexed sounds
-//	gi.soundindex ("*death1.wav");
-	//gi.soundindex ("*death2.wav");
-//	gi.soundindex ("*death3.wav");
-//	gi.soundindex ("*death4.wav");
-//	gi.soundindex ("*fall1.wav");
-//	gi.soundindex ("*fall2.wav");	
+	gi.soundindex ("*death1.wav");
+	gi.soundindex ("*death2.wav");
+	gi.soundindex ("*death3.wav");
+	gi.soundindex ("*death4.wav");
+	gi.soundindex ("*fall1.wav");
+	gi.soundindex ("*fall2.wav");	
 	gi.soundindex ("*gurp1.wav");		// drowning damage
 	gi.soundindex ("*gurp2.wav");	
 	gi.soundindex ("*jump1.wav");		// player jump
-	//gi.soundindex ("*pain25_1.wav");
-	//gi.soundindex ("*pain25_2.wav");
-	//gi.soundindex ("*pain50_1.wav");
-	//gi.soundindex ("*pain50_2.wav");
-	//gi.soundindex ("*pain75_1.wav");
-	//gi.soundindex ("*pain75_2.wav");
-	//gi.soundindex ("*pain100_1.wav");
-	//gi.soundindex ("*pain100_2.wav");
+	gi.soundindex ("*pain25_1.wav");
+	gi.soundindex ("*pain25_2.wav");
+	gi.soundindex ("*pain50_1.wav");
+	gi.soundindex ("*pain50_2.wav");
+	gi.soundindex ("*pain75_1.wav");
+	gi.soundindex ("*pain75_2.wav");
+	gi.soundindex ("*pain100_1.wav");
+	gi.soundindex ("*pain100_2.wav");
 
 	// sexed models
 	// THIS ORDER MUST MATCH THE DEFINES IN g_local.h
@@ -1053,22 +933,6 @@ void SP_worldspawn (edict_t *ent)
 
 	gi.soundindex ("infantry/inflies1.wav");
 
-	//jumpmod
-	gi.soundindex (gset_vars->numberone_wav);	// jump
-	gi.soundindex ("jump.wav");	// jump
-	gi.soundindex ("1_minute.wav");	// jump
-	gi.soundindex ("5_minute.wav");	// jump
-//	gi.soundindex ("jumpyes.wav");	// jump
-//	gi.soundindex ("jumpno.wav");	// jump
-
-	if (gset_vars->numsoundwavs>1)
-	{
-		for (i=1;i<gset_vars->numsoundwavs;i++)
-		{
-			sprintf(temp,"jump%i.wav",i);
-			gi.soundindex (temp);	// jump
-		}
-	}
 	sm_meat_index = gi.modelindex ("models/objects/gibs/sm_meat/tris.md2");
 	gi.modelindex ("models/objects/gibs/arm/tris.md2");
 	gi.modelindex ("models/objects/gibs/bone/tris.md2");
@@ -1081,115 +945,45 @@ void SP_worldspawn (edict_t *ent)
 // Setup light animation tables. 'a' is total darkness, 'z' is doublebright.
 //
 
-
 	// 0 normal
-		gi.configstring(CS_LIGHTS+0, "m");
+	gi.configstring(CS_LIGHTS+0, "m");
 	
-		// 1 FLICKER (first variety)
-		gi.configstring(CS_LIGHTS+1, "mmnmmommommnonmmonqnmmo");
-		
-		// 2 SLOW STRONG PULSE
-		gi.configstring(CS_LIGHTS+2, "abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba");
+	// 1 FLICKER (first variety)
+	gi.configstring(CS_LIGHTS+1, "mmnmmommommnonmmonqnmmo");
 	
-		// 3 CANDLE (first variety)
-		gi.configstring(CS_LIGHTS+3, "mmmmmaaaaammmmmaaaaaabcdefgabcdefg");
+	// 2 SLOW STRONG PULSE
+	gi.configstring(CS_LIGHTS+2, "abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba");
 	
-		// 4 FAST STROBE
-		gi.configstring(CS_LIGHTS+4, "mamamamamama");
+	// 3 CANDLE (first variety)
+	gi.configstring(CS_LIGHTS+3, "mmmmmaaaaammmmmaaaaaabcdefgabcdefg");
 	
-		// 5 GENTLE PULSE 1
-		gi.configstring(CS_LIGHTS+5,"jklmnopqrstuvwxyzyxwvutsrqponmlkj");
+	// 4 FAST STROBE
+	gi.configstring(CS_LIGHTS+4, "mamamamamama");
 	
-		// 6 FLICKER (second variety)
-		gi.configstring(CS_LIGHTS+6, "nmonqnmomnmomomno");
+	// 5 GENTLE PULSE 1
+	gi.configstring(CS_LIGHTS+5,"jklmnopqrstuvwxyzyxwvutsrqponmlkj");
 	
-		// 7 CANDLE (second variety)
-		gi.configstring(CS_LIGHTS+7, "mmmaaaabcdefgmmmmaaaammmaamm");
+	// 6 FLICKER (second variety)
+	gi.configstring(CS_LIGHTS+6, "nmonqnmomnmomomno");
 	
-		// 8 CANDLE (third variety)
-		gi.configstring(CS_LIGHTS+8, "mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa");
+	// 7 CANDLE (second variety)
+	gi.configstring(CS_LIGHTS+7, "mmmaaaabcdefgmmmmaaaammmaamm");
 	
-		// 9 SLOW STROBE (fourth variety)
-		gi.configstring(CS_LIGHTS+9, "aaaaaaaazzzzzzzz");
+	// 8 CANDLE (third variety)
+	gi.configstring(CS_LIGHTS+8, "mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa");
 	
-		// 10 FLUORESCENT FLICKER
-		gi.configstring(CS_LIGHTS+10, "mmamammmmammamamaaamammma");
+	// 9 SLOW STROBE (fourth variety)
+	gi.configstring(CS_LIGHTS+9, "aaaaaaaazzzzzzzz");
+	
+	// 10 FLUORESCENT FLICKER
+	gi.configstring(CS_LIGHTS+10, "mmamammmmammamamaaamammma");
 
-		// 11 SLOW PULSE NOT FADE TO BLACK
-		gi.configstring(CS_LIGHTS+11, "abcdefghijklmnopqrrqponmlkjihgfedcba");
-		// styles 32-62 are assigned by the l   ight program for switchable lights
+	// 11 SLOW PULSE NOT FADE TO BLACK
+	gi.configstring(CS_LIGHTS+11, "abcdefghijklmnopqrrqponmlkjihgfedcba");
+	
+	// styles 32-62 are assigned by the light program for switchable lights
 
-		gi.configstring (CONFIG_JUMP_KEY_FORWARD,    "  Forward");
-		gi.configstring (CONFIG_JUMP_KEY_LEFT,       "Left");
-//		gi.configstring (CONFIG_JUMP_KEY_FPS, "fps");
-		gi.configstring (CONFIG_JUMP_KEY_RIGHT,      "      Right");
-		gi.configstring (CONFIG_JUMP_ADDED_TIME,      "  +0");
-		gi.configstring (CONFIG_JUMP_KEY_JUMP,       "   JUMP!");
-		gi.configstring (CONFIG_JUMP_KEY_CROUCH,       " DUCK  DUCK");
-		gi.configstring (CONFIG_JUMP_KEY_BACK,       "    Back");
-
-
-		//create mapname at 20chars long
-		Com_sprintf(this_map,sizeof(this_map),"%16s",level.mapname);
-		memset(prev_levels[5].mapname,0,sizeof(prev_levels[5].mapname));
-		for (i=2;i>=0;i--)
-		{
-			Com_sprintf(prev_levels[i+1].mapname,sizeof(prev_levels[i+1].mapname),"%16s",prev_levels[i].mapname);
-		}
-		if (strlen(this_map)>16)
-			for (i=16;i<64;i++)
-				this_map[i] = 0;
-        
-		strcpy(prev_levels[0].mapname,this_map);
-		for (i=0;i<strlen(this_map);i++)
-			this_map[i] |= 128;
-		gi.configstring (CONFIG_CP_ON,va(              "  Chkpts: %s",SpecNR[(int)(mset_vars->checkpoint_total)]));
-		gi.configstring (CONFIG_CP_OFF,                "              ");
-        gi.configstring (CONFIG_JUMP_RACE_ON,          "    Race:     ");
-        gi.configstring (CONFIG_JUMP_RACE_OFF,         ""); // old "    Race: ÏÆÆ"
-		gi.configstring (CONFIG_JUMP_TEAM_EASY,        "    Team: Åáóù");
-		gi.configstring (CONFIG_JUMP_TEAM_HARD,        "    Team: Èáòä");
-		gi.configstring (CONFIG_JUMP_TEAM_OBSERVER,    "    Team: Ïâóåòöåò");
-		gi.configstring (CONFIG_JUMP_EMPTY,    " ");
-
-		gi.configstring (CONFIG_JUMP_MAPCOUNT,va("%4d",maplist.nummaps));
-
-		gi.configstring (CONFIG_JUMP_VOTE_INITIATED,"Vote by SadButTrue");			
-		gi.configstring (CONFIG_JUMP_VOTE_REMAINING,"30 seconds");			
-		gi.configstring (CONFIG_JUMP_VOTE_CAST,"Votes: 3 of 4");			
-		gi.configstring (CONFIG_JUMP_VOTE_TYPE,"Add Time: 20 mins");
-
-		//get map type
-		level.maptype = 1;
-
-	// status bar program
-	if (deathmatch->value)
-//ZOID
-		if (ctf->value) {
-			Com_sprintf(str,sizeof(str),ctf_statusbar,this_map,prev_levels[1].mapname,prev_levels[2].mapname,prev_levels[3].mapname);
-			//gi.dprintf("%d %s\n",strlen(str),str);
-			gi.configstring (CS_STATUSBAR, str);
-			CTFPrecache();
-		} else
-//ZOID
-			gi.configstring (CS_STATUSBAR, dm_statusbar);
-	else
-		gi.configstring (CS_STATUSBAR, single_statusbar);
-
-	//---------------
-		
 	// 63 testing
 	gi.configstring(CS_LIGHTS+63, "a");
-
-	for (i=MAX_MAPMEM;i > 0;i--)
-	{
-		strcpy(game.lastmaps[i],game.lastmaps[i - 1]);
-	}
-	strcpy(game.lastmaps[0],level.mapname);
-
-	ExpireBans();
-	
-	if (mset_vars->ghost_model>0 && ghost_model_list[mset_vars->ghost_model].name[0])
-		gi.modelindex (va("players/ghost/%s.md2",ghost_model_list[mset_vars->ghost_model-1].name));
-	num_time_votes = 0;
 }
+

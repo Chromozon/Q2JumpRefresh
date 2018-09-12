@@ -18,7 +18,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 // g_local.h -- local definitions for game module
-#pragma once
 
 #include "q_shared.h"
 
@@ -33,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //ZOID
 
 // the "gameversion" client command will print this plus compile date
+#define	GAMEVERSION	"baseq2"
 
 // protocol bytes that can be directly added to messages
 #define	svc_muzzleflash		1
@@ -40,12 +40,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	svc_temp_entity		3
 #define	svc_layout			4
 #define	svc_inventory		5
-#define	svc_stufftext		11//pooy
-#define	svc_configstring		13//pooy
 
 //==================================================================
-
-#define MAX_MAPMEM 32
 
 // view pitching times
 #define DAMAGE_TIME		0.5
@@ -86,7 +82,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MELEE_DISTANCE	80
 
-#define TELE_KEEP_VELOCITY 1
+#define BODY_QUEUE_SIZE		8
 
 typedef enum
 {
@@ -202,8 +198,7 @@ MOVETYPE_STEP,			// gravity, special edge handling
 MOVETYPE_FLY,
 MOVETYPE_TOSS,			// gravity
 MOVETYPE_FLYMISSILE,	// extra size to monsters
-MOVETYPE_BOUNCE,
-MOVETYPE_FLYRICOCHET	// STEVE added this so bolts can bounce off walls 
+MOVETYPE_BOUNCE
 } movetype_t;
 
 
@@ -279,7 +274,6 @@ typedef struct gitem_s
 // it should be initialized at dll load time, and read/written to
 // the server.ssv file for savegames
 //
-
 typedef struct
 {
 	char		helpmessage1[512];
@@ -304,8 +298,6 @@ typedef struct
 	int			num_items;
 
 	qboolean	autosaved;
-
-	char		lastmaps[MAX_QPATH][MAX_MAPMEM];
 } game_locals_t;
 
 
@@ -316,15 +308,10 @@ typedef struct
 typedef struct
 {
 	int			framenum;
-	int			timeleft;
 	float		time;
-	float		overtime;
-	float		votingtime;
-	int			status;
 
 	char		level_name[MAX_QPATH];	// the descriptive name (Outer Base, etc)
 	char		mapname[MAX_QPATH];		// the server name (base1, etc)
-	int			mapnum;
 	char		nextmap[MAX_QPATH];		// go here when fraglimit is hit
 	char		forcemap[MAX_QPATH];	// go here
 
@@ -356,14 +343,9 @@ typedef struct
 	int			killed_monsters;
 
 	edict_t		*current_entity;	// entity running from G_RunFrame
+	int			body_que;			// dead bodies
 
 	int			power_cubes;		// ugly necessity for coop
-	int			jumpboxes[10];
-	qboolean	got_spawn;
-	int ghost_frame;
-	edict_t *ghost;
-	edict_t *spinnything;
-	int maptype;
 } level_locals_t;
 
 
@@ -427,7 +409,7 @@ typedef struct
 typedef struct
 {
 	void	(*aifunc)(edict_t *self, float dist);
-	float	dist; 
+	float	dist;
 	void	(*thinkfunc)(edict_t *self);
 } mframe_t;
 
@@ -484,6 +466,9 @@ extern	spawn_temp_t	st;
 extern	int	sm_meat_index;
 extern	int	snd_fry;
 
+extern	int	jacket_armor_index;
+extern	int	combat_armor_index;
+extern	int	body_armor_index;
 
 
 // means of death
@@ -522,7 +507,6 @@ extern	int	snd_fry;
 #define MOD_HIT				32
 #define MOD_TARGET_BLASTER	33
 #define MOD_GRAPPLE			34
-#define MOD_DIED			35
 #define MOD_FRIENDLY_FIRE	0x8000000
 
 extern	int	meansOfDeath;
@@ -547,7 +531,7 @@ extern	cvar_t	*fraglimit;
 extern	cvar_t	*timelimit;
 //ZOID
 extern	cvar_t	*capturelimit;
-//extern	cvar_t	*instantweap;
+extern	cvar_t	*instantweap;
 //ZOID
 extern	cvar_t	*password;
 extern	cvar_t	*g_select_empty;
@@ -657,7 +641,6 @@ void Touch_Item (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf
 qboolean	KillBox (edict_t *ent);
 void	G_ProjectSource (vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
 edict_t *G_Find (edict_t *from, int fieldofs, char *match);
-edict_t *G_Find_contains (edict_t *from, int fieldofs, char *match);
 edict_t *findradius (edict_t *from, vec3_t org, float rad);
 edict_t *G_PickTarget (char *targetname);
 void	G_UseTargets (edict_t *ent, edict_t *activator);
@@ -784,11 +767,9 @@ void BeginIntermission (edict_t *targ);
 void PutClientInServer (edict_t *ent);
 void InitClientPersistant (gclient_t *client);
 void InitClientResp (gclient_t *client);
+void InitBodyQue (void);
 void ClientBeginServerFrame (edict_t *ent);
 void ClientUserinfoChanged (edict_t *ent, char *userinfo);
-void give_item(edict_t *ent, char *name);
-void SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles);
-void Generate_Race_Data(int race_frame, int race_this);
 
 //
 // g_player.c
@@ -813,7 +794,6 @@ void MoveClientToIntermission (edict_t *client);
 void G_SetStats (edict_t *ent);
 void ValidateSelectedItem (edict_t *ent);
 void DeathmatchScoreboardMessage (edict_t *client, edict_t *killer);
-void Cmd_Score2_f(edict_t *ent);
 
 //
 // g_pweapon.c
@@ -841,155 +821,11 @@ void G_RunEntity (edict_t *ent);
 void SaveClientData (void);
 void FetchClientEntData (edict_t *ent);
 void EndDMLevel (void);
-void End_Overtime(void);
-void End_Jumping(void);
-
-//pooy
-void EndDMLevel (void);  // not sure why id didn't include this
-
-// g_spawn.c
-void ED_CallSpawn(edict_t *ent);
-void ED_ParseField(char *key, char *value, edict_t *ent, int add);
-
-// g_ctf.c
-
 
 //
 // g_svcmds.c
 //
 qboolean SV_FilterPacket (char *from);
-
-// g_cmds.c
-void Cmd_Kill_f(edict_t *ent);
-
-// Misc
-void SP_item_health(edict_t *self);
-void SP_item_health_small(edict_t *self);
-void SP_item_health_large(edict_t *self);
-void SP_item_health_mega(edict_t *self);
-
-void SP_info_player_start(edict_t *ent);
-void SP_info_player_deathmatch(edict_t *ent);
-void SP_info_player_coop(edict_t *ent);
-void SP_info_player_intermission(edict_t *ent);
-
-void SP_func_plat(edict_t *ent);
-void SP_func_rotating(edict_t *ent);
-void SP_func_button(edict_t *ent);
-void SP_func_door(edict_t *ent);
-void SP_func_door_secret(edict_t *ent);
-void SP_func_door_rotating(edict_t *ent);
-void SP_func_water(edict_t *ent);
-void SP_func_train(edict_t *ent);
-void SP_func_conveyor(edict_t *self);
-void SP_func_wall(edict_t *self);
-void SP_func_object(edict_t *self);
-void SP_func_explosive(edict_t *self);
-void SP_func_timer(edict_t *self);
-void SP_func_areaportal(edict_t *ent);
-void SP_func_clock(edict_t *ent);
-void SP_func_killbox(edict_t *ent);
-
-void SP_trigger_always(edict_t *ent);
-void SP_trigger_once(edict_t *ent);
-void SP_trigger_multiple(edict_t *ent);
-void SP_trigger_relay(edict_t *ent);
-void SP_trigger_push(edict_t *ent);
-void SP_trigger_hurt(edict_t *ent);
-void SP_trigger_key(edict_t *ent);
-void SP_trigger_counter(edict_t *ent);
-void SP_trigger_elevator(edict_t *ent);
-void SP_trigger_gravity(edict_t *ent);
-void SP_trigger_monsterjump(edict_t *ent);
-
-void SP_target_temp_entity(edict_t *ent);
-void SP_target_speaker(edict_t *ent);
-void SP_target_explosion(edict_t *ent);
-void SP_target_changelevel(edict_t *ent);
-void SP_target_secret(edict_t *ent);
-void SP_target_goal(edict_t *ent);
-void SP_target_splash(edict_t *ent);
-void SP_target_spawner(edict_t *ent);
-void SP_target_blaster(edict_t *ent);
-void SP_target_crosslevel_trigger(edict_t *ent);
-void SP_target_crosslevel_target(edict_t *ent);
-void SP_target_laser(edict_t *self);
-void SP_target_help(edict_t *ent);
-void SP_target_actor(edict_t *ent);
-void SP_target_lightramp(edict_t *self);
-void SP_target_earthquake(edict_t *ent);
-void SP_target_character(edict_t *ent);
-void SP_target_string(edict_t *ent);
-
-void SP_worldspawn(edict_t *ent);
-void SP_viewthing(edict_t *ent);
-
-void SP_light(edict_t *self);
-void SP_light_mine1(edict_t *ent);
-void SP_light_mine2(edict_t *ent);
-void SP_info_null(edict_t *self);
-void SP_info_notnull(edict_t *self);
-void SP_path_corner(edict_t *self);
-void SP_point_combat(edict_t *self);
-
-void SP_misc_explobox(edict_t *self);
-void SP_misc_banner(edict_t *self);
-void SP_misc_satellite_dish(edict_t *self);
-void SP_misc_actor(edict_t *self);
-void SP_misc_gib_arm(edict_t *self);
-void SP_misc_gib_leg(edict_t *self);
-void SP_misc_gib_head(edict_t *self);
-void SP_misc_insane(edict_t *self);
-void SP_misc_deadsoldier(edict_t *self);
-void SP_misc_viper(edict_t *self);
-void SP_misc_viper_bomb(edict_t *self);
-void SP_misc_bigviper(edict_t *self);
-void SP_misc_strogg_ship(edict_t *self);
-void SP_misc_teleporter(edict_t *self);
-void SP_misc_teleporter_dest(edict_t *self);
-void SP_misc_blackhole(edict_t *self);
-void SP_misc_eastertank(edict_t *self);
-void SP_misc_easterchick(edict_t *self);
-void SP_misc_easterchick2(edict_t *self);
-
-void SP_monster_berserk(edict_t *self);
-void SP_monster_gladiator(edict_t *self);
-void SP_monster_gunner(edict_t *self);
-void SP_monster_infantry(edict_t *self);
-void SP_monster_soldier_light(edict_t *self);
-void SP_monster_soldier(edict_t *self);
-void SP_monster_soldier_ss(edict_t *self);
-void SP_monster_tank(edict_t *self);
-void SP_monster_medic(edict_t *self);
-void SP_monster_flipper(edict_t *self);
-void SP_monster_chick(edict_t *self);
-void SP_monster_parasite(edict_t *self);
-void SP_monster_flyer(edict_t *self);
-void SP_monster_brain(edict_t *self);
-void SP_monster_floater(edict_t *self);
-void SP_monster_hover(edict_t *self);
-void SP_monster_mutant(edict_t *self);
-void SP_monster_supertank(edict_t *self);
-void SP_monster_boss2(edict_t *self);
-void SP_monster_jorg(edict_t *self);
-void SP_monster_boss3_stand(edict_t *self);
-
-void SP_monster_commander_body(edict_t *self);
-
-void SP_turret_breach(edict_t *self);
-void SP_turret_base(edict_t *self);
-void SP_turret_driver(edict_t *self);
-
-void SP_effect(edict_t *ent);
-void SP_jumpbox_small(edict_t *ent);
-void SP_jumpbox_medium(edict_t *ent);
-void SP_jumpbox_large(edict_t *ent);
-void SP_jump_score(edict_t *ent);
-void SP_jump_time(edict_t *ent);
-void SP_jump_clip(edict_t *ent);
-void SP_cpbox_small(edict_t *ent);
-void SP_cpbox_medium(edict_t *ent);
-void SP_cpbox_large(edict_t *ent);
 
 //============================================================================
 
@@ -1008,9 +844,7 @@ typedef struct
 {
 	char		userinfo[MAX_INFO_STRING];
 	char		netname[16];
-	char		skin[255];
 	int			hand;
-	int			fps;
 
 	qboolean	connected;			// a loadgame will leave valid entities that
 									// just don't have a connection yet
@@ -1031,143 +865,11 @@ typedef struct
 	int			max_cells;
 	int			max_slugs;
 
-	// checkpoint things
-	int			checkpoints;
-	int			red_checkpoint;
-	int			target_checkpoint;
-	int			blue_checkpoint;
-	int			cd_checkpoint;
-	int			cube_checkpoint;
-	int			pyramid_checkpoint;
-	int			pass_checkpoint;
-	int			spinner_checkpoint;
-	int			rs1_checkpoint;
-	int			rs2_checkpoint;
-	int			rs3_checkpoint;
-	int			rs4_checkpoint;
-	int			rs5_checkpoint;
-	int			rs6_checkpoint;
-	int			rs7_checkpoint;
-	int			rs8_checkpoint;
-	int			rs9_checkpoint;
-	int			rs10_checkpoint;
-	int			rs11_checkpoint;
-	int			rs12_checkpoint;
-	int			rs13_checkpoint;
-	int			rs14_checkpoint;
-	int			rs15_checkpoint;
-	int			rs16_checkpoint;
-	int			rs17_checkpoint;
-	int			rs18_checkpoint;
-	int			rs19_checkpoint;
-	int			rs20_checkpoint;
-    int         cpbox_checkpoint[16];
-    int         cpbox_checkpoint1[16];
-    int         cpbox_checkpoint2[16];
-    int         cpbox_checkpoint3[16];
-
-	// stored checkpoints 1
-	int			stored_checkpoints1;
-	int			stored_red_checkpoint1;
-	int			stored_target_checkpoint1;
-	int			stored_blue_checkpoint1;
-	int			stored_cd_checkpoint1;
-	int			stored_cube_checkpoint1;
-	int			stored_pyramid_checkpoint1;
-	int			stored_pass_checkpoint1;
-	int			stored_spinner_checkpoint1;
-	int			stored_rs1_checkpoint1;
-	int			stored_rs2_checkpoint1;
-	int			stored_rs3_checkpoint1;
-	int			stored_rs4_checkpoint1;
-	int			stored_rs5_checkpoint1;
-	int			stored_rs6_checkpoint1;
-	int			stored_rs7_checkpoint1;
-	int			stored_rs8_checkpoint1;
-	int			stored_rs9_checkpoint1;
-	int			stored_rs10_checkpoint1;
-	int			stored_rs11_checkpoint1;
-	int			stored_rs12_checkpoint1;
-	int			stored_rs13_checkpoint1;
-	int			stored_rs14_checkpoint1;
-	int			stored_rs15_checkpoint1;
-	int			stored_rs16_checkpoint1;
-	int			stored_rs17_checkpoint1;
-	int			stored_rs18_checkpoint1;
-	int			stored_rs19_checkpoint1;
-	int			stored_rs20_checkpoint1;
-
-	// stored checkpoints 2
-	int			stored_checkpoints2;
-	int			stored_red_checkpoint2;
-	int			stored_target_checkpoint2;
-	int			stored_blue_checkpoint2;
-	int			stored_cd_checkpoint2;
-	int			stored_cube_checkpoint2;
-	int			stored_pyramid_checkpoint2;
-	int			stored_pass_checkpoint2;
-	int			stored_spinner_checkpoint2;
-	int			stored_rs1_checkpoint2;
-	int			stored_rs2_checkpoint2;
-	int			stored_rs3_checkpoint2;
-	int			stored_rs4_checkpoint2;
-	int			stored_rs5_checkpoint2;
-	int			stored_rs6_checkpoint2;
-	int			stored_rs7_checkpoint2;
-	int			stored_rs8_checkpoint2;
-	int			stored_rs9_checkpoint2;
-	int			stored_rs10_checkpoint2;
-	int			stored_rs11_checkpoint2;
-	int			stored_rs12_checkpoint2;
-	int			stored_rs13_checkpoint2;
-	int			stored_rs14_checkpoint2;
-	int			stored_rs15_checkpoint2;
-	int			stored_rs16_checkpoint2;
-	int			stored_rs17_checkpoint2;
-	int			stored_rs18_checkpoint2;
-	int			stored_rs19_checkpoint2;
-	int			stored_rs20_checkpoint2;
-
-	// stored checkpoints 3
-	int			stored_checkpoints3;
-	int			stored_red_checkpoint3;
-	int			stored_target_checkpoint3;
-	int			stored_blue_checkpoint3;
-	int			stored_cd_checkpoint3;
-	int			stored_cube_checkpoint3;
-	int			stored_pyramid_checkpoint3;
-	int			stored_pass_checkpoint3;
-	int			stored_spinner_checkpoint3;
-	int			stored_rs1_checkpoint3;
-	int			stored_rs2_checkpoint3;
-	int			stored_rs3_checkpoint3;
-	int			stored_rs4_checkpoint3;
-	int			stored_rs5_checkpoint3;
-	int			stored_rs6_checkpoint3;
-	int			stored_rs7_checkpoint3;
-	int			stored_rs8_checkpoint3;
-	int			stored_rs9_checkpoint3;
-	int			stored_rs10_checkpoint3;
-	int			stored_rs11_checkpoint3;
-	int			stored_rs12_checkpoint3;
-	int			stored_rs13_checkpoint3;
-	int			stored_rs14_checkpoint3;
-	int			stored_rs15_checkpoint3;
-	int			stored_rs16_checkpoint3;
-	int			stored_rs17_checkpoint3;
-	int			stored_rs18_checkpoint3;
-	int			stored_rs19_checkpoint3;
-	int			stored_rs20_checkpoint3;
-
 	gitem_t		*weapon;
 	gitem_t		*lastweapon;
 
 	int			power_cubes;	// used for tracking the cubes in coop games
 	int			score;			// for calculating total unit score in coop games
-	int			recalls;			// for calculating total unit score in coop games
-
-	char		userip[32];
-	unsigned long banlevel;
 } client_persistant_t;
 
 // client data that stays across deathmatch respawns
@@ -1176,7 +878,6 @@ typedef struct
 	client_persistant_t	coop_respawn;	// what to set client->pers to on a respawn
 	int			enterframe;			// level.framenum the client entered the game
 	int			score;				// frags, etc
-	int			recalls;				// frags, etc
 //ZOID
 	int			ctf_team;			// CTF team
 	int			ctf_state;
@@ -1188,101 +889,13 @@ typedef struct
 	float		lastidtime;
 	qboolean	voted; // for elections
 	qboolean	ready;
+	qboolean	admin;
 	struct ghost_s *ghost; // for ghost codes
-	int			admin;
-	int			model_number;
 //ZOID
 	vec3_t		cmd_angles;			// angles sent over in the last command
 	int			game_helpchanged;
 	int			helpchanged;
-	//pooy
-
-
-	edict_t	*stored_ent;
-	vec3_t		store_pos;
-	vec3_t		store_angles;
-	vec3_t		store_pos2;
-	vec3_t		store_angles2;
-	vec3_t		store_pos3;
-	vec3_t		store_angles3;
-	int			store;
-
-	int client_think_begin;
-	float			item_timer; // map completion time
-	float			item_timer_penalty;
-	int			item_timer_penalty_delay;
-	float			stored_item_timer;
-	qboolean	item_timer_allow;
-	int			num_votes;
-	qboolean	got_time;
-	qboolean	finished; // set to true when a run is completed; used to ignore weapon pickups after you've already gotten a time
-	int			jumps;
-	qboolean	hide_jumpers;
-	qboolean	mute_cps;
-	int			cur_jumper;
-	qboolean	going_up;
-	qboolean	going_forward;
-	qboolean	going_back;
-	qboolean	silence;
-	int silence_until;
-	qboolean key_forward;
-	qboolean key_back;
-	qboolean key_left;
-	qboolean key_right;
-	qboolean key_up;
-	qboolean key_down;
-	int			replaying;
-	double		replay_frame;
-	int replay_data;
-	int			replay_speed;
-	int			current_vote;
-	unsigned long frames_without_movement;
-	int msec_history[10];
-	qboolean	auto_record_on;
-	qboolean	cmsg;
-	char		auto_record_time[128];
-	qboolean	auto_recording;
-	qboolean	paused;
-	float		next_chasecam_toggle;
-	int			chasecam_type;
-	qboolean	chase_ineye;
-	qboolean	flashlight;
-	int			uid;
-	int			suid;
-	int trecid;
-	float best_time;
-	// ======================
-	// added by lilred
-	int			rep_repeat;
-	int			debug;
-	// ======================
-	char		admin_name[128];
-	vec3_t		takeoff_position;
-	int			inair;
-	vec_t		last_length;
-	qboolean	showjumpdistance;
-	int			last_fire_frame;
-	int			cur_time;
-
-	qboolean	rep_racing;
-	int			rep_race_number;
-	float	rep_racing_delay;
-	int			race_frame;
-	qboolean	shotproj;
-	qboolean cleanhud;
-	int			max_speed;
-	int			cur_speed;
-	int			max_speed_time;
 } client_respawn_t;
-
-
-typedef struct 
-{
-  byte command;
-  float timeout;
-  unsigned long data;
-  char *str;
-} CMDQUEUE;
 
 // this structure is cleared on each PutClientInServer(),
 // except for 'client->pers'
@@ -1297,7 +910,7 @@ struct gclient_s
 	client_respawn_t	resp;
 	pmove_state_t		old_pmove;	// for detecting out-of-pmove changes
 
-	int	showscores;			// set layout stat
+	qboolean	showscores;			// set layout stat
 //ZOID
 	qboolean	inmenu;				// in menu
 	pmenuhnd_t	*menu;				// current menu
@@ -1357,14 +970,7 @@ struct gclient_s
 	float		breather_framenum;
 	float		enviro_framenum;
 
-
-   /*ATTILA begin*/
-   float	Jet_framenum;   /*burn out time when jet is activated*/
-   float	Jet_remaining;  /*remaining fuel time*/
-   float	Jet_next_think; 
-   /*ATTILA end*/
-
-   qboolean	grenade_blew_up;
+	qboolean	grenade_blew_up;
 	float		grenade_time;
 	int			silencer_shots;
 	int			weapon_sound;
@@ -1389,12 +995,6 @@ struct gclient_s
 	float		menutime;			// time to update menu
 	qboolean	menudirty;
 //ZOID
-	int	hook_state;
-	edict_t	*hook;
-
-  CMDQUEUE      cmdQueue[20];         // command queue
-  int           maxCmds;
-
 };
 
 
@@ -1466,7 +1066,6 @@ struct edict_s
 	float		air_finished;
 	float		gravity;		// per entity gravity multiplier (1.0 is normal)
 								// use for lowgrav artifact, flares
-	float		gravity2;
 
 	edict_t		*goalentity;
 	edict_t		*movetarget;
@@ -1546,14 +1145,9 @@ struct edict_s
 	// common data blocks
 	moveinfo_t		moveinfo;
 	monsterinfo_t	monsterinfo;
-
-	edict_t *laser;
 };
-
-static int ESF_debug;
 
 //ZOID
 #include "g_ctf.h"
 //ZOID
-#include "jumpmod.h"
 

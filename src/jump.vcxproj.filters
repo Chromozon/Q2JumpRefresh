@@ -69,9 +69,6 @@
     <ClCompile Include="g_weapon.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="jumpmod.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="m_move.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -96,9 +93,6 @@
     <ClCompile Include="q_shared.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="zb_util.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h">
@@ -108,9 +102,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="g_local.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="jumpmod.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="m_player.h">

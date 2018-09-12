@@ -18,7 +18,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 #include "g_local.h"
-//#include "p_hook.h"
 #include "m_player.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
@@ -34,8 +33,6 @@ void SP_misc_teleporter_dest (edict_t *ent);
 //
 // we use carnal knowledge of the maps to fix the coop spot targetnames to match
 // that of the nearest named single player spot
-
-vec3_t up = {0,0,1};
 
 static void SP_FixCoopSpots (edict_t *self)
 {
@@ -169,7 +166,7 @@ void SP_info_player_coop(edict_t *self)
 The deathmatch intermission point will be at one of these
 Use 'angles' instead of 'angle', so you can set pitch or roll as well as yaw.  'pitch yaw roll'
 */
-void SP_info_player_intermission(edict_t *ent)
+void SP_info_player_intermission(void)
 {
 }
 
@@ -204,8 +201,6 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 	char		*message2;
 	qboolean	ff;
 
-	if (!level.status)
-		return;
 
 	if (coop->value && attacker->client)
 		meansOfDeath |= MOD_FRIENDLY_FIRE;
@@ -250,9 +245,6 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 		case MOD_TARGET_BLASTER:
 			message = "got blasted";
 			break;
-		case MOD_DIED:
-			message = "ran out of health";
-			break;
 		case MOD_BOMB:
 		case MOD_SPLASH:
 		case MOD_TRIGGER_HURT:
@@ -279,29 +271,22 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 				else
 					message = "blew himself up";
 				break;
-			case MOD_DIED:
-				message = "ran out of health";
-				break;
 			case MOD_BFG_BLAST:
 				message = "should have used a smaller gun";
 				break;
 			default:
-				message = NULL;
-				if (level.status)
-				{
-					if (IsFemale(self))
-						message = "killed herself";
-					else
-						message = "killed himself";
-				}
+				if (IsFemale(self))
+					message = "killed herself";
+				else
+					message = "killed himself";
 				break;
 			}
 		}
 		if (message)
 		{
 			gi.bprintf (PRINT_MEDIUM, "%s %s.\n", self->client->pers.netname, message);
-//			if (deathmatch->value)
-//pooy			self->client->resp.score--;
+			if (deathmatch->value)
+			self->client->resp.score--;
 			self->enemy = NULL;
 			return;
 		}
@@ -380,9 +365,6 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 				message2 = "'s personal space";
 				break;
 //ZOID
-			case MOD_DIED:
-				message = "ran out of health";
-				break;
 			case MOD_GRAPPLE:
 				message = "was caught by";
 				message2 = "'s grapple";
@@ -393,9 +375,11 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 			if (message)
 			{
 				gi.bprintf (PRINT_MEDIUM,"%s %s %s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2);
-				if (level.status==LEVEL_STATUS_OVERTIME)
+				if (deathmatch->value)
 				{
-					if (!ff)
+					if (ff)
+						attacker->client->resp.score--;
+					else
 						attacker->client->resp.score++;
 				}
 				return;
@@ -404,8 +388,8 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 	}
 
 	gi.bprintf (PRINT_MEDIUM,"%s died.\n", self->client->pers.netname);
-/*	if (deathmatch->value)
-	self->client->resp.score--;*///pooy
+	if (deathmatch->value)
+	self->client->resp.score--;
 }
 
 
@@ -506,9 +490,6 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 
 	VectorClear (self->avelocity);
 
-	self->gravity = 1.0;
-	self->gravity2 = 1.0;
-
 	self->takedamage = DAMAGE_YES;
 	self->movetype = MOVETYPE_TOSS;
 
@@ -530,10 +511,7 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 
 	if (!self->deadflag)
 	{
-		if (level.status)
-			self->client->respawn_time = level.framenum + 50;
-		else
-			self->client->respawn_time = level.framenum + 10;
+		self->client->respawn_time = level.time + 1.0;
 		LookAtKiller (self, inflictor, attacker);
 		self->client->ps.pmove.pm_type = PM_DEAD;
 		ClientObituary (self, inflictor, attacker);
@@ -542,24 +520,17 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		if (ctf->value && meansOfDeath == MOD_TELEFRAG &&
 			self->client->resp.ctf_state < 2 &&
 			self->client->resp.ctf_team == attacker->client->resp.ctf_team) {
-			//attacker->client->resp.score--;
+			attacker->client->resp.score--;
 			self->client->resp.ctf_state = 0;
 		}
 
+		CTFFragBonuses(self, inflictor, attacker);
 //ZOID
-//pooy		TossClientWeapon (self);
-		hook_reset(self->client->hook);
+		TossClientWeapon (self);
 //ZOID
-		//pooy
-		if (gametype->value!=GAME_CTF)
-		if ((self->client->resp.store) && (self->client->resp.ctf_team==CTF_TEAM1))
-		{
-			self->client->resp.item_timer_allow = true;
-		}
-
-		//CTFPlayerResetGrapple(self);
+		CTFPlayerResetGrapple(self);
 		CTFDeadDropFlag(self);
-		//CTFDeadDropTech(self);
+		CTFDeadDropTech(self);
 //ZOID
 		if (deathmatch->value && !self->client->showscores)
 			Cmd_Help_f (self);		// show scores
@@ -575,22 +546,12 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	// clear inventory
 	memset(self->client->pers.inventory, 0, sizeof(self->client->pers.inventory));
 
-
-  /*ATTILA begin*/
-  if ( Jet_Active(self) )
-  {
-    Jet_BecomeExplosion( self, damage );
-    /*stop jetting when dead*/
-    self->client->Jet_framenum = 0;
-  }
-  else
-  /*ATTILA end*/
 	if (self->health < -40)
 	{	// gib
-	//	gi.sound (self, CHAN_BODY, gi.soundindex ("misc/udeath.wav"), 1, ATTN_NORM, 0);
-//		for (n= 0; n < 4; n++)
-//			ThrowGib (self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
-//		ThrowClientHead (self, damage);
+		gi.sound (self, CHAN_BODY, gi.soundindex ("misc/udeath.wav"), 1, ATTN_NORM, 0);
+		for (n= 0; n < 4; n++)
+			ThrowGib (self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
+		ThrowClientHead (self, damage);
 //ZOID
 		self->client->anim_priority = ANIM_DEATH;
 		self->client->anim_end = 0;
@@ -626,37 +587,13 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 				self->client->anim_end = FRAME_death308;
 				break;
 			}
-	//		gi.sound (self, CHAN_VOICE, gi.soundindex(va("*death%i.wav", (rand()%4)+1)), 1, ATTN_NORM, 0);
+			gi.sound (self, CHAN_VOICE, gi.soundindex(va("*death%i.wav", (rand()%4)+1)), 1, ATTN_NORM, 0);
 		}
 	}
 
 	self->deadflag = DEAD_DEAD;
 
 	gi.linkentity (self);
-
-
-	if (self->client->resp.ctf_team!=CTF_NOTEAM)
-	{
-		if (level.status==LEVEL_STATUS_OVERTIME)
-		{
-			switch (gset_vars->overtimetype)
-			{
-			case OVERTIME_ROCKET :
-			case OVERTIME_RAIL :
-			case OVERTIME_LASTMAN :
-				if (level.overtime<=gset_vars->overtimewait)
-				{
-					AutoPutClientInServer (self);
-				}
-				else
-					addCmdQueue(self,QCMD_FORCETEAM_SPEC,2,0,0);
-				break;
-			case OVERTIME_FAST :
-			default :
-			break;
-			}
-		}
-	}
 }
 
 //=======================================================================
@@ -672,22 +609,8 @@ but is called after each death and level change in deathmatch
 void InitClientPersistant (gclient_t *client)
 {
 	gitem_t		*item;
-	char		userip[16];
-	unsigned long banlevel;
-	//char		user_temp[1024];
 
-	//ww - hang on to user ip and banlevel
-	strcpy(userip,client->pers.userip);
-	banlevel = client->pers.banlevel;
-
-//	strncpy(user_temp,client->pers.userinfo,sizeof(user_temp));
 	memset (&client->pers, 0, sizeof(client->pers));
-
-	//strncpy(client->pers.userinfo,user_temp,sizeof(client->pers.userinfo));
-
-	//ww - put banlevel and userip back in
-	strcpy(client->pers.userip,userip);
-	client->pers.banlevel = banlevel;
 
 	item = FindItem("Blaster");
 	client->pers.selected_item = ITEM_INDEX(item);
@@ -698,17 +621,13 @@ void InitClientPersistant (gclient_t *client)
 	client->pers.lastweapon = item;
 //ZOID
 
-	if ((level.status) && (gset_vars->overtimetype!=OVERTIME_FAST))
-	{
-		client->pers.health			= gset_vars->overtimehealth;//pooy 
-		client->pers.max_health		= gset_vars->overtimehealth;
-		client->pers.inventory[ITEM_INDEX(FindItem("Body Armor"))] = 150;
-	}
-	else
-	{
-		client->pers.health			= mset_vars->health;//pooy 
-		client->pers.max_health		= mset_vars->health;
-	}
+//ZOID
+	item = FindItem("Grapple");
+	client->pers.inventory[ITEM_INDEX(item)] = 1;
+//ZOID
+
+	client->pers.health			= 100;
+	client->pers.max_health		= 100;
 
 	client->pers.max_bullets	= 200;
 	client->pers.max_shells		= 100;
@@ -737,6 +656,7 @@ void InitClientResp (gclient_t *client)
 
 	client->resp.enterframe = level.framenum;
 	client->resp.coop_respawn = client->pers;
+ 
 //ZOID
 	if (ctf->value && client->resp.ctf_team < CTF_TEAM1)
 		CTFAssignTeam(client);
@@ -883,10 +803,7 @@ edict_t *SelectRandomDeathmatchSpawnPoint (void)
 			selection++;
 	} while(selection--);
 
-	if (!spot)
-		return NULL;
-	else
-		return spot;
+	return spot;
 }
 
 /*
@@ -925,10 +842,7 @@ edict_t *SelectFarthestDeathmatchSpawnPoint (void)
 	// we have no choice to turn one into a telefrag meltdown
 	spot = G_Find (NULL, FOFS(classname), "info_player_deathmatch");
 
-	if (!spot)
-		return NULL ;
-	else
-		return spot;
+	return spot;
 }
 
 edict_t *SelectDeathmatchSpawnPoint (void)
@@ -988,10 +902,15 @@ void	SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles)
 {
 	edict_t	*spot = NULL;
 
+	if (deathmatch->value)
+//ZOID
 		if (ctf->value)
 			spot = SelectCTFSpawnPoint(ent);
 		else
+//ZOID
 			spot = SelectDeathmatchSpawnPoint ();
+	else if (coop->value)
+		spot = SelectCoopSpawnPoint (ent);
 
 	// find a single player start spot
 	if (!spot)
@@ -1015,12 +934,7 @@ void	SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles)
 				spot = G_Find (spot, FOFS(classname), "info_player_start");
 			}
 			if (!spot)
-			{
-				spot = G_Find_contains (NULL, FOFS(classname), "info_");
-				if (!spot)
-					spot = ent;
-					//gi.error ("Couldn't find spawn point %s\n", game.spawnpoint);
-			}
+				gi.error ("Couldn't find spawn point %s\n", game.spawnpoint);
 		}
 	}
 
@@ -1032,13 +946,26 @@ void	SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles)
 //======================================================================
 
 
+void InitBodyQue (void)
+{
+	int		i;
+	edict_t	*ent;
+
+	level.body_que = 0;
+	for (i=0; i<BODY_QUEUE_SIZE ; i++)
+	{
+		ent = G_Spawn();
+		ent->classname = "bodyque";
+	}
+}
+
 void body_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int	n;
 
 	if (self->health < -40)
 	{
-//		gi.sound (self, CHAN_BODY, gi.soundindex ("misc/udeath.wav"), 1, ATTN_NORM, 0);
+		gi.sound (self, CHAN_BODY, gi.soundindex ("misc/udeath.wav"), 1, ATTN_NORM, 0);
 		for (n= 0; n < 4; n++)
 			ThrowGib (self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
 		self->s.origin[2] -= 48;
@@ -1047,39 +974,58 @@ void body_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
 	}
 }
 
+void CopyToBodyQue (edict_t *ent)
+{
+	edict_t		*body;
+
+
+	// grab a body que and cycle to the next one
+	body = &g_edicts[(int)maxclients->value + level.body_que + 1];
+	level.body_que = (level.body_que + 1) % BODY_QUEUE_SIZE;
+
+	// FIXME: send an effect on the removed body
+
+	gi.unlinkentity (ent);
+
+	gi.unlinkentity (body);
+	body->s = ent->s;
+	body->s.number = body - g_edicts;
+
+	body->svflags = ent->svflags;
+	VectorCopy (ent->mins, body->mins);
+	VectorCopy (ent->maxs, body->maxs);
+	VectorCopy (ent->absmin, body->absmin);
+	VectorCopy (ent->absmax, body->absmax);
+	VectorCopy (ent->size, body->size);
+	body->solid = ent->solid;
+	body->clipmask = ent->clipmask;
+	body->owner = ent->owner;
+	body->movetype = ent->movetype;
+
+	body->die = body_die;
+	body->takedamage = DAMAGE_YES;
+
+	gi.linkentity (body);
+}
+
+
 void respawn (edict_t *self)
 {
-	if ((self->client->resp.ctf_team==CTF_TEAM2) || (gametype->value==GAME_CTF))
-	{
-		self->client->resp.item_timer = 0;
-		self->client->resp.client_think_begin = 0;
-		self->client->resp.item_timer_penalty = 0;
-		self->client->resp.item_timer_penalty_delay = 0;
-		self->client->resp.jumps = 0;
-	}
-	else
-	{
-		self->client->resp.client_think_begin = 0;
-		self->client->resp.item_timer = 0;
-		self->client->resp.item_timer_penalty = 0;
-		self->client->resp.item_timer_penalty_delay = 0;
-		//self->client->resp.item_timer = self->client->resp.stored_item_timer;
-		
-	}
-
 	if (deathmatch->value || coop->value)
 	{
+		if (self->movetype != MOVETYPE_NOCLIP)
+			CopyToBodyQue (self);
 		self->svflags &= ~SVF_NOCLIENT;
 		PutClientInServer (self);
 
 		// add a teleportation effect
-//		self->s.event = EV_PLAYER_TELEPORT;
+		self->s.event = EV_PLAYER_TELEPORT;
 
 		// hold in place briefly
 		self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
 		self->client->ps.pmove.pm_time = 14;
 
-		self->client->respawn_time = level.framenum;
+		self->client->respawn_time = level.time;
 
 		return;
 	}
@@ -1091,39 +1037,7 @@ void respawn (edict_t *self)
 //==============================================================
 
 
-void give_item (edict_t *ent,char *name)
-{
-
-	gitem_t		*it;
-	int			index;
-	int			i;
-	qboolean	give_all;
-	edict_t		*it_ent;
-
-	it = FindItem (name);
-
-	if (!it->pickup)
-	{
-		gi.cprintf (ent, PRINT_HIGH, "non-pickup item\n");
-		return;
-	}
-
-	index = ITEM_INDEX(it);
-
-	if (it->flags & IT_AMMO)
-	{
-		ent->client->pers.inventory[index] += it->quantity;
-	}
-	 
-	{
-		it_ent = G_Spawn();
-		it_ent->classname = it->classname;
-		SpawnItem (it_ent, it);
-		Touch_Item (it_ent, ent, NULL, NULL);
-		if (it_ent->inuse)
-			G_FreeEdict(it_ent);
-	}
-}/*
+/*
 ===========
 PutClientInServer
 
@@ -1141,46 +1055,12 @@ void PutClientInServer (edict_t *ent)
 	int		i;
 	client_persistant_t	saved;
 	client_respawn_t	resp;
-	char		*name;
-	gitem_t		*item;
 
-	unpause_client(ent);
-
-	if ((ent->client->resp.ctf_team==CTF_TEAM2) || (gametype->value==GAME_CTF && ent->client->resp.ctf_team==CTF_TEAM1))
-	{
-
-		ent->client->resp.item_timer = 0;
-		ent->client->resp.item_timer_penalty_delay = 0;
-		ent->client->resp.client_think_begin = 0;
-		ent->client->resp.item_timer_penalty = 0;
-		ent->client->resp.jumps = 0;
-		pause_client(ent);
-	}
-	
 	// find a spawn point
 	// do it before setting health back up, so farthest
 	// ranging doesn't count this client
 	SelectSpawnPoint (ent, spawn_origin, spawn_angles);
-	
-	//pooy
-	if (gametype->value!=GAME_CTF)
-	{
-			if (
-			(ent->client->resp.store) && 
-				(
-				(ent->client->resp.ctf_team==CTF_TEAM1)
-				)
-			)
-		{
-			for (i=0 ; i<2 ; i++)
-				ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - ent->client->resp.cmd_angles[i]);
-			VectorCopy(ent->client->resp.store_pos,spawn_origin);
-			VectorCopy(ent->client->resp.store_angles,spawn_angles);
-		}
-	}
-	ent->client->resp.finished = false;
 
-	hook_reset(ent->client->hook);
 	index = ent-g_edicts-1;
 	client = ent->client;
 
@@ -1232,27 +1112,15 @@ void PutClientInServer (edict_t *ent)
 	ent->groundentity = NULL;
 	ent->client = &game.clients[index];
 	ent->takedamage = DAMAGE_AIM;
-	
 	ent->movetype = MOVETYPE_WALK;
-//	ent->movetype = MOVETYPE_TOSS;  
-	
 	ent->viewheight = 22;
 	ent->inuse = true;
 	ent->classname = "player";
 	ent->mass = 200;
-
-	//pooy
-/*	if (ent->client->resp.ctf_team==CTF_TEAM1)*/
-	if (gset_vars->walkthru)
-		ent->solid = SOLID_TRIGGER;
-	else
-		ent->solid = SOLID_BBOX;//BBOX;*/
-	
+	ent->solid = SOLID_BBOX;
 	ent->deadflag = DEAD_NO;
 	ent->air_finished = level.time + 12;
-	
 	ent->clipmask = MASK_PLAYERSOLID;
-	
 	ent->model = "players/male/tris.md2";
 	ent->pain = player_pain;
 	ent->die = player_die;
@@ -1260,8 +1128,7 @@ void PutClientInServer (edict_t *ent)
 	ent->watertype = 0;
 	ent->flags &= ~FL_NO_KNOCKBACK;
 	ent->svflags &= ~SVF_DEADMONSTER;
-	if ((gset_vars->invis) && (ent->client->resp.ctf_team==CTF_TEAM1 || gametype->value==GAME_CTF))
-	ent->svflags |= SVF_NOCLIENT;
+
 	VectorCopy (mins, ent->mins);
 	VectorCopy (maxs, ent->maxs);
 	VectorClear (ent->velocity);
@@ -1275,7 +1142,6 @@ void PutClientInServer (edict_t *ent)
 //ZOID
 	client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
 //ZOID
-	// LilRed
 
 	if (deathmatch->value && ((int)dmflags->value & DF_FIXED_FOV))
 	{
@@ -1293,7 +1159,6 @@ void PutClientInServer (edict_t *ent)
 	client->ps.gunindex = gi.modelindex(client->pers.weapon->view_model);
 
 	// clear entity state values
-	
 	ent->s.effects = 0;
 	ent->s.skinnum = ent - g_edicts - 1;
 	ent->s.modelindex = 255;		// will use the skin specified model
@@ -1328,255 +1193,9 @@ void PutClientInServer (edict_t *ent)
 
 	gi.linkentity (ent);
 
-	if (gametype->value==GAME_CTF)
-	{
-		item = FindItem("Grapple");
-		ent->client->pers.inventory[ITEM_INDEX(item)] = 1;
-		// force the current weapon up
-		client->newweapon = item;
-		ChangeWeapon (ent);
-	} else {
-		client->newweapon = client->pers.weapon;
-		ChangeWeapon (ent);
-	}
-
-	Start_Recording(ent);
-	ent->client->resp.replaying = 0;
-ent->client->resp.replay_speed = REPLAY_SPEED_ONE;
-
-	if (ent->client->resp.ctf_team==CTF_TEAM1 && gametype->value!=GAME_CTF)
-	{
-		ent->client->resp.recalls = 0;
-	}
-
-	if (ent->client->resp.auto_record_on)
-		if (ent->client->resp.ctf_team==CTF_NOTEAM)
-		{
-			if (ent->client->resp.auto_recording)
-				autorecord_stop(ent);			
-		}
-		else if (ent->client->resp.ctf_team==CTF_TEAM2 || gametype->value==GAME_CTF)
-		{
-			autorecord_start(ent);
-		}
-		else if (ent->client->resp.ctf_team==CTF_TEAM1)
-		{
-			if (ent->client->resp.auto_recording)
-				autorecord_stop(ent);			
-		}
-
-
-	if ((ent->client->resp.ctf_team==CTF_TEAM1) || (ent->client->resp.ctf_team==CTF_TEAM2))
-		ent->client->ctf_regentime = level.time;
-
-	if (ent->client->resp.rep_racing_delay)
-		ent->client->resp.race_frame = (int)(ent->client->resp.rep_racing_delay*10);
-	else
-		ent->client->resp.race_frame = 2;
-
-	KillMyRox(ent);
-
-//	gi.bprintf(PRINT_HIGH,"PutClient\n");
-}
-
-void AutoPutClientInServer (edict_t *ent)
-{
-	vec3_t	mins = {-16, -16, -24};
-	vec3_t	maxs = {16, 16, 32};
-	int		index;
-	vec3_t	spawn_origin, spawn_angles;
-	gclient_t	*client;
-	int		i;
-	client_persistant_t	saved;
-	client_respawn_t	resp;
-	char		*name;
-	gitem_t		*item;
-
-	unpause_client(ent);
-	if (ent->client->resp.ctf_team==CTF_TEAM2 || (gametype->value==GAME_CTF && ent->client->resp.ctf_team==CTF_TEAM1))
-		pause_client(ent);
-
-	if (gset_vars->overtimetype==OVERTIME_FAST)
-		SelectSpawnPoint (ent, spawn_origin, spawn_angles);
-	else
-		SelectSpawnPointFromDemo (ent, spawn_origin, spawn_angles);
-	ent->client->resp.finished = false;
-
-	index = ent-g_edicts-1;
-	client = ent->client;
-
-	// deathmatch wipes most client data every spawn
-	if (deathmatch->value)
-	{
-		char		userinfo[MAX_INFO_STRING];
-
-		resp = client->resp;
-		memcpy (userinfo, client->pers.userinfo, sizeof(userinfo));
-		InitClientPersistant (client);
-		ClientUserinfoChanged (ent, userinfo);
-	}
-	else
-	{
-		memset (&resp, 0, sizeof(resp));
-	}
-
-	// clear everything but the persistant data
-	saved = client->pers;
-	memset (client, 0, sizeof(*client));
-	client->pers = saved;
-	if (client->pers.health <= 0)
-		InitClientPersistant(client);
-	client->resp = resp;
-
-	// copy some data from the client to the entity
-	FetchClientEntData (ent);
-
-	// clear entity values
-	ent->groundentity = NULL;
-	ent->client = &game.clients[index];
-	ent->takedamage = DAMAGE_AIM;
-	
-	ent->movetype = MOVETYPE_WALK;
-//	ent->movetype = MOVETYPE_TOSS;  
-	
-	ent->viewheight = 22;
-	ent->inuse = true;
-	ent->classname = "player";
-	ent->mass = 200;
-	hook_reset(ent->client->hook);
-
-	//pooy
-/*	if (ent->client->resp.ctf_team==CTF_TEAM1)*/
-	if ((level.status==LEVEL_STATUS_OVERTIME) && (gset_vars->overtimetype!=OVERTIME_FAST))
-	{
-		ent->solid = SOLID_BBOX;//BBOX;*/
-	}
-	else
-	{
-		if (gset_vars->walkthru)
-			ent->solid = SOLID_TRIGGER;
-		else
-			ent->solid = SOLID_BBOX;//BBOX;*/
-	}
-	
-	ent->deadflag = DEAD_NO;
-	ent->air_finished = level.time + 12;
-	
-	ent->clipmask = MASK_PLAYERSOLID;
-	
-	ent->model = "players/male/tris.md2";
-	ent->pain = player_pain;
-	ent->die = player_die;
-	ent->waterlevel = 0;
-	ent->watertype = 0;
-	ent->flags &= ~FL_NO_KNOCKBACK;
-	ent->svflags &= ~SVF_DEADMONSTER;
-	if ((gset_vars->invis) && (ent->client->resp.ctf_team==CTF_TEAM1 || gametype->value==GAME_CTF))
-	ent->svflags |= SVF_NOCLIENT;
-
-	VectorCopy (mins, ent->mins);
-	VectorCopy (maxs, ent->maxs);
-	VectorClear (ent->velocity);
-
-	// clear playerstate values
-	memset (&ent->client->ps, 0, sizeof(client->ps));
-
-	client->ps.pmove.origin[0] = spawn_origin[0]*8;
-	client->ps.pmove.origin[1] = spawn_origin[1]*8;
-	client->ps.pmove.origin[2] = spawn_origin[2]*8;
-//ZOID
-	client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
-//ZOID
-
-	if (deathmatch->value && ((int)dmflags->value & DF_FIXED_FOV))
-	{
-		client->ps.fov = 90;
-	}
-	else
-	{
-		client->ps.fov = atoi(Info_ValueForKey(client->pers.userinfo, "fov"));
-		if (client->ps.fov < 1)
-			client->ps.fov = 90;
-		else if (client->ps.fov > 160)
-			client->ps.fov = 160;
-	}
-
-	client->ps.gunindex = gi.modelindex(client->pers.weapon->view_model);
-
-	// clear entity state values
-	
-	ent->s.effects = 0;
-	ent->s.skinnum = ent - g_edicts - 1;
-	ent->s.modelindex = 255;		// will use the skin specified model
-	ent->s.modelindex2 = 255;		// custom gun model
-	// sknum is player num and weapon number
-	// weapon number will be added in changeweapon
-	ent->s.skinnum = ent - g_edicts - 1;
-
-	ent->s.frame = 0;
-	VectorCopy (spawn_origin, ent->s.origin);
-	ent->s.origin[2] += 1;	// make sure off ground
-	VectorCopy (ent->s.origin, ent->s.old_origin);
-
-	// set the delta angle
-	for (i=0 ; i<3 ; i++)
-		client->ps.pmove.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - client->resp.cmd_angles[i]);
-
-	ent->s.angles[PITCH] = 0;
-	ent->s.angles[YAW] = spawn_angles[YAW];
-	ent->s.angles[ROLL] = 0;
-	VectorCopy (ent->s.angles, client->ps.viewangles);
-	VectorCopy (ent->s.angles, client->v_angle);
-
-//ZOID
-	if (CTFStartClient(ent))
-		return;
-//ZOID
-
-	if (!KillBox (ent))
-	{	// could't spawn in?
-	}
-
-	gi.linkentity (ent);
-
-
-	if (gset_vars->overtimetype==OVERTIME_ROCKET)
-		OverTime_GiveAll(ent,true);
-	else if (gset_vars->overtimetype==OVERTIME_LASTMAN)
-		OverTime_GiveAll(ent,true);
-	else if (gset_vars->overtimetype==OVERTIME_RAIL)
-		OverTime_GiveAll(ent,false);
-	
-
-	if (gametype->value==GAME_CTF)
-	{
-		item = FindItem("Grapple");
-		ent->client->pers.inventory[ITEM_INDEX(item)] = 1;
-		// force the current weapon up
-		client->newweapon = item;
-		ChangeWeapon (ent);
-	} else {
-		client->newweapon = client->pers.weapon;
-		ChangeWeapon (ent);
-	}
-
-	ent->client->resp.replaying = 0;
-
-	if (ent->client->resp.auto_record_on)
-	{
-		ent->client->resp.auto_record_on = false;
-		autorecord_stop(ent);
-	}	
-
-	if ((ent->client->resp.ctf_team==CTF_TEAM1) || (ent->client->resp.ctf_team==CTF_TEAM2))
-		ent->client->ctf_regentime = level.time;
-
-	if (ent->client->resp.rep_racing_delay)
-		ent->client->resp.race_frame = (int)(ent->client->resp.rep_racing_delay*10);
-	else
-		ent->client->resp.race_frame = 2;
-
-//	gi.bprintf(PRINT_HIGH,"Auto put\n");
+	// force the current weapon up
+	client->newweapon = client->pers.weapon;
+	ChangeWeapon (ent);
 }
 
 /*
@@ -1587,22 +1206,14 @@ A client has just connected to the server in
 deathmatch mode, so clear everything out before starting them.
 =====================
 */
-
 void ClientBeginDeathmatch (edict_t *ent)
 {
-	char	temp[256];
-	char *s,*sa;
-	int alevel;
-	int i;
-	int time_for_admin;
-	//int uid;
 	G_InitEdict (ent);
 
 	InitClientResp (ent->client);
 
 	// locate ent at a spawn point
 	PutClientInServer (ent);
-
 
 	if (level.intermissiontime)
 	{
@@ -1615,46 +1226,12 @@ void ClientBeginDeathmatch (edict_t *ent)
 		gi.WriteShort (ent-g_edicts);
 		gi.WriteByte (MZ_LOGIN);
 		gi.multicast (ent->s.origin, MULTICAST_PVS);
-		//pooy
-//		Besttimes_ind(ent);
-
 	}
 
-						gi.WriteByte (svc_stufftext);
-						gi.WriteString ("alias +hook \"cmd hook\"\n");
-						gi.unicast(ent, true);
-						gi.WriteByte (svc_stufftext);
-						gi.WriteString ("alias -hook \"cmd unhook\"\n");
-						gi.unicast(ent, true);
-						gi.WriteByte (svc_stufftext);
-						gi.WriteString ("-attack\n");
-						gi.unicast(ent, true);
-						
+	gi.bprintf (PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
 
-		addCmdQueue(ent,QCMD_DOWNLOAD,5,0,0);
-		addCmdQueue(ent,QCMD_CHECK_ADMIN,10,0,0);
-
-		// custom connections
-		if (Q_stricmp (ent->client->pers.netname, "test") == 0)
-			gi.cprintf(ent,PRINT_HIGH,"test werks\n");
-		else
-			gi.bprintf (PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
-
-	//uid = GetPlayerUid(va("%s", ent->client->pers.netname));
-//	gi.cprintf (ent, PRINT_HIGH, "Calling open_uid_file from ClientBeginDeathmatch.\n");
-	//open_uid_file (uid, ent);
-	//gi.cprintf (ent, PRINT_HIGH, "open_uid_file called from ClientBeginDeathmatch.\n");
-	//debug_log ("open_uid_file called in ClientBeginDeathmatch");
-	//debug_log (va ("%s is entering the game.", ent->client->pers.netname));
-	//debug_log ("CHECKPOINT: Function: ClientBeginDeathmatch Line: 1680 File: p_client.c");
-	ApplyBans(ent,ent->client->pers.netname);
-	//debug_log ("CHECKPOINT: Function: ClientBeginDeathmatch Line: 1682 File: p_client.c");
-
-//	gi.cprintf(ent,PRINT_CHAT,"console: p_version\n");
 	// make sure all view stuff is valid
-	ESF_debug = 1;
 	ClientEndServerFrame (ent);
-	ESF_debug = 0;
 }
 
 
@@ -1672,11 +1249,6 @@ void ClientBegin (edict_t *ent)
 
 	ent->client = game.clients + (ent - g_edicts - 1);
 
-	overall_completions[ent-g_edicts-1].loaded = false;
-	compare_users[ent-g_edicts-1].user1.loaded = false;
-	compare_users[ent-g_edicts-1].user2.loaded = false;
-//	removeClientCommands(ent);
-
 	if (deathmatch->value)
 	{
 		ClientBeginDeathmatch (ent);
@@ -1685,7 +1257,7 @@ void ClientBegin (edict_t *ent)
 
 	// if there is already a body waiting for us (a loadgame), just
 	// take it, otherwise spawn one from scratch
-	if (ent->inuse)
+	if (ent->inuse == true)
 	{
 		// the client has cleared the client side viewangles upon
 		// connecting to the server, which is different than the
@@ -1721,16 +1293,10 @@ void ClientBegin (edict_t *ent)
 
 			gi.bprintf (PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
 		}
-		//pooy
-//		Besttimes_ind(ent);
-
 	}
 
 	// make sure all view stuff is valid
 	ClientEndServerFrame (ent);
-	ent->client->resp.cur_time = 0;
-	ent->client->resp.last_fire_frame = 0;
-
 }
 
 /*
@@ -1746,37 +1312,17 @@ The game can override any of the settings in place
 void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 {
 	char	*s;
-	char	*sa;
-	char	s2[256];
 	int		playernum;
-	int		alevel;
-	  char	temps[64];
 
 	// check for malformed or illegal info strings
 	if (!Info_Validate(userinfo))
 	{
 		strcpy (userinfo, "\\name\\badinfo\\skin\\male/grunt");
 	}
+
 	// set name
 	s = Info_ValueForKey (userinfo, "name");
-/*	if (strcmp(s,"")==0)
-	{	
-		strcpy (s2,"Player");
-		strncpy (ent->client->pers.netname, s2, sizeof(ent->client->pers.netname)-1);
-	} else*/
-	if (strcmp(s,ent->client->pers.netname))
-	{
-		//name changed
-		UpdateThisUsersUID(ent,s);
-		overall_completions[ent-g_edicts-1].loaded = false;
-
-		ent->client->pers.banlevel = GetBanLevel(ent,userinfo);
-		ApplyBans(ent,s);		
-		
-	}
-
-		strncpy (ent->client->pers.netname, s, sizeof(ent->client->pers.netname)-1);
-	
+	strncpy (ent->client->pers.netname, s, sizeof(ent->client->pers.netname)-1);
 
 	// set skin
 	s = Info_ValueForKey (userinfo, "skin");
@@ -1816,25 +1362,9 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 	{
 		ent->client->pers.hand = atoi(s);
 	}
-	// handedness
-	s = Info_ValueForKey (userinfo, "cl_maxfps");
-	if (strlen(s))
-	{
-		ent->client->pers.fps = atoi(s);
-		if (ent->client->pers.fps>0 && ent->client->pers.fps<20)
-		{
-            gi.cprintf (ent,PRINT_HIGH, "[JumpMod]   You have been kicked for lowering CL_MAXFPS below 20\n");
-			sprintf(temps,"kick %d\n",ent-g_edicts-1);
-			gi.AddCommandString(temps);
-
-//			stuffcmd(ent,"set cl_maxfps 20\n");
-		}
-	}
 
 	// save off the userinfo in case we want to check something later
 	strncpy (ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo)-1);
-
-	Lastseen_Update(ent);
 }
 
 
@@ -1853,40 +1383,14 @@ loadgames will.
 qboolean ClientConnect (edict_t *ent, char *userinfo)
 {
 	char	*value;
-	int i;
-	char userip[16];
 
 	// check to see if they are on the banned IP list
 	value = Info_ValueForKey (userinfo, "ip");
-	strcpy(ent->client->pers.userip, value);
-	for (i=0;i<strlen(ent->client->pers.userip);i++)
-	{
-		if (ent->client->pers.userip[i] == ':')
-			break;
-	}
-	ent->client->pers.userip[i] = '\0';
-	ent->client->pers.banlevel = GetBanLevel(ent,userinfo);
-
-	if (ClientIsBanned(ent,BAN_CONNECTION))
-	{
-		Info_SetValueForKey(userinfo, "rejmsg", "Banned.");
-		return false;
-	}
-
-	if (ClientIsBanned(ent,BAN_KICK_BAN))
-	{
-		Info_SetValueForKey(userinfo, "rejmsg", "You are banned until the next map change.");
-		return false;
-	}
-
 	if (SV_FilterPacket(value)) {
 		Info_SetValueForKey(userinfo, "rejmsg", "Banned.");
 		return false;
 	}
-	
-	value = Info_ValueForKey (userinfo, "name");
-	if (strcmp(value,"")==0)
-		return false;
+
 
 	// check for a password
 	value = Info_ValueForKey (userinfo, "password");
@@ -1916,19 +1420,9 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 	ClientUserinfoChanged (ent, userinfo);
 
 	if (game.maxclients > 1)
-		gi.dprintf ("%s connected from %s\n", ent->client->pers.netname, ent->client->pers.userip);  // hann
+		gi.dprintf ("%s connected\n", ent->client->pers.netname);
 
 	ent->client->pers.connected = true;
-
-	ent->client->resp.frames_without_movement = 0;
-	ent->client->resp.current_vote = 0;
-	vote_data.votes[0]++;
-	removeClientCommands(ent);
-	overall_completions[ent-g_edicts-1].loaded = false;
-	compare_users[ent-g_edicts-1].user1.loaded = false;
-	compare_users[ent-g_edicts-1].user2.loaded = false;
-	ent->client->resp.cur_time = 0;
-	ent->client->resp.last_fire_frame = 0;
 	return true;
 }
 
@@ -1953,36 +1447,20 @@ void ClientDisconnect (edict_t *ent)
 	CTFDeadDropFlag(ent);
 	CTFDeadDropTech(ent);
 //ZOID
-	if (level_items.fastest_player==ent)
-		level_items.fastest_player=NULL;
 
-	ent->client->resp.got_time = false;
-	ent->client->resp.silence = false;
-	ent->client->resp.silence_until = 0;
 	// send effect
 	gi.WriteByte (svc_muzzleflash);
 	gi.WriteShort (ent-g_edicts);
 	gi.WriteByte (MZ_LOGOUT);
 	gi.multicast (ent->s.origin, MULTICAST_PVS);
 
-	if (jump_show_stored_ent)
-	{
-		if (ent->client->resp.stored_ent)	
-			G_FreeEdict(ent->client->resp.stored_ent);
-	}
 	gi.unlinkentity (ent);
 	ent->s.modelindex = 0;
 	ent->solid = SOLID_NOT;
 	ent->inuse = false;
 	ent->classname = "disconnected";
 	ent->client->pers.connected = false;
-	hook_reset(ent->client->hook);
 
-	vote_data.votes[ent->client->resp.current_vote]--;
-	ent->client->resp.current_vote = 0;
-	ent->client->resp.frames_without_movement = 0;
-	removeClientCommands(ent);
-	
 	playernum = ent-g_edicts-1;
 	gi.configstring (CS_PLAYERSKINS+playernum, "");
 }
@@ -2000,18 +1478,6 @@ trace_t	PM_trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 		return gi.trace (start, mins, maxs, end, pm_passent, MASK_PLAYERSOLID);
 	else
 		return gi.trace (start, mins, maxs, end, pm_passent, MASK_DEADSOLID);
-}
-trace_t	PM_trace2 (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
-{
-	if (pm_passent->health > 0)
-		return gi.trace (start, mins, maxs, end, pm_passent, MASK_PLAYERSOLID);
-	else
-		return gi.trace (start, mins, maxs, end, pm_passent, MASK_DEADSOLID);
-
-		/*	if (pm_passent->health > 0)
-		return gi.trace (start, mins, maxs, end, pm_passent, MASK_PLAYERSOLID);
-	else*/
-/*		return gi.trace (start, mins, maxs, end, pm_passent, MASK_SOLID);*/
 }
 
 unsigned CheckBlock (void *b, int c)
@@ -2039,45 +1505,21 @@ This will be called once for each client frame, which will
 usually be a couple times for each server frame.
 ==============
 */
-//remove
-
 void ClientThink (edict_t *ent, usercmd_t *ucmd)
 {
 	gclient_t	*client;
 	edict_t	*other;
 	int		i, j;
 	pmove_t	pm;
-	edict_t	*ent2, *client2;
-	vec3_t temp_pos;
-	qboolean prev_groundentity;
-	vec_t tlen;
 
 	level.current_entity = ent;
 	client = ent->client;
-
-	if (gametype->value!=GAME_CTF)
-	if (ent->client->resp.paused)
-	{
-		if (abs(ucmd->forwardmove)>0 || abs(ucmd->upmove)>0 || abs(ucmd->sidemove)>0)
-		{
-			
-			ent->client->resp.client_think_begin = Sys_Milliseconds();
-			unpause_client(ent);
-		}
-	}
-
-	//remove
-	ent->client->resp.cur_time += ucmd->msec;
-	//gi.cprintf(ent,PRINT_HIGH,"%i %i %i %i\n",ent->client->resp.cur_time,ucmd->buttons,ucmd->msec,ucmd->upmove,level.framenum);
-	if ((client->hook_state == HOOK_ON) && client->hook)
-	hook_service(client->hook);
 
 	if (level.intermissiontime)
 	{
 		client->ps.pmove.pm_type = PM_FREEZE;
 		// can exit intermission after five seconds
-
-		if (level.time > level.intermissiontime + (gset_vars->intermission/10)
+		if (level.time > level.intermissiontime + 5.0 
 			&& (ucmd->buttons & BUTTON_ANY) )
 			level.exitintermission = true;
 		return;
@@ -2085,44 +1527,7 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
 	pm_passent = ent;
 
-	
-//auto kick code goes here
-  if (enable_autokick->value) {
-        if (ucmd->buttons==0) {
-                ent->client->resp.frames_without_movement += ucmd->msec;
-        } else {
-                ent->client->resp.frames_without_movement = 0;
-        };
-  };
-
-  //!fps stuff
-  ent->client->resp.msec_history[level.framenum % 5] = ucmd->msec;
-
 //ZOID
-	if (level.status)
-	{
-		if (level.overtime<=gset_vars->overtimewait)
-		{
-			if (ucmd->buttons & BUTTON_ATTACK)
-				ucmd->buttons &= ~BUTTON_ATTACK;
-		}
-	}
-
-  
-	if (ent->client->resp.ctf_team==CTF_NOTEAM)
-	if (ucmd->buttons & BUTTON_ATTACK)
-	{
-		if (level.time>ent->client->resp.next_chasecam_toggle)
-			JumpChase(ent);
-	}
-/*	if (client->ps.pmove.pm_flags & PMF_JUMP_HELD)
-	{
-//		client->ps.pmove.pm_flags &= ~PMF_JUMP_HELD;
-		if (ent->client->resp.chasecam_type == 0)
-			ent->client->resp.chasecam_type = -1;
-		else
-			ent->client->resp.chasecam_type = 0;
-	}*/
 	if (ent->client->chase_target) {
 		client->resp.cmd_angles[0] = SHORT2ANGLE(ucmd->angles[0]);
 		client->resp.cmd_angles[1] = SHORT2ANGLE(ucmd->angles[1]);
@@ -2140,37 +1545,10 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 		client->ps.pmove.pm_type = PM_GIB;
 	else if (ent->deadflag)
 		client->ps.pmove.pm_type = PM_DEAD;
-	else if (ClientIsBanned(ent,BAN_MOVE))
-		client->ps.pmove.pm_type = PM_FREEZE;
 	else
 		client->ps.pmove.pm_type = PM_NORMAL;
 
-
-	if (level.status==LEVEL_STATUS_OVERTIME)
-	{
-		if (gset_vars->overtimetype==OVERTIME_FAST)
-		if (level.overtime<=gset_vars->overtimewait)
-		{
-			client->ps.pmove.pm_type = PM_FREEZE;
-		}
-	}
-	else if (level.status==LEVEL_STATUS_VOTING)
-	{
-		client->ps.pmove.pm_type = PM_FREEZE;
-	}
-
-	if (client->hook_state == HOOK_ON)
-		client->ps.pmove.gravity = 0;
-	else
-		client->ps.pmove.gravity = mset_vars->gravity * ent->gravity * ent->gravity2;
-
-	ent->gravity = 1;
-
-
-  /*ATTILA begin*/
-  if ( Jet_Active(ent) )
-    Jet_ApplyJet( ent, ucmd );
-  /*ATTILA end*/
+	client->ps.pmove.gravity = sv_gravity->value;
 	pm.s = client->ps.pmove;
 
 	for (i=0 ; i<3 ; i++)
@@ -2187,57 +1565,22 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
 	pm.cmd = *ucmd;
 
-	if (ent->client->resp.ctf_team==CTF_TEAM2 || (gametype->value==GAME_CTF && ent->client->resp.ctf_team==CTF_TEAM1))
-		pm.trace = PM_trace2;	// adds default parms
-	else
-		pm.trace = PM_trace;	// adds default parms
+	pm.trace = PM_trace;	// adds default parms
 	pm.pointcontents = gi.pointcontents;
 
 	// perform a pmove
 	gi.Pmove (&pm);
 
-	if (ent->client->resp.showjumpdistance)
-	if (!pm.groundentity)
-	{
-		if (!ent->client->resp.inair)
-		{
-			VectorCopy(ent->s.origin,ent->client->resp.takeoff_position);
-			ent->client->resp.inair = 2;
-		}
-	}
-	else
-	{
-		//on ground
-		if (ent->client->resp.inair==2)
-		{
-			//got a takeoff location
-			VectorSubtract(ent->s.origin, ent->client->resp.takeoff_position, temp_pos);
-			temp_pos[2] = 0;
-			tlen = VectorLength(temp_pos);
-			gi.cprintf(ent,PRINT_HIGH,"%-4.2f %-4.2f\n",tlen,tlen-ent->client->resp.last_length);
-			ent->client->resp.last_length = tlen;
-		}
-		//reset
-		ent->client->resp.inair=0;
-	}
-
-//		gi.cprintf(ent,PRINT_HIGH,"%f %f %f\n",ent->s.origin[0],ent->s.origin[1],ent->s.origin[2]);
 	// save results of pmove
-
 	client->ps.pmove = pm.s;
 	client->old_pmove = pm.s;
 
 	for (i=0 ; i<3 ; i++)
 	{
 		ent->s.origin[i] = pm.s.origin[i]*0.125;
-
-  /*ATTILA begin*/
-  if ( !Jet_Active(ent) || (Jet_Active(ent)&&(fabs((float)pm.s.velocity[i]*0.125) < fabs(ent->velocity[i]))) )
-  /*ATTILA end*/
-    		ent->velocity[i] = pm.s.velocity[i]*0.125;
+		ent->velocity[i] = pm.s.velocity[i]*0.125;
 	}
 
-	
 	VectorCopy (pm.mins, ent->mins);
 	VectorCopy (pm.maxs, ent->maxs);
 
@@ -2245,15 +1588,8 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	client->resp.cmd_angles[1] = SHORT2ANGLE(ucmd->angles[1]);
 	client->resp.cmd_angles[2] = SHORT2ANGLE(ucmd->angles[2]);
 
-
-  /*ATTILA begin*/
-  if ( Jet_Active(ent) )
-    if( pm.groundentity )		/*are we on ground*/
-      if ( Jet_AvoidGround(ent) )	/*then lift us if possible*/
-        pm.groundentity = NULL;		/*now we are no longer on ground*/
-  /*ATTILA end*/
-
-	if (ent->groundentity && !pm.groundentity && (pm.cmd.upmove >= 10) && (pm.waterlevel == 0)) {
+	if (ent->groundentity && !pm.groundentity && (pm.cmd.upmove >= 10) && (pm.waterlevel == 0))
+	{
 		gi.sound(ent, CHAN_VOICE, gi.soundindex("*jump1.wav"), 1, ATTN_NORM, 0);
 		PlayerNoise(ent, ent->s.origin, PNOISE_SELF);
 	}
@@ -2279,7 +1615,7 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
 //ZOID
 	if (client->ctf_grapple)
-		CTFGrapplePull((edict_t*)client->ctf_grapple);
+		CTFGrapplePull(client->ctf_grapple);
 //ZOID
 
 	gi.linkentity (ent);
@@ -2304,112 +1640,6 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
 	client->oldbuttons = client->buttons;
 	client->buttons = ucmd->buttons;
-	
-	if (ucmd->forwardmove>10)
-	{
-		client->resp.key_forward = true;
-		client->resp.key_back = false;
-	}
-	else 
-	if (ucmd->forwardmove<-10)
-	{
-		client->resp.key_back = true;
-		client->resp.key_forward = false;
-	}
-	else
-	{
-		client->resp.key_back = false;
-		client->resp.key_forward = false;
-	}
-
-	if (ucmd->sidemove<-10)
-	{
-		client->resp.key_left = true;
-		client->resp.key_right = false;
-	}
-	else
-	if (ucmd->sidemove>10)
-	{
-		client->resp.key_left = false;
-		client->resp.key_right = true;
-	}
-	else
-	{
-		client->resp.key_left = false;
-		client->resp.key_right = false;
-	}
-
-	if (ucmd->upmove>10)
-	{
-		client->resp.key_up = true;
-		client->resp.key_down = false;
-	}
-	else 
-		if (ucmd->upmove<-10)
-	{
-		client->resp.key_down = true;
-		client->resp.key_up = false;
-	}
-	else
-	{
-		client->resp.key_down = false;
-		client->resp.key_up = false;
-	}
-
-
-	//jump logging
-	if (ent->client->resp.ctf_team==CTF_NOTEAM)
-	{
-		if (ent->client->resp.replaying)
-		{
-			if ((ucmd->upmove>=10) && (!ent->client->resp.going_up))
-				ent->client->resp.going_up = true;
-			if ((ucmd->upmove<10) && (ent->client->resp.going_up))
-			{
-				Cmd_RepRepeat(ent);
-				ent->client->resp.going_up = false;
-			}
-			if ((ucmd->forwardmove>=10) && (!ent->client->resp.going_forward))
-				ent->client->resp.going_forward = true;
-			if (((ucmd->forwardmove<10) && (ucmd->forwardmove>=0)) && (ent->client->resp.going_forward))
-			{
-				ent->client->resp.going_forward = false;
-				ent->client->resp.replay_speed++;
-				if (ent->client->resp.replay_speed>MAX_REPLAY_SPEED)
-					ent->client->resp.replay_speed = MAX_REPLAY_SPEED;
-				if (ent->client->resp.replay_speed==REPLAY_SPEED_ZERO)
-					gi.cprintf(ent,PRINT_HIGH,"Paused\n");
-				else
-					gi.cprintf(ent,PRINT_HIGH,"Replaying at %2.1f speed\n",replay_speed_modifier[ent->client->resp.replay_speed]);
-
-			}
-			if ((ucmd->forwardmove<=-10) && (!ent->client->resp.going_back))
-				ent->client->resp.going_back = true;
-			if (((ucmd->forwardmove>-10) && (ucmd->forwardmove<=0)) && (ent->client->resp.going_back))
-			{
-				ent->client->resp.going_back = false;
-				ent->client->resp.replay_speed--;
-				if (ent->client->resp.replay_speed<MIN_REPLAY_SPEED)
-					ent->client->resp.replay_speed = MIN_REPLAY_SPEED;
-				if (ent->client->resp.replay_speed==REPLAY_SPEED_ZERO)
-					gi.cprintf(ent,PRINT_HIGH,"Paused\n");
-				else
-					gi.cprintf(ent,PRINT_HIGH,"Replaying at %2.1f speed\n",replay_speed_modifier[ent->client->resp.replay_speed]);
-			}
-		}
-	}
-	else
-	{
-	
-		if ((ucmd->upmove>=10) && (!ent->client->resp.going_up))
-			ent->client->resp.going_up = true;
-		if ((ucmd->upmove<10) && (ent->client->resp.going_up))
-		{
-
-			ent->client->resp.jumps++;
-			ent->client->resp.going_up = false;
-		}
-	}
 	client->latched_buttons |= client->buttons & ~client->oldbuttons;
 
 	// save light level the player is standing on for
@@ -2417,9 +1647,9 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	ent->light_level = ucmd->lightlevel;
 
 	// fire weapon from final position if needed
-	if ((client->latched_buttons & BUTTON_ATTACK)
+	if (client->latched_buttons & BUTTON_ATTACK
 //ZOID
-		&& (ent->client->resp.ctf_team>=CTF_TEAM1)
+		&& ent->movetype != MOVETYPE_NOCLIP
 //ZOID
 		)
 	{
@@ -2427,15 +1657,13 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 		{
 			client->weapon_thunk = true;
 			Think_Weapon (ent);
-			//we in spec mode, advance camera
 		}
 	}
 
 //ZOID
-	if (!level.status)
-		CTFApplyRegeneration2(ent);
-	else
-		CTFApplyDegeneration(ent);
+//regen tech
+	CTFApplyRegeneration(ent);
+//ZOID
 
 //ZOID
 	for (i = 1; i <= maxclients->value; i++) {
@@ -2451,13 +1679,6 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 		client->menudirty = false;
 	}
 //ZOID
-
-if ((client->hook_state == HOOK_ON) && (VectorLength(ent->velocity) < 10)) {
-	client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
-} else if (!ent->client->resp.replaying) {    
-	client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
-}
-
 }
 
 
@@ -2469,48 +1690,16 @@ This will be called once for each server frame, before running
 any other entities in the world.
 ==============
 */
-
-void Generate_Race_Data(int race_frame,int race_this)
-{
-								if (race_frame > 1)
-								{
-									gi.WriteByte (svc_temp_entity);
-									gi.WriteByte (TE_BFG_LASER);
-									gi.WritePosition (level_items.recorded_time_data[race_this][race_frame - 1].origin);
-									gi.WritePosition (level_items.recorded_time_data[race_this][race_frame].origin);
-								}
-								if (race_frame > 2)
-								{
-									gi.WriteByte (svc_temp_entity);
-									gi.WriteByte (TE_BFG_LASER);
-									gi.WritePosition (level_items.recorded_time_data[race_this][race_frame - 2].origin);
-									gi.WritePosition (level_items.recorded_time_data[race_this][race_frame - 1].origin);
-								}
-								if (race_frame > 3)
-								{
-									gi.WriteByte (svc_temp_entity);
-									gi.WriteByte (TE_BFG_LASER);
-									gi.WritePosition (level_items.recorded_time_data[race_this][race_frame - 3].origin);
-									gi.WritePosition (level_items.recorded_time_data[race_this][race_frame - 2].origin);
-								}
-}
-
 void ClientBeginServerFrame (edict_t *ent)
 {
 	gclient_t	*client;
-	edict_t *temp_ent;
 	int			buttonMask;
-	vec3_t temp = {10,10,10};
-	trace_t tr;
-	float a,b;
-	int i;
-	int race_this;
-	vec3_t dir;
 
 	if (level.intermissiontime)
 		return;
 
 	client = ent->client;
+
 	// run weapon animations if it hasn't been done by a ucmd_t
 	if (!client->weapon_thunk
 //ZOID
@@ -2524,7 +1713,7 @@ void ClientBeginServerFrame (edict_t *ent)
 	if (ent->deadflag)
 	{
 		// wait for any button just going down
-		if ( level.framenum > client->respawn_time)
+		if ( level.time > client->respawn_time)
 		{
 			// in deathmatch, only wait for attack button
 			if (deathmatch->value)
@@ -2538,8 +1727,6 @@ void ClientBeginServerFrame (edict_t *ent)
 			{
 				respawn(ent);
 				client->latched_buttons = 0;
-				//pooy
-
 			}
 		}
 		return;
@@ -2551,80 +1738,4 @@ void ClientBeginServerFrame (edict_t *ent)
 			PlayerTrail_Add (ent->s.old_origin);
 
 	client->latched_buttons = 0;
-
-	if (!ent->client->resp.race_frame)
-	{
-		if (ent->client->resp.rep_racing_delay)
-			ent->client->resp.race_frame = (int)(ent->client->resp.rep_racing_delay*10);
-		else
-			ent->client->resp.race_frame = 2;
-	}
-
-#ifdef RACESPARK2
-	race_this = ent->client->resp.rep_race_number;
-	if (race_this<0 || race_this>MAX_HIGHSCORES)
-		race_this = 0;
-	if (level_items.recorded_time_frames[race_this])
-	{
-		if (gset_vars->allow_race_spark)
-		{
-			if (ent->client->resp.ctf_team==CTF_TEAM2 || (gametype->value==GAME_CTF && ent->client->resp.ctf_team==CTF_TEAM1))
-			{
-
-				if (!ent->client->resp.race_frame)
-				{
-					if (ent->client->resp.rep_racing)
-					{
-						if (ent->client->resp.rep_racing_delay)
-							ent->client->resp.race_frame = (int)(ent->client->resp.rep_racing_delay*10);
-						else
-							ent->client->resp.race_frame = 2;
-					}
-				}
-
-				if (gi.inPVS(level_items.recorded_time_data[race_this][ent->client->resp.race_frame].origin,ent->s.origin))
-				{
-					if (ent->client->resp.race_frame > 0)
-					{
-						//send to ourselves
-						if (ent->client->resp.rep_racing)
-						{
-							Generate_Race_Data(ent->client->resp.race_frame,race_this);
-							gi.unicast(ent,true);
-						}
-						//send to everyone chasing us? seems laggy but ok								
-						for (i=0 ; i<maxclients->value ; i++)
-						{
-							temp_ent = g_edicts + 1 + i;
-							if (!temp_ent->inuse || !temp_ent->client || ent==temp_ent || temp_ent->client->chase_target!=ent)
-								continue;
-							Generate_Race_Data(ent->client->resp.race_frame,race_this);
-							gi.unicast(temp_ent,true);
-						}					
-					}
-				}
-				
-				if (!ent->client->resp.paused)
-					ent->client->resp.race_frame++;
-
-				if (ent->client->resp.race_frame>=level_items.recorded_time_frames[race_this])
-				{
-					if (ent->client->resp.rep_racing)
-					{
-						if (ent->client->resp.rep_racing_delay)
-							ent->client->resp.race_frame = (int)(ent->client->resp.rep_racing_delay*10);
-						else
-							ent->client->resp.race_frame = 2;
-					}
-				}
-				//dont let it go too far in
-				if (ent->client->resp.race_frame>2)
-					if (ent->client->resp.race_frame>=level_items.recorded_time_frames[race_this])
-						ent->client->resp.race_frame = 2;
-	
-			}
-		}
-	}
-#endif
-
 }

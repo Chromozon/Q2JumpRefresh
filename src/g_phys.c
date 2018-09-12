@@ -105,10 +105,7 @@ qboolean SV_RunThink (edict_t *ent)
 	
 	ent->nextthink = 0;
 	if (!ent->think)
-	{
-		return true;
-		ServerError("NULL ent->think");
-	}
+		gi.error ("NULL ent->think");
 	ent->think (ent);
 
 	return false;
@@ -124,17 +121,15 @@ Two entities have touched, so run their touch functions
 void SV_Impact (edict_t *e1, trace_t *trace)
 {
 	edict_t		*e2;
-	int i;
 //	cplane_t	backplane;
 
 	e2 = trace->ent;
-	{
-		if (e1->touch && e1->solid != SOLID_NOT)
-			e1->touch (e1, e2, &trace->plane, trace->surface);
-		
-		if (e2->touch && e2->solid != SOLID_NOT)
-			e2->touch (e2, e1, NULL, NULL);
-	}
+
+	if (e1->touch && e1->solid != SOLID_NOT)
+		e1->touch (e1, e2, &trace->plane, trace->surface);
+	
+	if (e2->touch && e2->solid != SOLID_NOT)
+		e2->touch (e2, e1, NULL, NULL);
 }
 
 
@@ -201,7 +196,6 @@ int SV_FlyMove (edict_t *ent, float time, int mask)
 	float		time_left;
 	int			blocked;
 	
-	
 	numbumps = 4;
 	
 	blocked = 0;
@@ -216,7 +210,7 @@ int SV_FlyMove (edict_t *ent, float time, int mask)
 	{
 		for (i=0 ; i<3 ; i++)
 			end[i] = ent->s.origin[i] + time_left * ent->velocity[i];
-		
+
 		trace = gi.trace (ent->s.origin, ent->mins, ent->maxs, end, ent, mask);
 
 		if (trace.allsolid)
@@ -327,7 +321,7 @@ SV_AddGravity
 */
 void SV_AddGravity (edict_t *ent)
 {
-	ent->velocity[2] -= ent->gravity * mset_vars->gravity * FRAMETIME;
+	ent->velocity[2] -= ent->gravity * sv_gravity->value * FRAMETIME;
 }
 
 /*
@@ -557,7 +551,6 @@ qboolean SV_Push (edict_t *pusher, vec3_t move, vec3_t amove)
 	return true;
 }
 
-
 /*
 ================
 SV_Physics_Pusher
@@ -594,7 +587,7 @@ void SV_Physics_Pusher (edict_t *ent)
 		}
 	}
 	if (pushed_p > &pushed[MAX_EDICTS])
-		ServerError("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
+		gi.error (ERR_FATAL, "pushed_p > &pushed[MAX_EDICTS], memory corrupted");
 
 	if (part)
 	{
@@ -709,9 +702,7 @@ void SV_Physics_Toss (edict_t *ent)
 
 // add gravity
 	if (ent->movetype != MOVETYPE_FLY
-	&& ent->movetype != MOVETYPE_FLYMISSILE
-	&& ent->movetype != MOVETYPE_FLYRICOCHET
-	)
+	&& ent->movetype != MOVETYPE_FLYMISSILE)
 		SV_AddGravity (ent);
 
 // move angles
@@ -725,35 +716,15 @@ void SV_Physics_Toss (edict_t *ent)
 
 	if (trace.fraction < 1)
 	{
-		if (ent->movetype == MOVETYPE_FLYRICOCHET)
-			backoff = 1.5;
-		else if (ent->movetype == MOVETYPE_BOUNCE)
+		if (ent->movetype == MOVETYPE_BOUNCE)
 			backoff = 1.5;
 		else
 			backoff = 1;
 
 		ClipVelocity (ent->velocity, trace.plane.normal, ent->velocity, backoff);
 
-		// STEVE... added this part to re-align the entity's angles after
-		// it bounces off a wall. Simply set its angles to its velocity vector.
-		if (ent->movetype == MOVETYPE_FLYRICOCHET)
-		{
-			vectoangles (ent->velocity, ent->s.angles);
-		}
-
 	// stop if on ground
-		/*if (trace.plane.normal[2] > 0.7)
-		{		
-			if (ent->velocity[2] < 60 || ent->movetype != MOVETYPE_BOUNCE )
-			{
-				ent->groundentity = trace.ent;
-				ent->groundentity_linkcount = trace.ent->linkcount;
-				VectorCopy (vec3_origin, ent->velocity);
-				VectorCopy (vec3_origin, ent->avelocity);
-			}
-		}*/
-
-		if (trace.plane.normal[2] > 0.7 && ent->movetype != MOVETYPE_FLYRICOCHET)
+		if (trace.plane.normal[2] > 0.7)
 		{		
 			if (ent->velocity[2] < 60 || ent->movetype != MOVETYPE_BOUNCE )
 			{
@@ -763,7 +734,6 @@ void SV_Physics_Toss (edict_t *ent)
 				VectorCopy (vec3_origin, ent->avelocity);
 			}
 		}
-
 
 //		if (ent->touch)
 //			ent->touch (ent, trace.ent, &trace.plane, trace.surface);
@@ -875,7 +845,7 @@ void SV_Physics_Step (edict_t *ent)
 		if (!(ent->flags & FL_FLY))
 			if (!((ent->flags & FL_SWIM) && (ent->waterlevel > 2)))
 			{
-				if (ent->velocity[2] < mset_vars->gravity*-0.1)
+				if (ent->velocity[2] < sv_gravity->value*-0.1)
 					hitsound = true;
 				if (ent->waterlevel == 0)
 					SV_AddGravity (ent);
@@ -959,11 +929,6 @@ G_RunEntity
 */
 void G_RunEntity (edict_t *ent)
 {
-	gclient_t	*cl;
-	edict_t		*temp;
-	int i;
-//pooy
-
 	if (ent->prethink)
 		ent->prethink (ent);
 
@@ -980,19 +945,15 @@ void G_RunEntity (edict_t *ent)
 		SV_Physics_Noclip (ent);
 		break;
 	case MOVETYPE_STEP:
-		{
-	
-			SV_Physics_Step (ent);
-		}
+		SV_Physics_Step (ent);
 		break;
 	case MOVETYPE_TOSS:
 	case MOVETYPE_BOUNCE:
 	case MOVETYPE_FLY:
 	case MOVETYPE_FLYMISSILE:
-	case MOVETYPE_FLYRICOCHET:
 		SV_Physics_Toss (ent);
 		break;
 	default:
-		ServerError("SV_Physics: bad movetype");
+		gi.error ("SV_Physics: bad movetype %i", (int)ent->movetype);			
 	}
 }

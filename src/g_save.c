@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "g_local.h"
-extern int curtime;
+
 field_t fields[] = {
 	{"classname", FOFS(classname), F_LSTRING},
 	{"origin", FOFS(s.origin), F_VECTOR},
@@ -47,20 +47,12 @@ field_t fields[] = {
 	{"sounds", FOFS(sounds), F_INT},
 	{"light", 0, F_IGNORE},
 	{"dmg", FOFS(dmg), F_INT},
-
-	
-	{"maxs", FOFS(maxs), F_VECTOR},
-	{"mins", FOFS(mins), F_VECTOR},
-
 	{"angles", FOFS(s.angles), F_VECTOR},
 	{"angle", FOFS(s.angles), F_ANGLEHACK},
 	{"mass", FOFS(mass), F_INT},
 	{"volume", FOFS(volume), F_FLOAT},
 	{"attenuation", FOFS(attenuation), F_FLOAT},
 	{"map", FOFS(map), F_LSTRING},
-	{"skinnum", FOFS(s.skinnum), F_INT},
-
-	{"effect", FOFS(s.effects), F_INT},
 
 	// temp spawn vars -- only valid when the spawn function is called
 	{"lip", STOFS(lip), F_INT, FFL_SPAWNTEMP},
@@ -154,49 +146,7 @@ is loaded.
 */
 void InitGame (void)
 {
-	int i;
-	char	maplist_path[256];
-	cvar_t	*jump_maplist;
-	cvar_t	*temp;
-	cvar_t	*jump_manual;
-	cvar_t	*port;
-	cvar_t	*tgame;
-	char	text[128];
-
-	removed_map = false;
-	srand ( time(NULL) );
-	gset_vars->debug = 1;
-	tgame = gi.cvar("game","",0);
-	port = gi.cvar("port", "", 0);
-	gi.dprintf ("==== InitGame ====\n\n");
-	
-	FS_CreatePath(va("%s/%s/",tgame->string,port->string));
-	FS_CreatePath(va("%s/jumpdemo/",tgame->string));
-	FS_CreatePath(va("%s/ent/",tgame->string));
-
-	open_debug_file();
-	sprintf(text,"\n==== InitGame ====");
-	debug_log(text);
-
-	allow_admin_log = gi.cvar("admin_log","",0);
-	sprintf(text,"==== Reading Jump Config ====");
-	debug_log(text);
-
-	SetDefaultValues();
-
-	sprintf(maplist_path,"%s/jump_mod.cfg",tgame->string);
-	readCfgFile(maplist_path);
-//	copy map data to global
-	CopyGlobalToLocal();
-
-	sprintf(text,"==== Reading Admin Config ====");
-	debug_log(text);
-	Read_Admin_cfg();
-	if (allow_admin_log->value)
-	{
-		open_admin_file();
-	}
-
+	gi.dprintf ("==== InitGame ====\n");
 
 	gun_x = gi.cvar ("gun_x", "0", 0);
 	gun_y = gi.cvar ("gun_y", "0", 0);
@@ -213,7 +163,7 @@ void InitGame (void)
 
 	// latched vars
 	sv_cheats = gi.cvar ("cheats", "0", CVAR_SERVERINFO|CVAR_LATCH);
-	gi.cvar ("gamename", va("Q2JUMP %s",JUMP_VERSION_S) , CVAR_SERVERINFO | CVAR_LATCH);
+	gi.cvar ("gamename", GAMEVERSION , CVAR_SERVERINFO | CVAR_LATCH);
 	gi.cvar ("gamedate", __DATE__ , CVAR_SERVERINFO | CVAR_LATCH);
 
 	maxclients = gi.cvar ("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
@@ -235,35 +185,23 @@ void InitGame (void)
 
 
 	// change anytime vars
-	jumpmod_version = gi.cvar ("JumpMod", JUMP_VERSION_S, CVAR_SERVERINFO);
 	dmflags = gi.cvar ("dmflags", "0", CVAR_SERVERINFO);
 	fraglimit = gi.cvar ("fraglimit", "0", CVAR_SERVERINFO);
-
-	enable_autokick = gi.cvar ("enable_autokick", "1", CVAR_ARCHIVE);
-	autokick_time = gi.cvar ("autokick_time", "300", CVAR_ARCHIVE);
 	timelimit = gi.cvar ("timelimit", "0", CVAR_SERVERINFO);
-	time_remaining = gi.cvar ("time_remaining", "00:00", CVAR_SERVERINFO);
 //ZOID
 	capturelimit = gi.cvar ("capturelimit", "0", CVAR_SERVERINFO);
-//	instantweap = gi.cvar ("instantweap", "0", CVAR_SERVERINFO);
+	instantweap = gi.cvar ("instantweap", "0", CVAR_SERVERINFO);
 //ZOID
  	password = gi.cvar ("password", "", CVAR_USERINFO);
 	filterban = gi.cvar ("filterban", "1", 0);
 
 	g_select_empty = gi.cvar ("g_select_empty", "0", CVAR_ARCHIVE);
 
-	run_pitch = gi.cvar ("run_pitch", "0.000", 0);
-	run_roll = gi.cvar ("run_roll", "0.000", 0);
-	bob_up  = gi.cvar ("bob_up", "0.000", 0);
-	bob_pitch = gi.cvar ("bob_pitch", "0.000", 0);
-	bob_roll = gi.cvar ("bob_roll", "0.000", 0);
-
-	// old
-	//run_pitch = gi.cvar ("run_pitch", "0.002", 0);
-	//run_roll = gi.cvar ("run_roll", "0.005", 0);
-	//bob_up  = gi.cvar ("bob_up", "0.005", 0);
-	//bob_pitch = gi.cvar ("bob_pitch", "0.002", 0);
-	//bob_roll = gi.cvar ("bob_roll", "0.002", 0);
+	run_pitch = gi.cvar ("run_pitch", "0.002", 0);
+	run_roll = gi.cvar ("run_roll", "0.005", 0);
+	bob_up  = gi.cvar ("bob_up", "0.005", 0);
+	bob_pitch = gi.cvar ("bob_pitch", "0.002", 0);
+	bob_roll = gi.cvar ("bob_roll", "0.002", 0);
 
 	// flood control
 	flood_msgs = gi.cvar ("flood_msgs", "4", 0);
@@ -274,8 +212,6 @@ void InitGame (void)
 	sv_maplist = gi.cvar ("sv_maplist", "", 0);
 
 	// items
-	sprintf(text,"==== InitItems ====");
-	debug_log(text);
 	InitItems ();
 
 	Com_sprintf (game.helpmessage1, sizeof(game.helpmessage1), "");
@@ -284,69 +220,18 @@ void InitGame (void)
 
 	// initialize all entities for this game
 	game.maxentities = maxentities->value;
-	g_edicts =  (edict_t*)gi.TagMalloc (game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	g_edicts =  gi.TagMalloc (game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	globals.edicts = g_edicts;
 	globals.max_edicts = game.maxentities;
 
 	// initialize all clients for this game
 	game.maxclients = maxclients->value;
-	game.clients = (gclient_t*)gi.TagMalloc (game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+	game.clients = gi.TagMalloc (game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 	globals.num_edicts = game.maxclients+1;
 
-	sprintf(text,"==== CTFInit ====");
-	debug_log(text);
 //ZOID
 	CTFInit();
 //ZOID
-
-	jump_maplist = gi.cvar("jump_maplist", "", 0);
-	jump_manual = gi.cvar("jump_manual", "", 0);
-	
-
-	//create dir here
-	
-	sprintf (maplist_path, "%s/%s/maplist.ini", tgame->string,port->string);
-
-	sprintf(text,"==== Loading MapList ====");
-	debug_log(text);
-	if (!*jump_maplist->string)
-		LoadMapList(maplist_path);//pooy
-
-	else
-		LoadMapList(jump_maplist->string);//pooy
-
-   if (0 == maplist.version)
-		UpdateScores2();
-   maplist.version = 1;
-   UpdateVoteMaps();
-
-   resync(false);
-	generate_random_start_map();
-	sprintf(text,"==== Loading Manual ====");
-	debug_log(text);
-
-	if (!*jump_manual->string)
-		LoadManualList("manual.ini");//pooy
-	else
-		LoadManualList(jump_manual->string);//pooy
-
-	temp = gi.cvar("jump_remove_stored_ent", "", 0);
-
-	gametype = gi.cvar("gametype","",0);	
-
-	if (!temp->value)
-		jump_show_stored_ent = true;
-	else
-		jump_show_stored_ent = false;
-
-	server_time = 0;
-	LoadBans();
-
-	Lastseen_Load();
-	Load_Model_List();
-	Create_Invis_Skin();
-	for (i=0;i<10;i++)
-	memset(prev_levels[i].mapname,0,sizeof(prev_levels[i].mapname));
 }
 
 //=========================================================
@@ -398,7 +283,7 @@ void WriteField1 (FILE *f, field_t *field, byte *base)
 		break;
 
 	default:
-		ServerError("WriteEdict: unknown field type");
+		gi.error ("WriteEdict: unknown field type");
 	}
 }
 
@@ -443,7 +328,7 @@ void ReadField (FILE *f, field_t *field, byte *base)
 			*(char **)p = NULL;
 		else
 		{
-			*(char **)p = (char*)gi.TagMalloc (len, TAG_LEVEL);
+			*(char **)p = gi.TagMalloc (len, TAG_LEVEL);
 			fread (*(char **)p, len, 1, f);
 		}
 		break;
@@ -453,7 +338,7 @@ void ReadField (FILE *f, field_t *field, byte *base)
 			*(char **)p = NULL;
 		else
 		{
-			*(char **)p = (char*)gi.TagMalloc (len, TAG_GAME);
+			*(char **)p = gi.TagMalloc (len, TAG_GAME);
 			fread (*(char **)p, len, 1, f);
 		}
 		break;
@@ -480,7 +365,7 @@ void ReadField (FILE *f, field_t *field, byte *base)
 		break;
 
 	default:
-		ServerError("ReadEdict: unknown field type");
+		gi.error ("ReadEdict: unknown field type");
 	}
 }
 
@@ -561,7 +446,7 @@ void WriteGame (char *filename, qboolean autosave)
 
 	f = fopen (filename, "wb");
 	if (!f)
-		ServerError("WriteGame : could not open file");
+		gi.error ("Couldn't open %s", filename);
 
 	memset (str, 0, sizeof(str));
 	strcpy (str, __DATE__);
@@ -587,20 +472,20 @@ void ReadGame (char *filename)
 
 	f = fopen (filename, "rb");
 	if (!f)
-		ServerError("ReadGame could not open file");
+		gi.error ("Couldn't open %s", filename);
 
 	fread (str, sizeof(str), 1, f);
 	if (strcmp (str, __DATE__))
 	{
 		fclose (f);
-		ServerError("Savegame from older version");
+		gi.error ("Savegame from an older version.\n");
 	}
 
-	g_edicts =  (edict_t*)gi.TagMalloc (game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	g_edicts =  gi.TagMalloc (game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	globals.edicts = g_edicts;
 
 	fread (&game, sizeof(game), 1, f);
-	game.clients = (gclient_t*)gi.TagMalloc (game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+	game.clients = gi.TagMalloc (game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 	for (i=0 ; i<game.maxclients ; i++)
 		ReadClient (f, &game.clients[i]);
 
@@ -727,7 +612,7 @@ void WriteLevel (char *filename)
 
 	f = fopen (filename, "wb");
 	if (!f)
-		ServerError("WriteLevel : couild not open file");
+		gi.error ("Couldn't open %s", filename);
 
 	// write out edict size for checking
 	i = sizeof(edict_t);
@@ -779,13 +664,11 @@ void ReadLevel (char *filename)
 	int		i;
 	void	*base;
 	edict_t	*ent;
-	char text[128];
+
 	f = fopen (filename, "rb");
 	if (!f)
-		ServerError("ReadLevel : could not open file");
+		gi.error ("Couldn't open %s", filename);
 
-	sprintf(text,"==== ReadLevel on %s ====",filename);
-	debug_log(text);
 	// free any dynamic memory allocated by loading the level
 	// base state
 	gi.FreeTags (TAG_LEVEL);
@@ -799,7 +682,7 @@ void ReadLevel (char *filename)
 	if (i != sizeof(edict_t))
 	{
 		fclose (f);
-		ServerError("ReadLevel : mismatched edict size");
+		gi.error ("ReadLevel: mismatched edict size");
 	}
 
 	// check function pointer base address
@@ -807,7 +690,7 @@ void ReadLevel (char *filename)
 	if (base != (void *)InitGame)
 	{
 		fclose (f);
-		ServerError("ReadLevel : function pointers have moved");
+		gi.error ("ReadLevel: function pointers have moved");
 	}
 
 	// load the level locals
@@ -819,8 +702,7 @@ void ReadLevel (char *filename)
 		if (fread (&entnum, sizeof(entnum), 1, f) != 1)
 		{
 			fclose (f);
-			ServerError("ReadLevel: failed to read entnum");
-
+			gi.error ("ReadLevel: failed to read entnum");
 		}
 		if (entnum == -1)
 			break;
@@ -858,6 +740,5 @@ void ReadLevel (char *filename)
 			if (strcmp(ent->classname, "target_crosslevel_target") == 0)
 				ent->nextthink = level.time + ent->delay;
 	}
-
 }
 

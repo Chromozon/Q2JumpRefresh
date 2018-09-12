@@ -19,7 +19,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "g_local.h"
-//#include "p_hook.h"
 #include "m_player.h"
 
 
@@ -143,7 +142,7 @@ void P_DamageFeedback (edict_t *player)
 			l = 75;
 		else
 			l = 100;
-		//gi.sound (player, CHAN_VOICE, gi.soundindex(va("*pain%i_%i.wav", l, r)), 1, ATTN_NORM, 0);
+		gi.sound (player, CHAN_VOICE, gi.soundindex(va("*pain%i_%i.wav", l, r)), 1, ATTN_NORM, 0);
 	}
 
 	// the total alpha of the blend is allways proportional to count
@@ -441,39 +440,7 @@ void SV_CalcBlend (edict_t *ent)
 		SV_AddBlend (0.5, 0.3, 0.2, 0.4, ent->client->ps.blend);
 
 	// add for powerups
-
-  /*ATTILA begin*/
-  if ( Jet_Active(ent) )
-  {
-    /*GOD -> dont burn out*/
-    if ( ent->flags & FL_GODMODE )
-      if ( (ent->client->Jet_framenum - level.framenum) <= 100 )
-        ent->client->Jet_framenum = level.framenum + 600;
-
-    /*update the fuel time*/
-    ent->client->Jet_remaining = ent->client->Jet_framenum - level.framenum;
-
-    /*if no fuel remaining, remove jetpack from inventory*/ 
-    if ( ent->client->Jet_remaining == 0 )
-      ent->client->pers.inventory[ITEM_INDEX(FindItem("Jetpack"))] = 0;
-
-    /*Play jetting sound every 0.6 secs (sound of monster icarus)*/
-    if ( ((int)ent->client->Jet_remaining % 6) == 0 )
-      gi.sound (ent, CHAN_AUTO, gi.soundindex("hover/hovidle1.wav"), 0.1, ATTN_NORM, 0);
-
-    /*beginning to fade if 4 secs or less*/
-/*    if (ent->client->Jet_remaining <= 40)*/
-      /*play on/off sound every sec*/
-/*      if ( ((int)ent->client->Jet_remaining % 10) == 0 )
-        gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM, 0);*/
-
-    if (ent->client->Jet_remaining > 40 || ( (int)ent->client->Jet_remaining & 4) )
-      SV_AddBlend (0, 0, 1, 0.08, ent->client->ps.blend);
-  }
-  else
-  /*ATTILA end*/
-
-  if (ent->client->quad_framenum > level.framenum)
+	if (ent->client->quad_framenum > level.framenum)
 	{
 		remaining = ent->client->quad_framenum - level.framenum;
 		if (remaining == 30)	// beginning to fade
@@ -566,9 +533,6 @@ void P_FallingDamage (edict_t *ent)
 	// never take falling damage if completely underwater
 	if (ent->waterlevel == 3)
 		return;
- 
-	if (ent->client->hook_state == HOOK_ON)
-    return;
 	if (ent->waterlevel == 2)
 		delta *= 0.25;
 	if (ent->waterlevel == 1)
@@ -593,9 +557,7 @@ void P_FallingDamage (edict_t *ent)
 		if (ent->health > 0)
 		{
 			if (delta >= 55)
-			{
 				ent->s.event = EV_FALLFAR;
-			}
 			else
 				ent->s.event = EV_FALL;
 		}
@@ -647,9 +609,9 @@ void P_WorldEffects (void)
 	if (!old_waterlevel && waterlevel)
 	{
 		PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
-//		if (current_player->watertype & CONTENTS_LAVA)
-//			gi.sound (current_player, CHAN_BODY, gi.soundindex("player/lava_in.wav"), 1, ATTN_NORM, 0);
-		if (current_player->watertype & CONTENTS_SLIME)
+		if (current_player->watertype & CONTENTS_LAVA)
+			gi.sound (current_player, CHAN_BODY, gi.soundindex("player/lava_in.wav"), 1, ATTN_NORM, 0);
+		else if (current_player->watertype & CONTENTS_SLIME)
 			gi.sound (current_player, CHAN_BODY, gi.soundindex("player/watr_in.wav"), 1, ATTN_NORM, 0);
 		else if (current_player->watertype & CONTENTS_WATER)
 			gi.sound (current_player, CHAN_BODY, gi.soundindex("player/watr_in.wav"), 1, ATTN_NORM, 0);
@@ -698,18 +660,7 @@ void P_WorldEffects (void)
 	//
 	if (waterlevel == 3)
 	{
-
-		/*ATTILA begin*/
-		if ( Jet_Active(current_player) ) /*dont jet and dive and stay alive*/
-		{
-			current_player->flags &= ~FL_GODMODE;
-			current_player->health = 0;
-			meansOfDeath = MOD_SUICIDE;
-			player_die (current_player, current_player, current_player, 100000, vec3_origin);
-		}
-		/*ATTILA end*/
- 
-	// breather or envirosuit give air
+		// breather or envirosuit give air
 		if (breather || envirosuit)
 		{
 			current_player->air_finished = level.time + 10;
@@ -770,10 +721,10 @@ void P_WorldEffects (void)
 				&& current_player->pain_debounce_time <= level.time
 				&& current_client->invincible_framenum < level.framenum)
 			{
-//				if (rand()&1)
-//					gi.sound (current_player, CHAN_VOICE, gi.soundindex("player/burn1.wav"), 1, ATTN_NORM, 0);
-//				else
-//					gi.sound (current_player, CHAN_VOICE, gi.soundindex("player/burn2.wav"), 1, ATTN_NORM, 0);
+				if (rand()&1)
+					gi.sound (current_player, CHAN_VOICE, gi.soundindex("player/burn1.wav"), 1, ATTN_NORM, 0);
+				else
+					gi.sound (current_player, CHAN_VOICE, gi.soundindex("player/burn2.wav"), 1, ATTN_NORM, 0);
 				current_player->pain_debounce_time = level.time + 1;
 			}
 
@@ -808,12 +759,7 @@ void G_SetClientEffects (edict_t *ent)
 	ent->s.renderfx = 0;
 
 	if (ent->health <= 0 || level.intermissiontime)
-	{
-		//transparent hack for jumpers off
-		ent->s.renderfx |= RF_TRANSLUCENT;
-		ent->s.modelindex2 = 0;
 		return;
-	}
 
 	if (ent->powerarmor_time > level.time)
 	{
@@ -836,17 +782,17 @@ void G_SetClientEffects (edict_t *ent)
 	if (ent->client->quad_framenum > level.framenum)
 	{
 		remaining = ent->client->quad_framenum - level.framenum;
-		//if (remaining > 30 || (remaining & 4) )
+		if (remaining > 30 || (remaining & 4) )
 //			ent->s.effects |= EF_QUAD;
-//			CTFSetPowerUpEffect(ent, EF_QUAD);
+			CTFSetPowerUpEffect(ent, EF_QUAD);
 	}
 
 	if (ent->client->invincible_framenum > level.framenum)
 	{
 		remaining = ent->client->invincible_framenum - level.framenum;
-		//if (remaining > 30 || (remaining & 4) )
+		if (remaining > 30 || (remaining & 4) )
 //			ent->s.effects |= EF_PENT;
-//			CTFSetPowerUpEffect(ent, EF_PENT);
+			CTFSetPowerUpEffect(ent, EF_PENT);
 	}
 
 	// show cheaters!!!
@@ -855,21 +801,6 @@ void G_SetClientEffects (edict_t *ent)
 		ent->s.effects |= EF_COLOR_SHELL;
 		ent->s.renderfx |= (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE);
 	}
-
-	if (!level.status)
-	{
-		if (ent->client->resp.frames_without_movement>60000)
-			ent->svflags = SVF_NOCLIENT;
-		else if (ent->client->resp.ctf_team!=CTF_NOTEAM)
-			ent->svflags &= ~SVF_NOCLIENT;
-	}
-	else
-	{
-		//dont make invis during overtime
-		//if (ent->client->resp.ctf_team!=CTF_NOTEAM)
-		//	ent->svflags &= ~SVF_NOCLIENT;
-	}
-
 }
 
 
@@ -918,9 +849,9 @@ void G_SetClientSound (edict_t *ent)
 	else
 		weap = "";
 
-//	if (ent->waterlevel && (ent->watertype&(CONTENTS_LAVA|CONTENTS_SLIME)) )
-//		ent->s.sound = snd_fry;
-	if (strcmp(weap, "weapon_railgun") == 0)
+	if (ent->waterlevel && (ent->watertype&(CONTENTS_LAVA|CONTENTS_SLIME)) )
+		ent->s.sound = snd_fry;
+	else if (strcmp(weap, "weapon_railgun") == 0)
 		ent->s.sound = gi.soundindex("weapons/rg_hum.wav");
 	else if (strcmp(weap, "weapon_bfg") == 0)
 		ent->s.sound = gi.soundindex("weapons/bfg_hum.wav");
@@ -1050,15 +981,9 @@ void ClientEndServerFrame (edict_t *ent)
 {
 	float	bobtime;
 	int		i;
-	int race_this;
-	qboolean updated_menu = false;
-	vec3_t temp_velocity;
-	int cur_speed;
-	
+
 	current_player = ent;
 	current_client = ent->client;
-//	if (1 == ESF_debug)
-//		debug_log ("CHECKPOINT: Function: ClientEndServerFrame Line: 1058 File: p_view.c");
 
 	//
 	// If the origin or velocity have changed since ClientThink(),
@@ -1074,22 +999,6 @@ void ClientEndServerFrame (edict_t *ent)
 		current_client->ps.pmove.velocity[i] = ent->velocity[i]*8.0;
 	}
 
-	temp_velocity[0] = ent->velocity[0];
-	temp_velocity[1] = ent->velocity[1];
-	cur_speed = (int)fabs(VectorLength(temp_velocity));
-		ent->client->resp.cur_speed  = cur_speed;
-		if (cur_speed>ent->client->resp.max_speed)
-		{
-			ent->client->resp.max_speed  = cur_speed;
-			ent->client->resp.max_speed_time = level.framenum;
-		}
-		if (ent->client->resp.max_speed_time+50<level.framenum)
-		{
-			ent->client->resp.max_speed  = cur_speed;
-			ent->client->resp.max_speed_time = 0;
-		}
-
-
 	//
 	// If the end of unit layout is displayed, don't give
 	// the player any normal movement attributes
@@ -1102,8 +1011,6 @@ void ClientEndServerFrame (edict_t *ent)
 		G_SetStats (ent);
 		return;
 	}
-//	if (1 == ESF_debug)
-//		debug_log ("CHECKPOINT: Function: ClientEndServerFrame Line: 1087 File: p_view.c");
 
 	AngleVectors (ent->client->v_angle, forward, right, up);
 
@@ -1142,9 +1049,7 @@ void ClientEndServerFrame (edict_t *ent)
 		else
 			bobmove = 0.0625;
 	}
-//	if (1 == ESF_debug)
-//		debug_log ("CHECKPOINT: Function: ClientEndServerFrame Line: 1127 File: p_view.c");
-
+	
 	bobtime = (current_client->bobtime += bobmove);
 
 	if (current_client->ps.pmove.pm_flags & PMF_DUCKED)
@@ -1154,7 +1059,6 @@ void ClientEndServerFrame (edict_t *ent)
 	bobfracsin = fabs(sin(bobtime*M_PI));
 
 	// detect hitting the floor
-	if (mset_vars->falldamage)
 	P_FallingDamage (ent);
 
 	// apply all the damage taken this frame
@@ -1173,9 +1077,6 @@ void ClientEndServerFrame (edict_t *ent)
 	// should be determined by the client
 	SV_CalcBlend (ent);
 
-//	if (1 == ESF_debug)
-//		debug_log ("CHECKPOINT: Function: ClientEndServerFrame Line: 1158 File: p_view.c");
-
 //ZOID
 	if (!ent->client->chase_target)
 //ZOID
@@ -1183,18 +1084,15 @@ void ClientEndServerFrame (edict_t *ent)
 
 //ZOID
 //update chasecam follower stats
-	for (i = 1; i <= maxclients->value; i++) 
-	{
+	for (i = 1; i <= maxclients->value; i++) {
 		edict_t *e = g_edicts + i;
 		if (!e->inuse || e->client->chase_target != ent)
 			continue;
 		memcpy(e->client->ps.stats, 
 			ent->client->ps.stats, 
-			sizeof(ent->client->ps.stats));		
+			sizeof(ent->client->ps.stats));
 		e->client->ps.stats[STAT_LAYOUTS] = 1;
-		//allow spectator to see a players speed regardless of their team
-		e->client->ps.stats[STAT_JUMP_SPEED_MAX] = ent->client->resp.max_speed;
-//		break; // LilRed: This is the fix to the chasecam bug... commenting out break; =)
+		break;
 	}
 //ZOID
 
@@ -1214,88 +1112,18 @@ void ClientEndServerFrame (edict_t *ent)
 	VectorClear (ent->client->kick_origin);
 	VectorClear (ent->client->kick_angles);
 
-//	if (1 == ESF_debug)
-//		debug_log ("CHECKPOINT: Function: ClientEndServerFrame Line: 1196 File: p_view.c");
-
-	if (!level.status)
-	{
-		if (!ent->client->resp.paused)
-		{
-	//		if (ent->client->resp.ctf_team==CTF_TEAM2)
-			ent->client->resp.item_timer+= 0.1;
-			//gi.bprintf(PRINT_HIGH,"%f %f %f origin\n",ent->s.origin[0]*8,ent->s.origin[1]*8,ent->s.origin[2]*8);
-			Record_Frame(ent);
-			Replay_Recording(ent);
-		}				
-	}
 	// if the scoreboard is up, update it
-	
-	if (level.votingtime)
-		if ((level.framenum % 10)==0)
-		{
-			if (ent->client->menu) {
-				CTFUpdateVoteMenu(ent,ent->client->menu);
-				PMenu_Update(ent);
-				updated_menu = true;
-			}
-		}
-
 	if (ent->client->showscores && !(level.framenum & 31) )
-		
 	{
 //ZOID
 		if (ent->client->menu) {
-			if (!updated_menu)
-			{
-				PMenu_Do_Update(ent);
-				ent->client->menudirty = false;
-				ent->client->menutime = level.time;
-			}
-		} else {
-//ZOID		
-			//pooy
-			if (ent->client->showscores==1)
-			{
-				DeathmatchScoreboardMessage (ent, ent->enemy);
-			}
-			else
-			{
-				BestTimesScoreboardMessage (ent, ent->enemy);
-			}
-		}
+			PMenu_Do_Update(ent);
+			ent->client->menudirty = false;
+			ent->client->menutime = level.time;
+		} else
+//ZOID
+			DeathmatchScoreboardMessage (ent, ent->enemy);
 		gi.unicast (ent, false);
 	}
-	//if (1 == ESF_debug)
-//		debug_log ("CHECKPOINT: Function: ClientEndServerFrame Line: 1246 File: p_view.c");
-
-/*	if (ent->client->resp.silence && ent->client->resp.silence_until)
-	{
-		if (ent->client->resp.silence_until<level.framenum)
-		{
-			ent->client->resp.silence = false;
-			ent->client->resp.silence_until = 0;
-		}
-	}*/
-
-	if (!ent->client->resp.paused)
-	ent->client->resp.race_frame++;
-
-	race_this = ent->client->resp.rep_race_number;
-	if (race_this<0 || race_this>MAX_HIGHSCORES)
-	{
-		race_this = ent->client->resp.rep_race_number = 0;
-	}
-	if (ent->client->resp.race_frame>=level_items.recorded_time_frames[race_this])
-	{
-		if (ent->client->resp.rep_racing_delay)
-		{
-			ent->client->resp.race_frame = (int)(ent->client->resp.rep_racing_delay*10);
-			if (ent->client->resp.race_frame>=level_items.recorded_time_frames[race_this])
-				ent->client->resp.race_frame = 2;
-		}
-		else
-			ent->client->resp.race_frame = 2;
-	}
-
 }
 

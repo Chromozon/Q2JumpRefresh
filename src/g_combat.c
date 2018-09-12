@@ -371,7 +371,7 @@ qboolean CheckTeamDamage (edict_t *targ, edict_t *attacker)
 	return false;
 }
 
-/*void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, int mod)
+void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, int mod)
 {
 	gclient_t	*client;
 	int			take;
@@ -557,14 +557,14 @@ qboolean CheckTeamDamage (edict_t *targ, edict_t *attacker)
 		VectorCopy (point, client->damage_from);
 	}
 }
-*/
+
 
 /*
 ============
 T_RadiusDamage
 ============
 */
-/*void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, int mod)
+void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, int mod)
 {
 	float	points;
 	edict_t	*ent = NULL;
@@ -589,238 +589,6 @@ T_RadiusDamage
 			if (CanDamage (ent, inflictor))
 			{
 				VectorSubtract (ent->s.origin, inflictor->s.origin, dir);
-				T_Damage (ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, DAMAGE_RADIUS, mod);
-			}
-		}
-	}
-}*/
-
-void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, int mod)
-{
-	gclient_t	*client;
-	int			take;
-	int			save;
-	int			asave;
-	int			psave;
-	int			te_sparks;
-
-	if (!targ->takedamage)
-		return;
-
-	if ((!mset_vars->damage))
-		damage = 0;
-
-	//dont allow damage when in countdown
-	if (level.status==LEVEL_STATUS_OVERTIME)
-		if (level.overtime<=gset_vars->overtimewait)
-			damage = 0;
-
-	meansOfDeath = mod;
-
-	// friendly fire avoidance
-	// if enabled you can't hurt teammates (but you can hurt yourself)
-	// knockback still occurs
-	if (level.status==LEVEL_STATUS_OVERTIME)
-		if (gset_vars->overtimetype!=OVERTIME_LASTMAN)
-		{
-
-	if ((targ != attacker) && ((deathmatch->value && ((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS))) || coop->value))
-	{
-		if (OnSameTeam (targ, attacker))
-		{
-			if ((int)(dmflags->value) & DF_NO_FRIENDLY_FIRE)
-				damage = 0;
-			else
-				mod |= MOD_FRIENDLY_FIRE;
-		}
-	}
-		}
-
-	client = targ->client;
-
-	if (dflags & DAMAGE_BULLET)
-		te_sparks = TE_BULLET_SPARKS;
-	else
-		te_sparks = TE_SPARKS;
-
-	VectorNormalize(dir);
-
-	if (targ->flags & FL_NO_KNOCKBACK)
-		knockback = 0;
-
-// figure momentum add
-	if (!(dflags & DAMAGE_NO_KNOCKBACK))
-	{
-		if ((knockback) && (targ->movetype != MOVETYPE_NONE) /*&& (targ->movetype != MOVETYPE_BOUNCE)*/ && (targ->movetype != MOVETYPE_PUSH) && (targ->movetype != MOVETYPE_STOP))
-		{
-			vec3_t	kvel;
-			float	mass;
-
-			if (targ->mass < 50)
-				mass = 50;
-			else
-				mass = targ->mass;
-
-			if (targ->client  && attacker == targ)
-			{
-				VectorScale (dir, 1600.0 * (float)knockback / mass, kvel);	// the rocket jump hack...
-			}
-			else
-			{
-				VectorScale (dir, 500.0 * (float)knockback / mass, kvel);
-			}
-				VectorAdd (targ->velocity, kvel, targ->velocity);
-
-		}
-	}
-
-	take = damage;
-	save = 0;
-
-	// check for godmode
-	if ( (targ->flags & FL_GODMODE) && !(dflags & DAMAGE_NO_PROTECTION) )
-	{
-		take = 0;
-		save = damage;
-		SpawnDamage (te_sparks, point, normal, save);
-	}
-
-	// check for invincibility
-	if ((client && client->invincible_framenum > level.framenum ) && !(dflags & DAMAGE_NO_PROTECTION))
-	{
-		if (targ->pain_debounce_time < level.time)
-		{
-			gi.sound(targ, CHAN_ITEM, gi.soundindex("items/protect4.wav"), 1, ATTN_NORM, 0);
-			targ->pain_debounce_time = level.time + 2;
-		}
-		take = 0;
-		save = damage;
-	}
-
-//ZOID
-//team armor protect
-	if (ctf->value && targ->client && attacker->client &&
-		targ->client->resp.ctf_team == attacker->client->resp.ctf_team &&
-		targ != attacker && ((int)dmflags->value & DF_ARMOR_PROTECT)) {
-		psave = asave = 0;
-	} else {
-//ZOID
-		psave = CheckPowerArmor (targ, point, normal, take, dflags);
-		take -= psave;
-	
-		asave = CheckArmor (targ, point, normal, take, te_sparks, dflags);
-		take -= asave;
-	}
-
-	//treat cheat/powerup savings the same as armor
-	asave += save;
-
-// do the damage
-	if (take)
-	{
-		if ((targ->svflags & SVF_MONSTER) || (client))
-			SpawnDamage (TE_BLOOD, point, normal, take);
-		else
-			SpawnDamage (te_sparks, point, normal, take);
-
-		if (!CTFMatchSetup())
-			targ->health = targ->health - take;
-			
-		if (targ->health <= 0)
-		{
-			if ((targ->svflags & SVF_MONSTER) || (client))
-				targ->flags |= FL_NO_KNOCKBACK;
-
-			Killed (targ, inflictor, attacker, take, point);
-			if (attacker->client)
-			{
-				if (level.status==LEVEL_STATUS_OVERTIME)
-				{
-					attacker->health += gset_vars->overtimegainedhealth;
-					if (attacker->health>gset_vars->overtimehealth)
-						attacker->health=gset_vars->overtimehealth;
-				}
-			}
-			return;
-		}
-	}
-
-	if (client)
-	{
-		if (!(targ->flags & FL_GODMODE) && (take) && !CTFMatchSetup())
-			targ->pain (targ, attacker, knockback, take);
-	}
-	else if (take)
-	{
-		if (targ->pain)
-			targ->pain (targ, attacker, knockback, take);
-	}
-
-	// add to the damage inflicted on a player this frame
-	// the total will be turned into screen blends and view angle kicks
-	// at the end of the frame
-	if (client)
-	{
-
-		if (level.status==LEVEL_STATUS_OVERTIME)
-		{
-			if (level.overtime>gset_vars->overtimewait)
-			{
-				if (gset_vars->overtimetype!=OVERTIME_FAST)
-				{
-					client->damage_parmor += psave;
-					client->damage_armor += asave;
-					client->damage_blood += take;
-					client->damage_knockback += knockback;
-					VectorCopy (point, client->damage_from);
-				}
-			}
-		}
-	}
-}
-
-
-/*
-============
-T_RadiusDamage
-============
-*/
-
-void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, int mod)
-{
-	float	points;
-	edict_t	*ent = NULL;
-	vec3_t	v;
-	vec3_t	dir;
-
-	while ((ent = findradius(ent, inflictor->s.origin, radius)) != NULL)
-	{
-		if (ent == ignore)
-			continue;
-		if (!ent->takedamage)
-			continue;
-
-		if (!level.status)
-		if (ent->client)
-		{
-			if (ent->client!=attacker->client)
-			{
-				continue;
-			}
-		}
-
-
-		VectorAdd (ent->mins, ent->maxs, v);
-		VectorMA (ent->s.origin, 0.5, v, v);
-		VectorSubtract (inflictor->s.origin, v, v);
-		points = damage - 0.5 * VectorLength (v);
-		if (ent == attacker)
-			points = points * 0.5;
-		if (points > 0)
-		{
-			if (CanDamage (ent, inflictor))
-			{
-				VectorSubtract (ent->s.origin, inflictor->s.origin, dir);				
 				T_Damage (ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, DAMAGE_RADIUS, mod);
 			}
 		}

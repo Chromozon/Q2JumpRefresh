@@ -35,7 +35,6 @@ void Weapon_Grenade (edict_t *ent);
 void Weapon_GrenadeLauncher (edict_t *ent);
 void Weapon_Railgun (edict_t *ent);
 void Weapon_BFG (edict_t *ent);
-void Weapon_Finish (edict_t *ent);
 
 gitem_armor_t jacketarmor_info	= { 25,  50, .30, .00, ARMOR_JACKET};
 gitem_armor_t combatarmor_info	= { 50, 100, .60, .30, ARMOR_COMBAT};
@@ -55,31 +54,7 @@ static int	quad_drop_timeout_hack;
 
 //======================================================================
 
-/*ATTILA begin*/
-  void Use_Jet ( edict_t *ent, gitem_t *item )
-  {
-    ValidateSelectedItem ( ent );
-
-    /*jetpack in inventory but no fuel time? must be one of the
-      give all/give jetpack cheats, so put fuel in*/
-    if ( ent->client->Jet_remaining == 0 )
-      ent->client->Jet_remaining = 600;
-
-    if ( Jet_Active(ent) ) 
-      ent->client->Jet_framenum = 0; 
-    else
-      ent->client->Jet_framenum = level.framenum + ent->client->Jet_remaining;
-
-    /*The On/Off Sound taken from the invulnerability*/
-    gi.sound( ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 0.3, ATTN_NORM, 0 );
-
-    /*this is the sound played when flying. To here this sound 
-      immediately we play it here the first time*/
-    gi.sound ( ent, CHAN_AUTO, gi.soundindex("hover/hovidle1.wav"), 0.1, ATTN_NORM, 0 );
-  }
-  /*ATTILA end*/
-
-  /*
+/*
 ===============
 GetItemByIndex
 ===============
@@ -195,29 +170,6 @@ void SetRespawn (edict_t *ent, float delay)
 qboolean Pickup_Powerup (edict_t *ent, edict_t *other)
 {
 	int		quantity;
-	gitem_t		*item;
-
-	if (gametype->value==GAME_CTF)
-		return false;
-	if (level.status==LEVEL_STATUS_OVERTIME)
-	{
-		if (gset_vars->overtimetype==OVERTIME_FAST)
-		{
-			//this player wins, end overtime
-			gi.bprintf(PRINT_CHAT,"%s wins!\n",other->client->pers.netname);
-//			level.overtime = 0;
-			End_Overtime();
-			return false;
-		}
-	}
-
-	
-	if  (( Q_stricmp(ent->item->pickup_name, "Jetpack") == 0 ) && (other->client->resp.admin>=aset_vars->ADMIN_GIVE_LEVEL)&& (other->client->resp.ctf_team==CTF_TEAM1))
-	{
-		
-	}  else
-	if ((other->client->resp.ctf_team==CTF_TEAM1))
-		return false;
 
 	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
 	if ((skill->value == 1 && quantity >= 2) || (skill->value >= 2 && quantity >= 1))
@@ -228,23 +180,6 @@ qboolean Pickup_Powerup (edict_t *ent, edict_t *other)
 
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 
-
-	if  ( Q_stricmp(ent->item->pickup_name, "Jetpack") == 0 )
-	{
-		other->client->pers.inventory[ITEM_INDEX(ent->item)] = 1;
-		other->client->Jet_remaining += 600;
-
-		/*if deathmatch-flag instant use is set, switch off the jetpack, 
-		the item->use function will turn it on again immediately*/
-		if ( (int)dmflags->value & DF_INSTANT_ITEMS )
-			other->client->Jet_framenum = 0;
-
-	    /*otherwise update the burn out time if jetpack is activated*/
-		else 
-			if ( Jet_Active(other) )
-				other->client->Jet_framenum = level.framenum + other->client->Jet_remaining;
-
-	  }
 	if (deathmatch->value)
 	{
 		if (!(ent->spawnflags & DROPPED_ITEM) )
@@ -256,12 +191,6 @@ qboolean Pickup_Powerup (edict_t *ent, edict_t *other)
 			ent->item->use (other, ent->item);
 		}
 	}
-
-	//pooy
-
-	
-	if (Q_stricmp(ent->item->pickup_name, "Jetpack") != 0)
-		apply_time(other,ent);
 
 	return true;
 }
@@ -278,10 +207,6 @@ void Drop_General (edict_t *ent, gitem_t *item)
 
 qboolean Pickup_Adrenaline (edict_t *ent, edict_t *other)
 {
-	if (gametype->value==GAME_CTF)
-		return false;
-	if ((other->client->resp.ctf_team==CTF_TEAM1))
-		return false;
 	if (!deathmatch->value)
 		other->max_health += 1;
 
@@ -296,8 +221,6 @@ qboolean Pickup_Adrenaline (edict_t *ent, edict_t *other)
 
 qboolean Pickup_AncientHead (edict_t *ent, edict_t *other)
 {
-	if (gametype->value==GAME_CTF)
-		return false;
 	other->max_health += 2;
 
 	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
@@ -349,10 +272,6 @@ qboolean Pickup_Pack (edict_t *ent, edict_t *other)
 	gitem_t	*item;
 	int		index;
 
-	if (gametype->value==GAME_CTF)
-		return false;
-	if ((other->client->resp.ctf_team==CTF_TEAM1))
-		return false;
 	if (other->client->pers.max_bullets < 300)
 		other->client->pers.max_bullets = 300;
 	if (other->client->pers.max_shells < 200)
@@ -513,30 +432,6 @@ void	Use_Silencer (edict_t *ent, gitem_t *item)
 
 qboolean Pickup_Key (edict_t *ent, edict_t *other)
 {
-	char		item_name[128];
-	gitem_t		*item;
-	int			my_time;
-	float		my_time_decimal;
-
-	if (gametype->value==GAME_CTF)
-		return false;
-
-	// let people pick up checkpoints on easy?
-	//if ((other->client->resp.ctf_team==CTF_TEAM1))
-		//return false;
-
-	if (level.status==LEVEL_STATUS_OVERTIME)
-	{
-		if (gset_vars->overtimetype==OVERTIME_FAST)
-		{
-			//this player wins, end overtime
-			gi.bprintf(PRINT_CHAT,"%s wins!\n",other->client->pers.netname);
-//			level.overtime = 0;
-			End_Overtime();
-			return false;
-		}
-	}
-
 	if (coop->value)
 	{
 		if (strcmp(ent->classname, "key_power_cube") == 0)
@@ -554,329 +449,8 @@ qboolean Pickup_Key (edict_t *ent, edict_t *other)
 		}
 		return true;
 	}
-
-	// resizable ent that removes all weapons on touch
-	if (Q_stricmp(ent->item->pickup_name,"weapon clear")==0) {
-
-		memset(other->client->pers.inventory, 0, sizeof(other->client->pers.inventory)); // reset their inventory
-
-		item = FindItem("Blaster"); // set their equiped item to a blaster
-		other->client->newweapon = item;
-		ChangeWeapon (other);
-	}
-	
-	// resizable starting line, timer is reset when you pass over it, cp's also removed
-	if (Q_stricmp(ent->item->pickup_name,"start line")==0) {
-
-		memset(other->client->pers.inventory, 0, sizeof(other->client->pers.inventory)); // reset their inventory
-
-		item = FindItem("Blaster"); // set their equiped item to a blaster
-		other->client->newweapon = item;
-		ChangeWeapon (other);
-
-		Stop_Recording(other); // stop the recording for race line alignment
-		Start_Recording(other); // start another recording for this rep
-		other->client->resp.item_timer = 0; // internal timer reset 1
-		other->client->resp.client_think_begin = Sys_Milliseconds(); // ui timer reset and internal timer reset 2
-		other->client->resp.race_frame = 0; //reset race frame if racing
-		ClearCheckpoints(&other->client->pers);
-	}
-
-	// resizable ent that can clear checkpoints, print msg if they had some
-	if (Q_stricmp(ent->item->pickup_name,"cp clear")==0) {
-		if (other->client->pers.checkpoints > 0)
-			gi.cprintf(other,PRINT_HIGH,"%d checkpoint(s) removed from your inventory.\n", other->client->pers.checkpoints);
-		ClearCheckpoints(&other->client->pers);
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-	}
-
-	// get the clients time in .xxx format
-	my_time = Sys_Milliseconds() - other->client->resp.client_think_begin;
-	my_time_decimal = (float)my_time / 1000.0f;
-
-	// check if checkpoints have been picked up
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 1")==0 && other->client->pers.rs1_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs1_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 2")==0 && other->client->pers.rs2_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs2_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 3")==0 && other->client->pers.rs3_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs3_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 4")==0 && other->client->pers.rs4_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs4_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 5")==0 && other->client->pers.rs5_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs5_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 6")==0 && other->client->pers.rs6_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs6_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 7")==0 && other->client->pers.rs7_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs7_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 8")==0 && other->client->pers.rs8_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs8_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 9")==0 && other->client->pers.rs9_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs9_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 10")==0 && other->client->pers.rs10_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs10_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 11")==0 && other->client->pers.rs11_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs11_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 12")==0 && other->client->pers.rs12_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs12_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 13")==0 && other->client->pers.rs13_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs13_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 14")==0 && other->client->pers.rs14_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs14_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 15")==0 && other->client->pers.rs15_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs15_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 16")==0 && other->client->pers.rs16_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs16_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 17")==0 && other->client->pers.rs17_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs17_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 18")==0 && other->client->pers.rs18_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs18_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 19")==0 && other->client->pers.rs19_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs19_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"cp resize 20")==0 && other->client->pers.rs20_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.rs20_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"Airstrike Marker")==0 && other->client->pers.target_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.target_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"Blue Key")==0 && other->client->pers.blue_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.blue_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"Data CD")==0 && other->client->pers.cd_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.cd_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"Data Spinner")==0 && other->client->pers.spinner_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.spinner_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"Security Pass")==0 && other->client->pers.pass_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.pass_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"Power Cube")==0 && other->client->pers.cube_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.cube_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"Pyramid Key")==0 && other->client->pers.pyramid_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.pyramid_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	if (Q_stricmp(ent->item->pickup_name,"Red Key")==0 && other->client->pers.red_checkpoint != 1) {
-		other->client->pers.checkpoints = other->client->pers.checkpoints + 1;
-		other->client->pers.red_checkpoint = 1;
-		if (!other->client->resp.mute_cps)
-			gi.sound(ent, CHAN_AUTO, gi.soundindex("items/pkup.wav"), 1, ATTN_NORM, 0);
-		if (other->client->resp.ctf_team==CTF_TEAM1)
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-		else
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-	}
-	return false; // leave item on the ground
+	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
+	return true;
 }
 
 //======================================================================
@@ -923,10 +497,6 @@ qboolean Pickup_Ammo (edict_t *ent, edict_t *other)
 	int			count;
 	qboolean	weapon;
 
-	if (gametype->value==GAME_CTF)
-		return false;
-	if ((other->client->resp.ctf_team==CTF_TEAM1))
-		return false;
 	weapon = (ent->item->flags & IT_WEAPON);
 	if ( (weapon) && ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		count = 1000;
@@ -990,8 +560,6 @@ void MegaHealth_think (edict_t *self)
 
 qboolean Pickup_Health (edict_t *ent, edict_t *other)
 {
-	if (gametype->value==GAME_CTF)
-		return false;
 	if (!(ent->style & HEALTH_IGNORE_MAX))
 		if (other->health >= other->max_health)
 			return false;
@@ -1064,10 +632,6 @@ qboolean Pickup_Armor (edict_t *ent, edict_t *other)
 	float			salvage;
 	int				salvagecount;
 
-	if (gametype->value==GAME_CTF)
-		return false;
-	if ((other->client->resp.ctf_team==CTF_TEAM1))
-		return false;
 	// get info on new armor
 	newinfo = (gitem_armor_t *)ent->item->info;
 
@@ -1182,24 +746,7 @@ void Use_PowerArmor (edict_t *ent, gitem_t *item)
 qboolean Pickup_PowerArmor (edict_t *ent, edict_t *other)
 {
 	int		quantity;
-	char		item_name[128];
-	gitem_t		*item;
 
-	if (gametype->value==GAME_CTF)
-		return false;
-	if (level.status==LEVEL_STATUS_OVERTIME)
-	{
-		if (gset_vars->overtimetype==OVERTIME_FAST)
-		{
-			//this player wins, end overtime
-			gi.bprintf(PRINT_CHAT,"%s wins!\n",other->client->pers.netname);
-//			level.overtime = 0;
-			End_Overtime();
-			return false;
-		}
-	}
-	if ((other->client->resp.ctf_team==CTF_TEAM1))
-		return false;
 	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
 
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
@@ -1212,9 +759,6 @@ qboolean Pickup_PowerArmor (edict_t *ent, edict_t *other)
 		if (!quantity)
 			ent->item->use (other, ent->item);
 	}
-
-	//pooy
-	apply_time(other,ent);
 
 	return true;
 }
@@ -1255,11 +799,13 @@ void Touch_Item (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf
 		other->client->bonus_alpha = 0.25;	
 
 		// show icon and name on status bar
+		other->client->ps.stats[STAT_PICKUP_ICON] = gi.imageindex(ent->item->icon);
+		other->client->ps.stats[STAT_PICKUP_STRING] = CS_ITEMS+ITEM_INDEX(ent->item);
 		other->client->pickup_msg_time = level.time + 3.0;
 
 		// change selected item
 		if (ent->item->use)
-			other->client->pers.selected_item = ITEM_INDEX(ent->item);
+			other->client->pers.selected_item = other->client->ps.stats[STAT_SELECTED_ITEM] = ITEM_INDEX(ent->item);
 
 		if (ent->item->pickup == Pickup_Health)
 		{
@@ -1407,16 +953,11 @@ void droptofloor (edict_t *ent)
 	else
 		gi.setmodel (ent, ent->item->world_model);
 	ent->solid = SOLID_TRIGGER;
-	if (mset_vars->droptofloor)
-	{
-		ent->movetype = MOVETYPE_TOSS;  
-	}
+	ent->movetype = MOVETYPE_TOSS;  
 	ent->touch = Touch_Item;
-	if (mset_vars->droptofloor)
-	{
-		v = tv(0,0,-128);
-		VectorAdd (ent->s.origin, v, dest);
-	}
+
+	v = tv(0,0,-128);
+	VectorAdd (ent->s.origin, v, dest);
 
 	tr = gi.trace (ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
 	if (tr.startsolid)
@@ -1425,10 +966,8 @@ void droptofloor (edict_t *ent)
 		G_FreeEdict (ent);
 		return;
 	}
-	if (mset_vars->droptofloor)
-	{
-		VectorCopy (tr.endpos, ent->s.origin);
-	}
+
+	VectorCopy (tr.endpos, ent->s.origin);
 
 	if (ent->team)
 	{
@@ -1513,7 +1052,7 @@ void PrecacheItem (gitem_t *it)
 
 		len = s-start;
 		if (len >= MAX_QPATH || len < 5)
-			ServerError("PrecacheItem: bad precache string");
+			gi.error ("PrecacheItem: %s has bad precache string", it->classname);
 		memcpy (data, start, len);
 		data[len] = 0;
 		if (*s)
@@ -1628,7 +1167,6 @@ void SpawnItem (edict_t *ent, gitem_t *item)
 		ent->think = CTFFlagSetup;
 	}
 //ZOID
-
 
 }
 
@@ -1800,7 +1338,7 @@ always owned, never in the world
 		"misc/w_pkup.wav",
 		NULL, 0,
 		"models/weapons/grapple/tris.md2",
-/* icon */		"net",
+/* icon */		"w_grapple",
 /* pickup */	"Grapple",
 		0,
 		0,
@@ -2065,31 +1603,6 @@ always owned, never in the world
 		NULL,
 		0,
 /* precache */ "sprites/s_bfg1.sp2 sprites/s_bfg2.sp2 sprites/s_bfg3.sp2 weapons/bfg__f1y.wav weapons/bfg__l1a.wav weapons/bfg__x1b.wav weapons/bfg_hum.wav"
-	},
-	
-	
-/*QUAKED weapon_finish (.5 .5 .5) ?
-*/
-	{
-		// this ent allows a plane or box to serve as the finish line, instead of a weapon -Ace
-		"weapon_finish",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_Finish,
-		"misc/w_pkup.wav",
-		"models/weapons/g_rail/tris.md2", 0,
-		"models/weapons/v_rail/tris.md2",
-/* icon */		"w_railgun",
-/* pickup */	"Railgun",
-		0,
-		1,
-		"Slugs",
-		IT_WEAPON|IT_STAY_COOP,
-		WEAP_RAILGUN,
-		NULL,
-		0,
-/* precache */ "weapons/rg_hum.wav"
 	},
 
 #if 0
@@ -2361,7 +1874,7 @@ Special item that gives +2 to maximum health
 */
 	{
 		"item_ancient_head",
-		NULL,
+		Pickup_AncientHead,
 		NULL,
 		NULL,
 		NULL,
@@ -2669,520 +2182,6 @@ tank commander's head
 /* precache */ ""
 	},
 
-/*QUAKED weapon_clear (.5 .5 .5) ?
-removes all weapons from a player's inventory
-*/
-	{
-		"weapon_clear",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"weapon clear",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-
-/*QUAKED start_line (.5 .5 .5) ?
-resets timer and removes cps
-*/
-	{
-		"start_line",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"start line",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-
-/*QUAKED cp_clear (.5 .5 .5) ?
-can clear checkpoints in a player's inventory
-*/
-	{
-		"cp_clear",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp clear",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-
-/*QUAKED cp_resize_1 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_1",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 1",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-
-/*QUAKED cp_resize_2 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_2",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 2",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_3 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_3",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 3",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_4 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_4",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 4",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_5 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_5",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 5",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_6 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_6",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 6",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_7 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_7",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 7",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_8 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_8",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 8",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_9 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_9",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 9",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_10 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_10",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 10",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_11 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_11",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 11",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_12 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_12",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 12",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_13 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_13",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 13",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_14 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_14",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 14",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_15 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_15",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 15",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_16 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_16",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 16",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_17 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_17",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 17",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_18 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_18",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 18",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_19 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_19",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 19",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-/*QUAKED cp_resize_20 (.5 .5 .5) ?
-*/
-	{
-		"cp_resize_20",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_GIB,
-		NULL,
-		"k_redkey",
-		"cp resize 20",
-		2,
-		0,
-		NULL,
-		IT_STAY_COOP|IT_KEY,
-		0,
-		NULL,
-		0,
-/* precache */ ""
-	},
-
 	{
 		NULL,
 		Pickup_Health,
@@ -3212,7 +2211,7 @@ can clear checkpoints in a player's inventory
 		"item_flag_team1",
 		CTFPickup_Flag,
 		NULL,
-		NULL, //Should this be null if we don't want players to drop it manually?
+		CTFDrop_Flag, //Should this be null if we don't want players to drop it manually?
 		NULL,
 		"ctf/flagtk.wav",
 		"players/male/flag1.md2", EF_FLAG1,
@@ -3235,7 +2234,7 @@ can clear checkpoints in a player's inventory
 		"item_flag_team2",
 		CTFPickup_Flag,
 		NULL,
-		NULL, //Should this be null if we don't want players to drop it manually?
+		CTFDrop_Flag, //Should this be null if we don't want players to drop it manually?
 		NULL,
 		"ctf/flagtk.wav",
 		"players/male/flag2.md2", EF_FLAG2,
@@ -3342,28 +2341,6 @@ can clear checkpoints in a player's inventory
 
 //ZOID
 
-/* JetPack */
-	{
-		"item_jet",
-		Pickup_Powerup,
-		Use_Jet,
-		NULL, 
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/data_cd/tris.md2", EF_ROTATE,
-		NULL,
-/* icon */		"p_quad",
-/* pickup */	"Jetpack",
-/* width */		2,
-		60,
-		NULL,
-		0,
-		0,
-		NULL,
-		0,
-/* precache */ "ctf/tech4.wav"
-	},
-
 	// end of list marker
 	{NULL}
 };
@@ -3466,493 +2443,4 @@ void SetItemNames (void)
 	body_armor_index   = ITEM_INDEX(FindItem("Body Armor"));
 	power_screen_index = ITEM_INDEX(FindItem("Power Screen"));
 	power_shield_index = ITEM_INDEX(FindItem("Power Shield"));
-}
-
-
-void SP_jumpbox_small (edict_t *ent)
-{
-	ent->classname = "jumpbox_small";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_BBOX;
-	ent->s.renderfx |= RF_TRANSLUCENT;
-		VectorSet (ent->mins, -16,-16,-16);
-		VectorSet (ent->maxs, 16, 16, 16);
-	ent->s.modelindex = gi.modelindex ("models/jump/smallbox3/tris.md2");
-	gi.linkentity (ent);
-	level.jumpboxes[0]++;
-}
-
-void SP_jumpbox_medium (edict_t *ent)
-{
-	ent->classname = "jumpbox_medium";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_BBOX;
-	ent->s.renderfx |= RF_TRANSLUCENT;
-		VectorSet (ent->mins, -32,-32,-16);
-		VectorSet (ent->maxs, 32, 32, 48);
-	ent->s.modelindex = gi.modelindex ("models/jump/mediumbox3/tris.md2");
-	gi.linkentity (ent);
-	level.jumpboxes[1]++;
-}
-
-void SP_jumpbox_large (edict_t *ent)
-{
-	ent->classname = "jumpbox_large";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_BBOX;
-	ent->s.renderfx |= RF_TRANSLUCENT;
-		VectorSet (ent->mins, -64,-64,-32);
-		VectorSet (ent->maxs, 64, 64, 96);
-	ent->s.modelindex = gi.modelindex ("models/jump/largebox3/tris.md2");
-	gi.linkentity (ent);
-	level.jumpboxes[2]++;
-}
-
-void cpbox_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf){
-    int my_time;
-    float my_time_decimal;
-    // get the clients time in .xxx format
-	my_time = Sys_Milliseconds() - other->client->resp.client_think_begin;
-	my_time_decimal = (float)my_time / 1000.0f;
-
-    if (other->client->pers.cpbox_checkpoint[self->count] == 0){
-        other->client->pers.cpbox_checkpoint[self->count] = 1;
-        other->client->pers.checkpoints += 1;
-        if (other->client->resp.ctf_team==CTF_TEAM1){
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.1f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, other->client->resp.item_timer);
-        } else {
-			gi.cprintf(other,PRINT_HIGH,"You reached checkpoint %d/%d in %1.3f seconds.\n", other->client->pers.checkpoints, mset_vars->checkpoint_total, my_time_decimal);
-        }
-    }
-}
-
-void SP_cpbox_small (edict_t *ent)
-{
-	ent->classname = "cpbox_small";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_TRIGGER;
-	ent->s.renderfx |= RF_TRANSLUCENT;
-		VectorSet (ent->mins, -16,-16,-16);
-		VectorSet (ent->maxs, 16, 16, 16);
-	ent->s.modelindex = gi.modelindex ("models/jump/smallbox3/tris.md2");
-    ent->touch = cpbox_touch;
-	gi.linkentity (ent);
-	level.jumpboxes[0]++;
-}
-
-void SP_cpbox_medium (edict_t *ent)
-{
-	ent->classname = "cpbox_medium";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_TRIGGER;
-	ent->s.renderfx |= RF_TRANSLUCENT;
-		VectorSet (ent->mins, -32,-32,-16);
-		VectorSet (ent->maxs, 32, 32, 48);
-	ent->s.modelindex = gi.modelindex ("models/jump/mediumbox3/tris.md2");
-    ent->touch = cpbox_touch;
-	gi.linkentity (ent);
-	level.jumpboxes[1]++;
-}
-
-void SP_cpbox_large (edict_t *ent)
-{
-	ent->classname = "cpbox_large";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_TRIGGER;
-	ent->s.renderfx |= RF_TRANSLUCENT;
-		VectorSet (ent->mins, -64,-64,-32);
-		VectorSet (ent->maxs, 64, 64, 96);
-	ent->s.modelindex = gi.modelindex ("models/jump/largebox3/tris.md2");
-    ent->touch = cpbox_touch;
-	gi.linkentity (ent);
-	level.jumpboxes[2]++;
-}
-
-
-void SP_effect(edict_t *ent)
-{
-			ent->movetype = MOVETYPE_NONE;
-			ent->clipmask = MASK_PLAYERSOLID;
-			ent->solid = SOLID_NOT;
-
-			ent->svflags = 0;
-			ent->s.renderfx |= RF_FULLBRIGHT;
-			VectorSet (ent->mins, 0, 0, 0);
-			VectorSet (ent->maxs, 0, 0, 0);
-			ent->s.modelindex = gi.modelindex ("models/jump/smallmodel/tris.md2");
-			ent->dmg = 0;
-			ent->classname = "jumpmod_effect";
-	gi.linkentity (ent);
-}
-
-
-void SP_jump_score_think(edict_t *ent)
-{
-	float cur_time;
-	char time_str[32];
-	int time_skin;
-	cur_time = level_items.stored_item_times[0].time;
-	ent->nextthink = level.time + 5;
-	if (!cur_time)
-	{
-		return;
-	}
-	Com_sprintf(time_str,sizeof(time_str),"%5.1f",cur_time);	
-	
-	if (strcmp(ent->classname,"jump_score")==0)
-	{
-		if (time_str[0]<'0')
-			time_skin = 0;
-		else if (time_str[0]>'9')
-			time_skin = 0;
-		else
-			time_skin = time_str[0] - '0';
-		ent->s.skinnum = time_skin;
-	}
-	else if (strcmp(ent->classname,"jump_score_digit2")==0)
-	{
-		if (time_str[1]<'0')
-			time_skin = 0;
-		else if (time_str[1]>'9')
-			time_skin = 0;
-		else
-			time_skin = time_str[1] - '0';
-		ent->s.skinnum = time_skin;
-	}
-	else if (strcmp(ent->classname,"jump_score_digit3")==0)
-	{
-		if (time_str[2]<'0')
-			time_skin = 0;
-		else if (time_str[2]>'9')
-			time_skin = 0;
-		else
-			time_skin = time_str[2] - '0';
-		ent->s.skinnum = time_skin;
-	}
-	else if (strcmp(ent->classname,"jump_score_digit5")==0)
-	{
-		if (time_str[4]<'0')
-			time_skin = 0;
-		else if (time_str[4]>'9')
-			time_skin = 0;
-		else
-			time_skin = time_str[4] - '0';
-		ent->s.skinnum = time_skin;
-	}
-}
-
-void SP_jump_score (edict_t *ent)
-{
-	edict_t *next_ent;
-	int add_x = 0;
-	int add_y = 0;
-	ent->classname = "jump_score";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_NOT;
-	VectorSet (ent->mins, 0, 0, 0);
-	VectorSet (ent->maxs, 0, 0, 0);
-	ent->s.modelindex = gi.modelindex ("models/digits/tris.md2");
-
-	ent->s.origin[2] += 16;
-	ent->s.angles[0] = 0;
-	ent->s.angles[1] = 180;
-	ent->s.angles[2] = 0;
-	add_x = 0;
-	add_y = -46;
-	ent->nextthink = level.time + 5;
-	ent->think = SP_jump_score_think;
-
-	
-	gi.linkentity (ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_score_digit2";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x;
-	next_ent->s.old_origin[0] += add_x;
-	next_ent->s.origin[1] += add_y;
-	next_ent->s.old_origin[1] += add_y;
-	next_ent->s.modelindex = gi.modelindex ("models/digits/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->nextthink = level.time + 5;
-	next_ent->think = SP_jump_score_think;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_score_digit3";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x*2;
-	next_ent->s.old_origin[0] += add_x*2;
-	next_ent->s.origin[1] += add_y*2;
-	next_ent->s.old_origin[1] += add_y*2;
-	next_ent->s.modelindex = gi.modelindex ("models/digits/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->nextthink = level.time + 5;
-	next_ent->think = SP_jump_score_think;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_score_digit4";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x*3;
-	next_ent->s.old_origin[0] += add_x*3;
-	next_ent->s.origin[1] += add_y*3;
-	next_ent->s.old_origin[1] += add_y*3;
-	next_ent->s.modelindex = gi.modelindex ("models/dot2/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_score_digit5";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x*4;
-	next_ent->s.old_origin[0] += add_x*4;
-	next_ent->s.origin[1] += add_y*4;
-	next_ent->s.old_origin[1] += add_y*4;
-	next_ent->s.modelindex = gi.modelindex ("models/digits/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->nextthink = level.time + 5;
-	next_ent->think = SP_jump_score_think;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_score_digit6";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x*2;
-	next_ent->s.old_origin[0] += add_x*2;
-	next_ent->s.origin[1] += add_y*2;
-	next_ent->s.old_origin[1] += add_y*2;
-	next_ent->s.origin[2] += 46;
-	next_ent->s.old_origin[2] += 46;
-	next_ent->s.modelindex = gi.modelindex ("models/billboard/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-}
-
-
-
-
-
-
-void SP_jump_time_think(edict_t *ent)
-{
-	int cur_time;
-	char time_str[32];
-	int time_skin;
-	int h1,h2,h3,h4;
-	cur_time = ((mset_vars->timelimit*60)+(map_added_time*60)-level.time);
-	ent->nextthink = level.time + 1;
-	if (level.status)
-	{
-		h1 = 0;
-		h2 = 0;
-		h3 = 0;
-		h4 = 0;
-	}
-	else
-	{
-		h1 = (int)(cur_time / 60) /10;
-		h2 = (int)(cur_time / 60) % 10;
-		h3 = (cur_time % 60) / 10;
-		h4 = (cur_time % 60) % 10;
-	}
-	//gi.dprintf("%i %i %i %i %i\n",cur_time,h1,h2,h3,h4);
-	
-	if (strcmp(ent->classname,"jump_time")==0)
-	{
-		ent->s.skinnum = h1;
-	}
-	else if (strcmp(ent->classname,"jump_time_digit2")==0)
-	{
-		ent->s.skinnum = h2;
-	}
-	else if (strcmp(ent->classname,"jump_time_digit4")==0)
-	{
-		ent->s.skinnum = h3;
-	}
-	else if (strcmp(ent->classname,"jump_time_digit5")==0)
-	{
-		ent->s.skinnum = h4;
-	}
-}
-
-void SP_jump_time (edict_t *ent)
-{
-	edict_t *next_ent;
-	int add_x = 0;
-	int add_y = 0;
-	ent->classname = "jump_time";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_NOT;
-	VectorSet (ent->mins, 0, 0, 0);
-	VectorSet (ent->maxs, 0, 0, 0);
-	ent->s.modelindex = gi.modelindex ("models/digits/tris.md2");
-
-	ent->s.origin[2] += 16;
-	ent->s.angles[0] = 0;
-	ent->s.angles[1] = 0;
-	add_x = 0;
-	add_y = 46;
-	ent->nextthink = level.time + 5;
-	ent->think = SP_jump_time_think;
-
-	
-	gi.linkentity (ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_time_digit2";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x;
-	next_ent->s.old_origin[0] += add_x;
-	next_ent->s.origin[1] += add_y;
-	next_ent->s.old_origin[1] += add_y;
-	next_ent->s.modelindex = gi.modelindex ("models/digits/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->nextthink = level.time + 5;
-	next_ent->think = SP_jump_time_think;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_time_digit3";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x*2;
-	next_ent->s.old_origin[0] += add_x*2;
-	next_ent->s.origin[1] += add_y*2;
-	next_ent->s.old_origin[1] += add_y*2;
-	next_ent->s.modelindex = gi.modelindex ("models/dot2/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->owner = ent;
-	next_ent->s.skinnum = 1;
-
-	gi.linkentity (next_ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_time_digit4";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x*3;
-	next_ent->s.old_origin[0] += add_x*3;
-	next_ent->s.origin[1] += add_y*3;
-	next_ent->s.old_origin[1] += add_y*3;
-	next_ent->s.modelindex = gi.modelindex ("models/digits/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->nextthink = level.time + 5;
-	next_ent->think = SP_jump_time_think;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-
-	
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_time_digit5";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x*4;
-	next_ent->s.old_origin[0] += add_x*4;
-	next_ent->s.origin[1] += add_y*4;
-	next_ent->s.old_origin[1] += add_y*4;
-	next_ent->s.modelindex = gi.modelindex ("models/digits/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->nextthink = level.time + 5;
-	next_ent->think = SP_jump_time_think;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-
-	next_ent = G_Spawn();
-
-	next_ent->classname = "jump_time_digit6";
-	VectorSet (next_ent->mins, 0, 0, 0);
-	VectorSet (next_ent->maxs, 0, 0, 0);
-	VectorCopy (ent->s.origin,next_ent->s.origin);
-	VectorCopy (ent->s.old_origin,next_ent->s.old_origin);
-	VectorCopy (ent->s.angles,next_ent->s.angles);
-	next_ent->s.origin[0] += add_x*2;
-	next_ent->s.old_origin[0] += add_x*2;
-	next_ent->s.origin[1] += add_y*2;
-	next_ent->s.old_origin[1] += add_y*2;
-	next_ent->s.origin[2] += 46;
-	next_ent->s.old_origin[2] += 46;
-	next_ent->s.modelindex = gi.modelindex ("models/billboard/tris.md2");
-	next_ent->movetype = MOVETYPE_NONE;
-	next_ent->solid = SOLID_NOT;
-	next_ent->owner = ent;
-
-	gi.linkentity (next_ent);
-}
-
-
-void SP_jump_clip (edict_t *ent)
-{
-	ent->classname = "jump_clip";
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_BBOX;
-	
-	ent->s.modelindex = gi.modelindex ("models/jump/smallmodel/tris.md2");
-	ent->dmg = 0;
-	gi.linkentity (ent);
 }

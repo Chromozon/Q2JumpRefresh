@@ -410,7 +410,6 @@ qboolean FindTarget (edict_t *self)
 	qboolean	heardit;
 	int			r;
 
-
 	if (self->monsterinfo.aiflags & AI_GOOD_GUY)
 	{
 		if (self->goalentity && self->goalentity->inuse && self->goalentity->classname)
@@ -917,7 +916,7 @@ void ai_run (edict_t *self, float dist)
 	vec3_t		v;
 	edict_t		*tempgoal;
 	edict_t		*save;
-	qboolean	newbool;
+	qboolean	new;
 	edict_t		*marker;
 	float		d1, d2;
 	trace_t		tr;
@@ -987,7 +986,7 @@ void ai_run (edict_t *self, float dist)
 	tempgoal = G_Spawn();
 	self->goalentity = tempgoal;
 
-    newbool = false;
+	new = false;
 
 	if (!(self->monsterinfo.aiflags & AI_LOST_SIGHT))
 	{
@@ -995,7 +994,7 @@ void ai_run (edict_t *self, float dist)
 //		dprint("lost sight of player, last seen at "); dprint(vtos(self.last_sighting)); dprint("\n");
 		self->monsterinfo.aiflags |= (AI_LOST_SIGHT | AI_PURSUIT_LAST_SEEN);
 		self->monsterinfo.aiflags &= ~(AI_PURSUE_NEXT | AI_PURSUE_TEMP);
-        newbool = true;
+		new = true;
 	}
 
 	if (self->monsterinfo.aiflags & AI_PURSUE_NEXT)
@@ -1012,7 +1011,7 @@ void ai_run (edict_t *self, float dist)
 			self->monsterinfo.aiflags &= ~AI_PURSUE_TEMP;
 			marker = NULL;
 			VectorCopy (self->monsterinfo.saved_goal, self->monsterinfo.last_sighting);
-            newbool = true;
+			new = true;
 		}
 		else if (self->monsterinfo.aiflags & AI_PURSUIT_LAST_SEEN)
 		{
@@ -1032,7 +1031,7 @@ void ai_run (edict_t *self, float dist)
 //			dprint("heading is "); dprint(ftos(self.ideal_yaw)); dprint("\n");
 
 //			debug_drawline(self.origin, self.last_sighting, 52);
-            newbool = true;
+			new = true;
 		}
 	}
 
@@ -1046,7 +1045,7 @@ void ai_run (edict_t *self, float dist)
 
 	VectorCopy (self->monsterinfo.last_sighting, self->goalentity->s.origin);
 
-	if (newbool)
+	if (new)
 	{
 //		gi.dprintf("checking for course correction\n");
 

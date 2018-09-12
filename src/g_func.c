@@ -1,4 +1,3 @@
-
 /*
 Copyright (C) 1997-2001 Id Software, Inc.
 
@@ -1132,12 +1131,8 @@ void door_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *sur
 		return;
 	self->touch_debounce_time = level.time + 5.0;
 
-	if (!mset_vars->cmsg)
-	if (!other->client->resp.cmsg)
-	{
-		gi.centerprintf (other, "%s", self->message);
-		gi.sound (other, CHAN_AUTO, gi.soundindex ("misc/talk1.wav"), 1, ATTN_NORM, 0);
-	}
+	gi.centerprintf (other, "%s", self->message);
+	gi.sound (other, CHAN_AUTO, gi.soundindex ("misc/talk1.wav"), 1, ATTN_NORM, 0);
 }
 
 void SP_func_door (edict_t *ent)
@@ -1146,38 +1141,29 @@ void SP_func_door (edict_t *ent)
 
 	if (ent->sounds != 1)
 	{
-		//ent->moveinfo.sound_start = gi.soundindex  ("doors/dr1_strt.wav");
-//		ent->moveinfo.sound_middle = gi.soundindex  ("doors/dr1_mid.wav");
-//		ent->moveinfo.sound_end = gi.soundindex  ("doors/dr1_end.wav");
+		ent->moveinfo.sound_start = gi.soundindex  ("doors/dr1_strt.wav");
+		ent->moveinfo.sound_middle = gi.soundindex  ("doors/dr1_mid.wav");
+		ent->moveinfo.sound_end = gi.soundindex  ("doors/dr1_end.wav");
 	}
 
 	G_SetMovedir (ent->s.angles, ent->movedir);
 	ent->movetype = MOVETYPE_PUSH;
-	//ent->movetype = MOVETYPE_NOCLIP;
-//	if (mset_vars->fastdoors)
-//		ent->solid = SOLID_TRIGGER;
-//	else
-		ent->solid = SOLID_BSP;
-	
+	ent->solid = SOLID_BSP;
 	gi.setmodel (ent, ent->model);
 
 	ent->blocked = door_blocked;
 	ent->use = door_use;
+	
 	if (!ent->speed)
 		ent->speed = 100;
-	if (mset_vars->fastdoors)
-		ent->speed = 1000;
 	if (deathmatch->value)
 		ent->speed *= 2;
 
-	if (mset_vars->slowdoors)
-		ent->wait = 1800;
 	if (!ent->accel)
 		ent->accel = ent->speed;
 	if (!ent->decel)
 		ent->decel = ent->speed;
 
-	
 	if (!ent->wait)
 		ent->wait = 3;
 	if (!st.lip)
@@ -1203,7 +1189,6 @@ void SP_func_door (edict_t *ent)
 
 	ent->moveinfo.state = STATE_BOTTOM;
 
-	//ent->health = 0;
 	if (ent->health)
 	{
 		ent->takedamage = DAMAGE_YES;
@@ -1335,7 +1320,6 @@ void SP_func_door_rotating (edict_t *ent)
 		VectorNegate (ent->movedir, ent->movedir);
 	}
 
-//	ent->health = 0;
 	if (ent->health)
 	{
 		ent->takedamage = DAMAGE_YES;
@@ -1547,7 +1531,6 @@ void train_next (edict_t *self)
 	edict_t		*ent;
 	vec3_t		dest;
 	qboolean	first;
-	vec3_t		angledest;
 
 	first = true;
 again:
@@ -1565,9 +1548,6 @@ again:
 	}
 
 	self->target = ent->target;
-	if (ent->speed)
-		self->moveinfo.speed = ent->speed;
-	self->moveinfo.accel = self->moveinfo.decel = self->moveinfo.speed;
 
 	// check for a teleport path_corner
 	if (ent->spawnflags & 1)
@@ -1580,7 +1560,6 @@ again:
 		first = false;
 		VectorSubtract (ent->s.origin, self->mins, self->s.origin);
 		VectorCopy (self->s.origin, self->s.old_origin);
-		self->s.event = EV_OTHER_TELEPORT;
 		gi.linkentity (self);
 		goto again;
 	}
@@ -1599,8 +1578,6 @@ again:
 	self->moveinfo.state = STATE_TOP;
 	VectorCopy (self->s.origin, self->moveinfo.start_origin);
 	VectorCopy (dest, self->moveinfo.end_origin);
-	VectorCopy (self->s.angles,angledest);
-	angledest[1] += 90;
 	Move_Calc (self, dest, train_wait);
 	self->spawnflags |= TRAIN_START_ON;
 }
@@ -2003,7 +1980,6 @@ void SP_func_door_secret (edict_t *ent)
 	ent->blocked = door_secret_blocked;
 	ent->use = door_secret_use;
 
-//	ent->health = 0;
 	if (!(ent->targetname) || (ent->spawnflags & SECRET_ALWAYS_SHOOT))
 	{
 		ent->health = 0;
@@ -2068,3 +2044,4 @@ void SP_func_killbox (edict_t *ent)
 	ent->use = use_killbox;
 	ent->svflags = SVF_NOCLIENT;
 }
+

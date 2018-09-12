@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-#include "g_local.h"  
+#include "g_local.h"
 #include "m_player.h"
 
 
@@ -75,7 +75,7 @@ void SelectNextItem (edict_t *ent, int itflags)
 	if (cl->menu) {
 		PMenu_Next(ent);
 		return;
-	}   if (cl->chase_target) {
+	} else if (cl->chase_target) {
 		ChaseNext(ent);
 		return;
 	}
@@ -112,7 +112,7 @@ void SelectPrevItem (edict_t *ent, int itflags)
 	if (cl->menu) {
 		PMenu_Prev(ent);
 		return;
-	}   if (cl->chase_target) {
+	} else if (cl->chase_target) {
 		ChasePrev(ent);
 		return;
 	}
@@ -167,36 +167,25 @@ void Cmd_Give_f (edict_t *ent)
 	int			i;
 	qboolean	give_all;
 	edict_t		*it_ent;
-	char		item_name[128];
+
+	if (deathmatch->value && !sv_cheats->value)
+	{
+		gi.cprintf (ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+		return;
+	}
 
 	name = gi.args();
 
-	if (gametype->value==GAME_CTF)
-		return;
-	if ((ent->client->resp.admin>=aset_vars->ADMIN_GIVE_LEVEL) && (ent->client->resp.ctf_team==CTF_TEAM1))
-	{
-		if (Q_stricmp(name, "jetpack") == 0)
-		{
-			strcpy(item_name,"jetpack");
-			give_item(ent,item_name);
-			return;
-		}
-	}
-
-//for jumpmod give all and give only need hand out weapons, ammo and health
-if ((ent->client->resp.admin>=aset_vars->ADMIN_GIVEALL_LEVEL) && (ent->client->resp.ctf_team==CTF_TEAM1))
-{
-
 	if (Q_stricmp(name, "all") == 0)
 		give_all = true;
-	 else
+	else
 		give_all = false;
 
 	if (give_all || Q_stricmp(gi.argv(1), "health") == 0)
 	{
 		if (gi.argc() == 3)
 			ent->health = atoi(gi.argv(2));
-		 
+		else
 			ent->health = ent->max_health;
 		if (!give_all)
 			return;
@@ -264,16 +253,14 @@ if ((ent->client->resp.admin>=aset_vars->ADMIN_GIVEALL_LEVEL) && (ent->client->r
 			return;
 	}
 
-	return;
-/*	if (give_all)
+	if (give_all)
 	{
-		return;
 		for (i=0 ; i<game.num_items ; i++)
 		{
 			it = itemlist + i;
 			if (!it->pickup)
 				continue;
-			if (!(it->flags & (IT_ARMOR|IT_WEAPON|IT_AMMO)))
+			if (it->flags & (IT_ARMOR|IT_WEAPON|IT_AMMO))
 				continue;
 			ent->client->pers.inventory[i] = 1;
 		}
@@ -304,12 +291,10 @@ if ((ent->client->resp.admin>=aset_vars->ADMIN_GIVEALL_LEVEL) && (ent->client->r
 	{
 		if (gi.argc() == 3)
 			ent->client->pers.inventory[index] = atoi(gi.argv(2));
-		 
+		else
 			ent->client->pers.inventory[index] += it->quantity;
 	}
-
-	//dont allow give single item
-	if (it->flags & (IT_ARMOR|IT_WEAPON|IT_AMMO))
+	else
 	{
 		it_ent = G_Spawn();
 		it_ent->classname = it->classname;
@@ -317,8 +302,7 @@ if ((ent->client->resp.admin>=aset_vars->ADMIN_GIVEALL_LEVEL) && (ent->client->r
 		Touch_Item (it_ent, ent, NULL, NULL);
 		if (it_ent->inuse)
 			G_FreeEdict(it_ent);
-	}*/
-}
+	}
 }
 
 
@@ -344,7 +328,7 @@ void Cmd_God_f (edict_t *ent)
 	ent->flags ^= FL_GODMODE;
 	if (!(ent->flags & FL_GODMODE) )
 		msg = "godmode OFF\n";
-	 
+	else
 		msg = "godmode ON\n";
 
 	gi.cprintf (ent, PRINT_HIGH, msg);
@@ -364,7 +348,6 @@ void Cmd_Notarget_f (edict_t *ent)
 {
 	char	*msg;
 
-
 	if (deathmatch->value && !sv_cheats->value)
 	{
 		gi.cprintf (ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
@@ -374,7 +357,7 @@ void Cmd_Notarget_f (edict_t *ent)
 	ent->flags ^= FL_NOTARGET;
 	if (!(ent->flags & FL_NOTARGET) )
 		msg = "notarget OFF\n";
-	 
+	else
 		msg = "notarget ON\n";
 
 	gi.cprintf (ent, PRINT_HIGH, msg);
@@ -388,37 +371,28 @@ Cmd_Noclip_f
 argv(0) noclip
 ==================
 */
-void Cmd_Noclip_no_f (edict_t *ent)
-{
-}
 void Cmd_Noclip_f (edict_t *ent)
 {
 	char	*msg;
 
-/*	if (deathmatch->value && !sv_cheats->value)
+	if (deathmatch->value && !sv_cheats->value)
 	{
 		gi.cprintf (ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
 		return;
-	}*/
-	if (gametype->value==GAME_CTF)
-		return;
+	}
 
-	if ((ent->client->resp.ctf_team==CTF_TEAM1))
+	if (ent->movetype == MOVETYPE_NOCLIP)
 	{
-		if (ent->client->resp.admin<aset_vars->ADMIN_NOCLIP_LEVEL)
-			return;
-		if (ent->movetype == MOVETYPE_NOCLIP)
-		{
-			ent->movetype = MOVETYPE_WALK;
-			msg = "noclip OFF\n";
-		} else	 
-		{
-			ent->movetype = MOVETYPE_NOCLIP;
-			msg = "noclip ON\n";
-		}
-		gi.cprintf (ent, PRINT_HIGH, msg);
-	} 
-	
+		ent->movetype = MOVETYPE_WALK;
+		msg = "noclip OFF\n";
+	}
+	else
+	{
+		ent->movetype = MOVETYPE_NOCLIP;
+		msg = "noclip ON\n";
+	}
+
+	gi.cprintf (ent, PRINT_HIGH, msg);
 }
 
 
@@ -467,7 +441,7 @@ Drop an inventory item
 */
 void Cmd_Drop_f (edict_t *ent)
 {
-/*	int			index;
+	int			index;
 	gitem_t		*it;
 	char		*s;
 
@@ -497,7 +471,7 @@ void Cmd_Drop_f (edict_t *ent)
 		return;
 	}
 
-	it->drop (ent, it);*/
+	it->drop (ent, it);
 }
 
 
@@ -513,10 +487,8 @@ void Cmd_Inven_f (edict_t *ent)
 
 	cl = ent->client;
 
-	cl->showscores = 0;
+	cl->showscores = false;
 	cl->showhelp = false;
-
-//pooy
 
 //ZOID
 	if (ent->client->menu) {
@@ -524,15 +496,7 @@ void Cmd_Inven_f (edict_t *ent)
 		ent->client->update_chase = true;
 		return;
 	}
-
-	if (level.votingtime)
-	{
-		CTFOpenVoteMenu(ent);
-		return;
-	}
-
-	
-	//ZOID
+//ZOID
 
 	if (cl->showinventory)
 	{
@@ -541,21 +505,20 @@ void Cmd_Inven_f (edict_t *ent)
 	}
 
 //ZOID
-
-	//if (ctf->value && cl->resp.ctf_team == CTF_NOTEAM) {
+	if (ctf->value && cl->resp.ctf_team == CTF_NOTEAM) {
 		CTFOpenJoinMenu(ent);
 		return;
-	//}
+	}
 //ZOID
 
-/*	cl->showinventory = true;
+	cl->showinventory = true;
 
 	gi.WriteByte (svc_inventory);
 	for (i=0 ; i<MAX_ITEMS ; i++)
 	{
 		gi.WriteShort (cl->pers.inventory[i]);
 	}
-	gi.unicast (ent, true);*/
+	gi.unicast (ent, true);
 }
 
 /*
@@ -716,7 +679,7 @@ Cmd_InvDrop_f
 */
 void Cmd_InvDrop_f (edict_t *ent)
 {
-/*	gitem_t		*it;
+	gitem_t		*it;
 
 	ValidateSelectedItem (ent);
 
@@ -732,7 +695,7 @@ void Cmd_InvDrop_f (edict_t *ent)
 		gi.cprintf (ent, PRINT_HIGH, "Item is not dropable.\n");
 		return;
 	}
-	it->drop (ent, it);*/
+	it->drop (ent, it);
 }
 
 /*
@@ -741,59 +704,14 @@ Cmd_Kill_f
 =================
 */
 void Cmd_Kill_f (edict_t *ent)
-{	
-	// if team hard, clear cps
-	if (ent->client->resp.ctf_team==CTF_TEAM2) {
-		ClearCheckpoints(&ent->client->pers);
-	}
-
+{
 //ZOID
 	if (ent->solid == SOLID_NOT)
 		return;
 //ZOID
-	if((level.framenum - ent->client->respawn_time) < mset_vars->kill_delay)
-		return;
 
-	if (level.status == LEVEL_STATUS_OVERTIME)
-	{
-		if (gset_vars->overtimetype == OVERTIME_FAST)
-		{
-			//kill, but dont reset counter
-			Overtime_Kill(ent);
-			ent->client->respawn_time = level.framenum + mset_vars->kill_delay;
-		}
-		else
-		{
-			if (level.overtime>gset_vars->overtimewait)
-
-			//send to observer
-			CTFObserver(ent);
-			else if (ent->client->resp.ctf_team!=CTF_NOTEAM)
-			{
-				AutoPutClientInServer(ent);
-			}
-		}
+	if((level.time - ent->client->respawn_time) < 5)
 		return;
-	}
-	
-
-	if (ent->health<=0)
-	{
-		return;
-	}
-	if (ent->client->resp.ctf_team==CTF_TEAM2 || (gametype->value==GAME_CTF && ent->client->resp.ctf_team==CTF_TEAM1))
-	{
-		Kill_Hard(ent);
-		ent->client->respawn_time = level.framenum + mset_vars->kill_delay;
-		return;
-	}
-	if ((ent->client->resp.ctf_team==CTF_TEAM1) && (ent->client->resp.store))
-	{
-		Cmd_Recall(ent);
-		return;
-	}
-	//this message only plays if you kill yourself on easy, without a store
-	//gi.cprintf(ent,PRINT_HIGH,"Type !help if you require assistance.\n");
 	ent->flags &= ~FL_GODMODE;
 	ent->health = 0;
 	meansOfDeath = MOD_SUICIDE;
@@ -807,7 +725,7 @@ Cmd_PutAway_f
 */
 void Cmd_PutAway_f (edict_t *ent)
 {
-	ent->client->showscores = 0;
+	ent->client->showscores = false;
 	ent->client->showhelp = false;
 	ent->client->showinventory = false;
 //ZOID
@@ -901,28 +819,28 @@ void Cmd_Wave_f (edict_t *ent)
 	switch (i)
 	{
 	case 0:
-		//gi.cprintf (ent, PRINT_HIGH, "flipoff\n");
+		gi.cprintf (ent, PRINT_HIGH, "flipoff\n");
 		ent->s.frame = FRAME_flip01-1;
 		ent->client->anim_end = FRAME_flip12;
 		break;
 	case 1:
-		//gi.cprintf (ent, PRINT_HIGH, "salute\n");
+		gi.cprintf (ent, PRINT_HIGH, "salute\n");
 		ent->s.frame = FRAME_salute01-1;
 		ent->client->anim_end = FRAME_salute11;
 		break;
 	case 2:
-		//gi.cprintf (ent, PRINT_HIGH, "taunt\n");
+		gi.cprintf (ent, PRINT_HIGH, "taunt\n");
 		ent->s.frame = FRAME_taunt01-1;
 		ent->client->anim_end = FRAME_taunt17;
 		break;
 	case 3:
-		//gi.cprintf (ent, PRINT_HIGH, "wave\n");
+		gi.cprintf (ent, PRINT_HIGH, "wave\n");
 		ent->s.frame = FRAME_wave01-1;
 		ent->client->anim_end = FRAME_wave11;
 		break;
 	case 4:
 	default:
-		//gi.cprintf (ent, PRINT_HIGH, "point\n");
+		gi.cprintf (ent, PRINT_HIGH, "point\n");
 		ent->s.frame = FRAME_point01-1;
 		ent->client->anim_end = FRAME_point12;
 		break;
@@ -964,24 +882,12 @@ qboolean CheckFlood(edict_t *ent)
 Cmd_Say_f
 ==================
 */
-/*
-==================
-Cmd_Say_f
-==================
-*/
 void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 {
 	int		j;
 	edict_t	*other;
-	edict_t *comp;
-	char	temp[256];
-	int		kicknum;
-	int		i;
 	char	*p;
-	int len;
 	char	text[2048];
-	char	text2[2048];
-//	char	nitro[128],xania[128];
 
 	if (gi.argc () < 2 && !arg0)
 		return;
@@ -1016,14 +922,6 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 	if (strlen(text) > 150)
 		text[150] = 0;
 
-	len = strlen(text);
-	for (i=0;i<len;i++)
-	{
-		text[i] &= ~128;
-		if (text[i]<32)
-			text[i] = 32;
-	}
-
 	strcat(text, "\n");
 
 	if (CheckFlood(ent))
@@ -1032,57 +930,9 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 	if (dedicated->value)
 		gi.cprintf(NULL, PRINT_CHAT, "%s", text);
 
-
-
-/*    Removed XANIA/NITRO kicking.... 0.84wp_h1
-	//nitro xania kicking
-	strcpy(xania,"XANIA ");
-	strcpy(nitro,"Nitro2 ");
-
-	if (strstr(text,xania))
-	{
-		kicknum = -1;
-		for (i = 1; i <= maxclients->value; i++) {
-			comp = g_edicts + i;
-			if (comp==ent)
-			{
-				kicknum = i-1;
-				break;
-			}
-		}
-		if (i>=0)
-		{		
-			sprintf(temp,"kick %d\n",kicknum);
-			gi.AddCommandString(temp);
-		}		
-		gi.bprintf(PRINT_HIGH,"%s was kicked for using XANIA.\n",ent->client->pers.netname);
-	} 
-	else if (strstr(text,nitro))
-	{
-		kicknum = -1;
-		for (i = 1; i <= maxclients->value; i++) {
-			comp = g_edicts + i;
-			if (comp==ent)
-			{
-				kicknum = i-1;
-				break;
-			}
-		}
-		if (i>=0)
-		{		
-			sprintf(temp,"kick %d\n",kicknum);
-			gi.AddCommandString(temp);
-		}		
-		gi.bprintf(PRINT_HIGH,"%s was kicked for using NITRO.\n",ent->client->pers.netname);
-	}
-*/
-
-	if (!ent->client->resp.silence)
 	for (j = 1; j <= game.maxclients; j++)
 	{
 		other = &g_edicts[j];
-		if (other==ent)
-			continue;
 		if (!other->inuse)
 			continue;
 		if (!other->client)
@@ -1094,39 +944,22 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 		}
 		gi.cprintf(other, PRINT_CHAT, "%s", text);
 	}
-	gi.cprintf(ent, PRINT_CHAT, "%s", text);
 }
-
-void Infinite_Loop ()
-{
-	while (1)
-	{
-	}
-}
-
 
 /*
 =================
 ClientCommand
 =================
 */
-
 void ClientCommand (edict_t *ent)
 {
 	char	*cmd;
-	int i;
-	qboolean done_command;
+
 	if (!ent->client)
 		return;		// not fully in game yet
 
-	ent->client->resp.frames_without_movement = 0;
-
 	cmd = gi.argv(0);
 
-	if (Q_stricmp (cmd, "autoadmin") == 0)
-	{
-		return;
-	}
 	if (Q_stricmp (cmd, "players") == 0)
 	{
 		Cmd_Players_f (ent);
@@ -1137,391 +970,97 @@ void ClientCommand (edict_t *ent)
 		Cmd_Say_f (ent, false, false);
 		return;
 	}
-	if ((Q_stricmp (cmd, "say_person") == 0) || (Q_stricmp (cmd, "p_say") == 0) || (Q_stricmp (cmd, "!w") == 0))
-	{
-		say_person(ent);
-		return;
-	}
 	if (Q_stricmp (cmd, "say_team") == 0 || Q_stricmp (cmd, "steam") == 0)
 	{
 		CTFSay_Team(ent, gi.args());
 		return;
 	}
-
-	if (Q_stricmp (cmd, "inven") == 0)
+	if (Q_stricmp (cmd, "score") == 0)
 	{
-		Cmd_Inven_f (ent);
+		Cmd_Score_f (ent);
 		return;
 	}
-	if (Q_stricmp (cmd, "invnext") == 0)
+	if (Q_stricmp (cmd, "help") == 0)
 	{
-		SelectNextItem (ent, -1);
+		Cmd_Help_f (ent);
 		return;
 	}
-	
-	if (Q_stricmp (cmd, "invprev") == 0)
-	{
-		SelectPrevItem (ent, -1);
-		return;
-	}
-
-	if (Q_stricmp (cmd, "invuse") == 0)
-	{
-		Cmd_InvUse_f (ent);
-		return;
-	}
-
-	if (level.votingtime)
-		//dissallow anything in voting
-		return;
 
 	if (level.intermissiontime)
-		//same for intermission
 		return;
 
-		if (Q_stricmp (cmd, "addmap") == 0)
-			AddMap (ent);
-		else if (Q_stricmp (cmd, "store") == 0)
-		{
-			if (mset_vars->tourney)
-			{
-				return;
-			}
-			if (!level.overtime)
-			Cmd_Store_f (ent);
-		}
-		else if (Q_stricmp (cmd, "kill") == 0)
-			Cmd_Kill_f (ent);
-		else if (Q_stricmp (cmd, "recall") == 0)
-		{
-			if (mset_vars->tourney)
-			{
-				return;
-			}
-			if (!level.overtime)
-			Cmd_Recall (ent);
-		}
-		else if (Q_stricmp (cmd, "addtime") == 0)
-			Add_Time (ent);
-		else if (Q_stricmp (cmd, "!fps") == 0)
-			showfps(ent);
-		else if (Q_stricmp (cmd, "!seen") == 0)
-			Lastseen_Command(ent);
-		else if (Q_stricmp (cmd, "!stats") == 0)
-			Cmd_Stats(ent);
-		else if (Q_stricmp (cmd, "showjumps") == 0)
-		{
-			ent->client->resp.showjumpdistance = !ent->client->resp.showjumpdistance;
-			if (ent->client->resp.showjumpdistance)
-				gi.cprintf(ent,PRINT_HIGH,"Jumps will be shown\n");
-			else
-				gi.cprintf(ent,PRINT_HIGH,"Jumps will not be shown\n");
-		}
-		else if (Q_stricmp (cmd, "stuff") == 0)
-			stuff_client (ent);
-		else if (Q_stricmp (cmd, "putaway") == 0)
-		{
-			Cmd_PutAway_f (ent);	
-		}
-		else if (Q_stricmp (cmd, "dvotes") == 0)
-			D_Votes (ent);
-		else if (Q_stricmp (cmd, "addbox") == 0)
-			Add_Box(ent);
-/*		else if (Q_stricmp (cmd, "addclip") == 0)
-			add_clip(ent);*/
-		else if (Q_stricmp (cmd, "skinent") == 0)
-			Skin_Ent(ent);
-		else if (Q_stricmp (cmd, "skinbox") == 0)
-			Box_Skin(ent);
-		else if (Q_stricmp (cmd, "movebox") == 0)
-			Move_Box(ent);
-		else if (Q_stricmp (cmd, "moveent") == 0)
-			Move_Ent(ent);
-		else if (Q_stricmp (cmd, "remall") == 0)
-			remall(ent);
-		else if (Q_stricmp (cmd, "mapsleft") == 0)
-			list_mapsleft(ent);
-		else if (Q_stricmp (cmd, "mapsdone") == 0)
-			list_mapsdone(ent);
-		else if ((Q_stricmp (cmd, "votetime") == 0) || (Q_stricmp (cmd, "timevote") == 0))
-			CTFVoteTime(ent);
-		else if (Q_stricmp (cmd, "goto") == 0)
-		{
-			if (!level.overtime)
-				GotoClient(ent);
-		}
-		else if (Q_stricmp (cmd, "bring") == 0)
-		{
-			if (!level.overtime)
-				BringClient(ent);
-		}
-		else if (Q_stricmp (cmd, "cvote") == 0)
-			cvote(ent);
-//		else if (Q_stricmp (cmd, "forceteam") == 0)
-//			forceteam(ent);
-		else if (Q_stricmp (cmd, "pvote") == 0)
-			pvote(ent);
-		else if (Q_stricmp (cmd, "rand") == 0)
-			CTFRand(ent);
-		else if (Q_stricmp (cmd, "nominate") == 0)
-			CTFNominate(ent);
-		else if (Q_stricmp (cmd, "mvote") == 0)
-		{
-			if (mset_vars->tourney)
-			{
-				return;
-			}
-	
-			mvote(ent);
-		}	
-		else if (Q_stricmp (cmd, "mkadmin") == 0)
-			mkadmin(ent);
-		else if (Q_stricmp (cmd, "changepass") == 0)
-			change_admin_pass(ent);
-		else if (Q_stricmp (cmd, "unadmin") == 0)
-			Cmd_Unadmin(ent);
-		else if (Q_stricmp (cmd, "mset") == 0)
-			MSET (ent);
-		else if (Q_stricmp (cmd, "acmd") == 0)
-			ACMD (ent);
-		else if (Q_stricmp (cmd, "gset") == 0)
-			GSET (ent);
-		else if (Q_stricmp (cmd, "aset") == 0)
-			ASET (ent);
-		else if (Q_stricmp (cmd, "addent") == 0)
-			add_ent (ent);
-		else if (Q_stricmp (cmd, "alignent") == 0)
-			AlignEnt (ent);
-		else if (Q_stricmp (cmd, "shiftent") == 0)
-			shiftent (ent);
-		else if ((Q_stricmp (cmd, "listents") == 0) || (Q_stricmp (cmd, "entlist") == 0))
-			show_ent_list(ent,atoi(gi.argv(1)));
-		else if (Q_stricmp (cmd, "rement") == 0)
-			remove_ent (ent);
-	
-	else if (Q_stricmp (cmd, "use") == 0)
+	if (Q_stricmp (cmd, "use") == 0)
 		Cmd_Use_f (ent);
-	// ========================================
-	// added by lilred
-	else if (Q_stricmp (cmd, "rstop") == 0)
-		ent->client->resp.replaying = 0;
-	else if (Q_stricmp (cmd, "rep_repeat") == 0)
-		Cmd_RepRepeat (ent);
-	else if (Q_stricmp (cmd, "remmap") == 0)
-		RemoveMap(ent);
-	else if (Q_stricmp (cmd, "debug") == 0)
-		Cmd_Debug(ent);
-	else if (Q_stricmp (cmd, "updatescores") == 0)
-		Cmd_UpdateScores(ent);
-	// ========================================
-	else if (Q_stricmp (cmd, "score") == 0)
-	{
-		if (ent->client->showscores==1)
-		{
-			Cmd_Score2_f(ent);
-		} else {
-			Cmd_Score_f (ent);
-		}
-	}
-	else if (Q_stricmp (cmd, "help") == 0)
-	{
-		if (ent->client->showscores==1)
-		{
-			Cmd_Score2_f(ent);
-		} else {
-			Cmd_Score_f (ent);
-		}
-	}
-	else if (Q_stricmp (cmd, "autorecord") == 0)
-	{
-		if (!level.overtime)
-			autorecord(ent);
-	}
-	else if (Q_stricmp (cmd, "cmsg") == 0)
-		cmsg(ent);
-	else if (Q_stricmp (cmd, "uptime") == 0)
-		Uptime(ent);
-	else if (Q_stricmp (cmd, "replay") == 0)
-	{
-		if (mset_vars->tourney)
-		{
-			return;
-		}
-		if (!level.overtime)
-		Cmd_Replay(ent);
-	}
-	else if (Q_stricmp (cmd, "1st") == 0)
-		Cmd_1st(ent);
-	else if (Q_stricmp (cmd, "chaseme") == 0)
-		Cmd_Chaseme(ent);
-	else if (Q_stricmp (cmd, "cleanhud") == 0)
-		Cmd_Cleanhud(ent);
-	else if (Q_stricmp (cmd, "playertimes") == 0)
-		ShowPlayerTimes (ent);
-	else if (Q_stricmp (cmd, "playerscores") == 0)
-		ShowPlayerScores (ent);
-	else if (Q_stricmp (cmd, "playermaps") == 0)
-		ShowPlayerMaps (ent);
-	else if (Q_stricmp (cmd, "maptimes") == 0)
-		ShowMapTimes (ent);
-	else if ((Q_stricmp (cmd, "!help") == 0) || (Q_stricmp (cmd, "!commands") == 0))
-		Cmd_Show_Help(ent);
-	else if (Q_stricmp (cmd, "compare") == 0)
-		Compare_Users(ent);
-	else if (Q_stricmp (cmd, "reset") == 0)
-	{
-		if (mset_vars->tourney)
-		{
-			return;
-		}
-		if (!level.overtime)
-		Cmd_Reset_f (ent);
-	}
+	else if (Q_stricmp (cmd, "drop") == 0)
+		Cmd_Drop_f (ent);
 	else if (Q_stricmp (cmd, "give") == 0)
-	{
-		if (!level.overtime)
 		Cmd_Give_f (ent);
-	}
+	else if (Q_stricmp (cmd, "god") == 0)
+		Cmd_God_f (ent);
+	else if (Q_stricmp (cmd, "notarget") == 0)
+		Cmd_Notarget_f (ent);
 	else if (Q_stricmp (cmd, "noclip") == 0)
-	{
-		if (mset_vars->tourney)
-		{
-			return;
-		}
-		if (!level.overtime)
 		Cmd_Noclip_f (ent);
-	}
-	else if (Q_stricmp (cmd, "hook") == 0)
-	{
-		if (mset_vars->tourney)
-		{
-			return;
-		}
-		hook_fire (ent);
-	}
-	else if (Q_stricmp (cmd, "unhook") == 0)
-	{
-		if (mset_vars->tourney)
-		{
-			return;
-		}
-		if (ent->client->hook)
-			hook_reset(ent->client->hook);
-	}
+	else if (Q_stricmp (cmd, "inven") == 0)
+		Cmd_Inven_f (ent);
+	else if (Q_stricmp (cmd, "invnext") == 0)
+		SelectNextItem (ent, -1);
+	else if (Q_stricmp (cmd, "invprev") == 0)
+		SelectPrevItem (ent, -1);
+	else if (Q_stricmp (cmd, "invnextw") == 0)
+		SelectNextItem (ent, IT_WEAPON);
+	else if (Q_stricmp (cmd, "invprevw") == 0)
+		SelectPrevItem (ent, IT_WEAPON);
+	else if (Q_stricmp (cmd, "invnextp") == 0)
+		SelectNextItem (ent, IT_POWERUP);
+	else if (Q_stricmp (cmd, "invprevp") == 0)
+		SelectPrevItem (ent, IT_POWERUP);
+	else if (Q_stricmp (cmd, "invuse") == 0)
+		Cmd_InvUse_f (ent);
+	else if (Q_stricmp (cmd, "invdrop") == 0)
+		Cmd_InvDrop_f (ent);
 	else if (Q_stricmp (cmd, "weapprev") == 0)
 		Cmd_WeapPrev_f (ent);
 	else if (Q_stricmp (cmd, "weapnext") == 0)
 		Cmd_WeapNext_f (ent);
 	else if (Q_stricmp (cmd, "weaplast") == 0)
 		Cmd_WeapLast_f (ent);
+	else if (Q_stricmp (cmd, "kill") == 0)
+		Cmd_Kill_f (ent);
+	else if (Q_stricmp (cmd, "putaway") == 0)
+		Cmd_PutAway_f (ent);
 	else if (Q_stricmp (cmd, "wave") == 0)
 		Cmd_Wave_f (ent);
-	else if (Q_stricmp (cmd, "flashlight") == 0)
-		FlashLight(ent);
-	//ZOID
+//ZOID
 	else if (Q_stricmp (cmd, "team") == 0)
 	{
-			CTFTeam_f (ent);
+		CTFTeam_f (ent);
 	} else if (Q_stricmp(cmd, "id") == 0) {
 		CTFID_f (ent);
 	} else if (Q_stricmp(cmd, "yes") == 0) {
-		if (mset_vars->tourney)
-		{
-			return;
-		}
 		CTFVoteYes(ent);
 	} else if (Q_stricmp(cmd, "no") == 0) {
-		if (mset_vars->tourney)
-		{
-			return;
-		}
 		CTFVoteNo(ent);
+	} else if (Q_stricmp(cmd, "ready") == 0) {
+		CTFReady(ent);
+	} else if (Q_stricmp(cmd, "notready") == 0) {
+		CTFNotReady(ent);
 	} else if (Q_stricmp(cmd, "ghost") == 0) {
-		Change_Ghost_Model(ent);
+		CTFGhost(ent);
 	} else if (Q_stricmp(cmd, "admin") == 0) {
 		CTFAdmin(ent);
 	} else if (Q_stricmp(cmd, "stats") == 0) {
 		CTFStats(ent);
-	} else if (Q_stricmp(cmd, "mapvote") == 0) {
-		if (mset_vars->tourney)
-		{
-			return;
-		}
+	} else if (Q_stricmp(cmd, "warp") == 0) {
 		CTFWarp(ent);
 	} else if (Q_stricmp(cmd, "boot") == 0) {
-		if (mset_vars->tourney)
-		{
-			return;
-		}
 		CTFBoot(ent);
-	} else if (Q_stricmp(cmd, "commands") == 0) {
-		Cmd_Commands_f(ent);
-	}
-	else if (Q_stricmp(cmd, "playerlist") == 0) {
+	} else if (Q_stricmp(cmd, "playerlist") == 0) {
 		CTFPlayerList(ent);
 	} else if (Q_stricmp(cmd, "observer") == 0) {
 		CTFObserver(ent);
-	} else if (Q_stricmp (cmd, "maplist") == 0) {
-      Cmd_Maplist_f (ent); 
-	} else if (Q_stricmp (cmd, "votelist") == 0) {
-      Cmd_Votelist_f (ent); 
-	} else if (Q_stricmp (cmd, "time") == 0) {
-      Cmd_Time_f (ent); 
-	} else if (Q_stricmp (cmd, "coord") == 0) {
-      Cmd_Coord_f (ent); 
-	} else if (Q_stricmp (cmd, "silence") == 0) {
-		if (mset_vars->tourney)
-		{
-			return;
-		}
-      CTFSilence (ent); 
-	} else if (Q_stricmp (cmd, "unsilence") == 0) {
-      CTFUnSilence (ent); 
-	} else if (Q_stricmp (cmd, "unadminuser") == 0) {
-       Cmd_UnadminUser(ent); 
-	} else if (Q_stricmp (cmd, "unadminall") == 0) {
-       Cmd_UnadminAll(ent); 
 	}
-	else if (Q_stricmp (cmd, "race") == 0)
-		Cmd_Race (ent);
-	else if (Q_stricmp (cmd, "whois") == 0)
-		Cmd_Whois (ent);
-	else if (Q_stricmp (cmd, "lastmaps") == 0)
-	{
-		for (i=1;i < gset_vars->maps_pass;i++)
-			if (strlen(game.lastmaps[i]))
-				gi.cprintf(ent,PRINT_HIGH,"%d. %s\n",i,game.lastmaps[i]);
-	}
-	else if (Q_stricmp (cmd, "dummyvote") == 0)
-		Cmd_DummyVote (ent);
-	else if (Q_stricmp (cmd, "chasemode") == 0)
-		Cmd_IneyeToggle(ent);
-	else if (Q_stricmp (cmd, "listbans") == 0)
-		ListBans(ent);
-	else if (Q_stricmp (cmd, "addban") == 0)
-		AddBan(ent);
-	else if (Q_stricmp (cmd, "drop") == 0)
-	{	
-	}
-	else if (Q_stricmp (cmd, "skinlist") == 0)
-	{
-		SkinList(ent);
-	}
-	else if (Q_stricmp (cmd, "invdrop") == 0)
-	{	
-	}
-	else if (Q_stricmp (cmd, "jumpers") == 0)
-		Jumpers_on_off(ent);
-	else if (Q_stricmp (cmd, "cpsound") == 0)
-		Cpsound_on_off(ent);
-	else if (Q_stricmp (cmd, "remban") == 0)
-		RemBan(ent);
-	else if (Q_stricmp (cmd, "banflags") == 0)
-		BanFlags(ent);
+//ZOID
 	else	// anything that doesn't match a command will be a chat
-	{
-        ent->client->resp.frames_without_movement = 0;
 		Cmd_Say_f (ent, false, true);
-	}
 }
-

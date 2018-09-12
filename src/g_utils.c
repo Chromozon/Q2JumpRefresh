@@ -65,28 +65,6 @@ edict_t *G_Find (edict_t *from, int fieldofs, char *match)
 	return NULL;
 }
 
-edict_t *G_Find_contains (edict_t *from, int fieldofs, char *match)
-{
-	char	*s;
-
-	if (!from)
-		from = g_edicts;
-	else
-		from++;
-
-	for ( ; from < &g_edicts[globals.num_edicts] ; from++)
-	{
-		if (!from->inuse)
-			continue;
-		s = *(char **) ((byte *)from + fieldofs);
-		if (!s)
-			continue;
-		if (strstr(s, match))
-			return from;
-	}
-
-	return NULL;
-}
 
 /*
 =================
@@ -221,15 +199,11 @@ void G_UseTargets (edict_t *ent, edict_t *activator)
 //
 	if ((ent->message) && !(activator->svflags & SVF_MONSTER))
 	{
-	if (!mset_vars->cmsg)
-	if (!activator->client->resp.cmsg)
-	{
 		gi.centerprintf (activator, "%s", ent->message);
 		if (ent->noise_index)
 			gi.sound (activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM, 0);
 		else
 			gi.sound (activator, CHAN_AUTO, gi.soundindex ("misc/talk1.wav"), 1, ATTN_NORM, 0);
-	}
 	}
 
 //
@@ -420,7 +394,7 @@ char *G_CopyString (char *in)
 {
 	char	*out;
 	
-	out = (char*)gi.TagMalloc (strlen(in)+1, TAG_LEVEL);
+	out = gi.TagMalloc (strlen(in)+1, TAG_LEVEL);
 	strcpy (out, in);
 	return out;
 }
@@ -431,15 +405,7 @@ void G_InitEdict (edict_t *e)
 	e->inuse = true;
 	e->classname = "noclass";
 	e->gravity = 1.0;
-	e->gravity2 = 1.0;
 	e->s.number = e - g_edicts;
-	e->prethink = NULL;  // 083wp_h1
-	e->think = NULL;  // 083wp_h1
-	e->blocked = NULL;  // 083wp_h1
-	e->touch = NULL;  // 083wp_h1
-	e->use = NULL;  // 083wp_h1
-	e->pain = NULL;  // 083wp_h1
-	e->die = NULL;  // 083wp_h1
 }
 
 /*
@@ -471,7 +437,7 @@ edict_t *G_Spawn (void)
 	}
 	
 	if (i == game.maxentities)
-		ServerError("ED_Alloc: no free edicts");
+		gi.error ("ED_Alloc: no free edicts");
 		
 	globals.num_edicts++;
 	G_InitEdict (e);
@@ -489,7 +455,7 @@ void G_FreeEdict (edict_t *ed)
 {
 	gi.unlinkentity (ed);		// unlink from world
 
-	if ((ed - g_edicts) <= (maxclients->value))
+	if ((ed - g_edicts) <= (maxclients->value + BODY_QUEUE_SIZE))
 	{
 //		gi.dprintf("tried to free special edict\n");
 		return;
@@ -499,8 +465,6 @@ void G_FreeEdict (edict_t *ed)
 	ed->classname = "freed";
 	ed->freetime = level.time;
 	ed->inuse = false;
-	ed->nextthink = 0;
-
 }
 
 

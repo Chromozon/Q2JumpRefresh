@@ -290,12 +290,12 @@ void M_WorldEffects (edict_t *ent)
 	{	
 		if (!(ent->svflags & SVF_DEADMONSTER))
 		{
-//			if (ent->watertype & CONTENTS_LAVA)
-//				if (random() <= 0.5)
-//					gi.sound (ent, CHAN_BODY, gi.soundindex("player/lava1.wav"), 1, ATTN_NORM, 0);
-//				else
-//					gi.sound (ent, CHAN_BODY, gi.soundindex("player/lava2.wav"), 1, ATTN_NORM, 0);
-			if (ent->watertype & CONTENTS_SLIME)
+			if (ent->watertype & CONTENTS_LAVA)
+				if (random() <= 0.5)
+					gi.sound (ent, CHAN_BODY, gi.soundindex("player/lava1.wav"), 1, ATTN_NORM, 0);
+				else
+					gi.sound (ent, CHAN_BODY, gi.soundindex("player/lava2.wav"), 1, ATTN_NORM, 0);
+			else if (ent->watertype & CONTENTS_SLIME)
 				gi.sound (ent, CHAN_BODY, gi.soundindex("player/watr_in.wav"), 1, ATTN_NORM, 0);
 			else if (ent->watertype & CONTENTS_WATER)
 				gi.sound (ent, CHAN_BODY, gi.soundindex("player/watr_in.wav"), 1, ATTN_NORM, 0);
@@ -533,16 +533,11 @@ void monster_death_use (edict_t *self)
 
 qboolean monster_start (edict_t *self)
 {
-/*	if (deathmatch->value)
+	if (deathmatch->value)
 	{
 		G_FreeEdict (self);
 		return false;
-	}*/
-
-	if (!(self->spawnflags & 128))
-		self->monsterinfo.aiflags |= AI_GOOD_GUY;
-
-
+	}
 
 	if ((self->spawnflags & 4) && !(self->monsterinfo.aiflags & AI_GOOD_GUY))
 	{

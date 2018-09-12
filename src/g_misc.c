@@ -588,7 +588,7 @@ static void light_use (edict_t *self, edict_t *other, edict_t *activator)
 void SP_light (edict_t *self)
 {
 	// no targeted lights in deathmatch, because they cause global messages
-	if (!self->targetname)
+	if (!self->targetname || deathmatch->value)
 	{
 		G_FreeEdict (self);
 		return;
@@ -851,11 +851,11 @@ void func_explosive_spawn (edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_func_explosive (edict_t *self)
 {
-/*	if (deathmatch->value)
+	if (deathmatch->value)
 	{	// auto-remove for deathmatch
 		G_FreeEdict (self);
 		return;
-	}*/
+	}
 
 	self->movetype = MOVETYPE_PUSH;
 
@@ -1100,7 +1100,7 @@ void misc_eastertank_think (edict_t *self)
 void SP_misc_eastertank (edict_t *ent)
 {
 	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_NOT;
+	ent->solid = SOLID_BBOX;
 	VectorSet (ent->mins, -32, -32, -16);
 	VectorSet (ent->maxs, 32, 32, 32);
 	ent->s.modelindex = gi.modelindex ("models/monsters/tank/tris.md2");
@@ -1128,7 +1128,7 @@ void misc_easterchick_think (edict_t *self)
 void SP_misc_easterchick (edict_t *ent)
 {
 	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_NOT;
+	ent->solid = SOLID_BBOX;
 	VectorSet (ent->mins, -32, -32, 0);
 	VectorSet (ent->maxs, 32, 32, 32);
 	ent->s.modelindex = gi.modelindex ("models/monsters/bitch/tris.md2");
@@ -1156,7 +1156,7 @@ void misc_easterchick2_think (edict_t *self)
 void SP_misc_easterchick2 (edict_t *ent)
 {
 	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_NOT;
+	ent->solid = SOLID_BBOX;
 	VectorSet (ent->mins, -32, -32, 0);
 	VectorSet (ent->maxs, 32, 32, 32);
 	ent->s.modelindex = gi.modelindex ("models/monsters/bitch/tris.md2");
@@ -1258,11 +1258,11 @@ void misc_deadsoldier_die (edict_t *self, edict_t *inflictor, edict_t *attacker,
 
 void SP_misc_deadsoldier (edict_t *ent)
 {
-/*	if (deathmatch->value)
+	if (deathmatch->value)
 	{	// auto-remove for deathmatch
 		G_FreeEdict (ent);
 		return;
-	}*/
+	}
 
 	ent->movetype = MOVETYPE_NONE;
 	ent->solid = SOLID_BBOX;
@@ -1285,7 +1285,7 @@ void SP_misc_deadsoldier (edict_t *ent)
 	VectorSet (ent->mins, -16, -16, 0);
 	VectorSet (ent->maxs, 16, 16, 16);
 	ent->deadflag = DEAD_DEAD;
-	ent->takedamage = DAMAGE_NO;
+	ent->takedamage = DAMAGE_YES;
 	ent->svflags |= SVF_MONSTER|SVF_DEADMONSTER;
 	ent->die = misc_deadsoldier_die;
 	ent->monsterinfo.aiflags |= AI_GOOD_GUY;
@@ -1797,7 +1797,7 @@ void SP_func_clock (edict_t *self)
 
 	func_clock_reset (self);
 
-	self->message = (char*)gi.TagMalloc (CLOCK_MESSAGE_SIZE, TAG_LEVEL);
+	self->message = gi.TagMalloc (CLOCK_MESSAGE_SIZE, TAG_LEVEL);
 
 	self->think = func_clock_think;
 
@@ -1819,7 +1819,7 @@ void teleporter_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	dest = G_Find (NULL, FOFS(targetname), self->target);
 	if (!dest)
 	{
-//		gi.dprintf ("Couldn't find destination\n");
+		gi.dprintf ("Couldn't find destination\n");
 		return;
 	}
 
@@ -1834,27 +1834,22 @@ void teleporter_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	VectorCopy (dest->s.origin, other->s.old_origin);
 	other->s.origin[2] += 10;
 
-	// clear the velocity
-	if (!(self->spawnflags & 1))
-		VectorClear (other->velocity);
+	// clear the velocity and hold them in place briefly
+	VectorClear (other->velocity);
+	other->client->ps.pmove.pm_time = 160>>3;		// hold time
+	other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
 
-	// hold them in place briefly
-	if (!mset_vars->fasttele)
-    {
-        other->client->ps.pmove.pm_time = 160>>3;        // hold time
-        other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
-    }
-
+	// draw the teleport splash at source and on the player
+	self->owner->s.event = EV_PLAYER_TELEPORT;
+	other->s.event = EV_PLAYER_TELEPORT;
 
 	// set angles
-	if (!(self->spawnflags & 3)) {
-		for (i=0 ; i<3 ; i++)
-			other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
+	for (i=0 ; i<3 ; i++)
+		other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
 
-		VectorClear (other->s.angles);
-		VectorClear (other->client->ps.viewangles);
-		VectorClear (other->client->v_angle);
-	}
+	VectorClear (other->s.angles);
+	VectorClear (other->client->ps.viewangles);
+	VectorClear (other->client->v_angle);
 
 	// kill anything at the destination
 	KillBox (other);
@@ -1887,11 +1882,9 @@ void SP_misc_teleporter (edict_t *ent)
 	gi.linkentity (ent);
 
 	trig = G_Spawn ();
-
 	trig->touch = teleporter_touch;
 	trig->solid = SOLID_TRIGGER;
 	trig->target = ent->target;
-	trig->spawnflags = ent->spawnflags;
 	trig->owner = ent;
 	VectorCopy (ent->s.origin, trig->s.origin);
 	VectorSet (trig->mins, -8, -8, 8);
@@ -1914,41 +1907,3 @@ void SP_misc_teleporter_dest (edict_t *ent)
 	gi.linkentity (ent);
 }
 
-/*QUAKED trigger_teleport (0.5 0.5 0.5) ?
-Players touching this will be teleported
-*/
-void SP_trigger_teleport (edict_t *ent)
-{
-	edict_t *s;
-	int i;
-
-	if (!ent->target)
-	{
-		gi.dprintf ("teleporter without a target.\n");
-		G_FreeEdict (ent);
-		return;
-	}
-
-	ent->svflags |= SVF_NOCLIENT;
-	ent->solid = SOLID_TRIGGER;
-	ent->touch = teleporter_touch;
-	gi.setmodel (ent, ent->model);
-	gi.linkentity (ent);
-
-	// noise maker and splash effect dude
-	s = G_Spawn();
-	ent->enemy = s;
-	for (i = 0; i < 3; i++)
-		s->s.origin[i] = ent->mins[i] + (ent->maxs[i] - ent->mins[i])/2;
-	s->s.sound = gi.soundindex (""); //old "world/hum1.wav"
-	gi.linkentity(s);
-	
-}
-
-/*QUAKED info_teleport_destination (0.5 0.5 0.5) (-16 -16 -24) (16 16 32)
-Point trigger_teleports at these.
-*/
-void SP_info_teleport_destination (edict_t *ent)
-{
-	ent->s.origin[2] += 16;
-}

@@ -20,13 +20,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "g_local.h"
 
-void	SVCmd_ChangePass_f (void)
+
+void	Svcmd_Test_f (void)
 {
-	//change users password
-}
-void	SVCmd_AddMaps (void)
-{
-	addmaps();
+	gi.cprintf (NULL, PRINT_HIGH, "Svcmd_Test_f()\n");
 }
 
 /*
@@ -249,7 +246,7 @@ void SVCmd_WriteIP_f (void)
 	game = gi.cvar("game", "", 0);
 
 	if (!*game->string)
-		sprintf (name, "jump/listip.cfg");
+		sprintf (name, "%s/listip.cfg", GAMEVERSION);
 	else
 		sprintf (name, "%s/listip.cfg", game->string);
 
@@ -287,10 +284,8 @@ void	ServerCommand (void)
 	char	*cmd;
 
 	cmd = gi.argv(1);
-	if (Q_stricmp (cmd, "addmaps") == 0)
-		SVCmd_AddMaps ();
-	else if (Q_stricmp (cmd, "changepass") == 0)
-		SVCmd_ChangePass_f ();
+	if (Q_stricmp (cmd, "test") == 0)
+		Svcmd_Test_f ();
 	else if (Q_stricmp (cmd, "addip") == 0)
 		SVCmd_AddIP_f ();
 	else if (Q_stricmp (cmd, "removeip") == 0)

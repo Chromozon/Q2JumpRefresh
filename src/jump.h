@@ -19,6 +19,7 @@ namespace Jump
     bool JumpClientCommand(edict_t* ent);
 
     void Cmd_Jump_Inven(edict_t* ent);
+    void Cmd_Jump_Noclip(edict_t* ent);
 
     void AssignTeamSkin(edict_t* ent);
 }

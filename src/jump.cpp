@@ -113,6 +113,11 @@ namespace Jump
             Cmd_Jump_Inven(ent);
             return true;
         }
+        else if (Q_stricmp(cmd, "noclip") == 0)
+        {
+            Cmd_Jump_Noclip(ent);
+            return true;
+        }
         else
         {
             return false;
@@ -128,6 +133,23 @@ namespace Jump
         else
         {
             OpenMenu_Join(ent);
+        }
+    }
+
+    void Cmd_Jump_Noclip(edict_t* ent)
+    {
+        if (ent->client->resp.jump_team == TEAM_EASY)
+        {
+            if (ent->movetype == MOVETYPE_NOCLIP)
+            {
+                ent->movetype = MOVETYPE_WALK;
+                gi.cprintf(ent, PRINT_HIGH, "noclip OFF\n");
+            }
+            else
+            {
+                ent->movetype = MOVETYPE_NOCLIP;
+                gi.cprintf(ent, PRINT_HIGH, "noclip ON\n");
+            }
         }
     }
 

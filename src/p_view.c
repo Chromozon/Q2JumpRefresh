@@ -1059,7 +1059,10 @@ void ClientEndServerFrame (edict_t *ent)
 	bobfracsin = fabs(sin(bobtime*M_PI));
 
 	// detect hitting the floor
-	P_FallingDamage (ent);
+    // Jump
+    // We disable all falling damage
+	//P_FallingDamage (ent);
+    // Jump
 
 	// apply all the damage taken this frame
 	P_DamageFeedback (ent);

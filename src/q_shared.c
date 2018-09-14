@@ -1416,4 +1416,63 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 
 //====================================================================
 
+// Jump
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/types.h>
+#include <sys/time.h>
+#endif
 
+int	curtime; // Part of the q_shared time API, although unused.
+
+int Sys_Milliseconds(void)
+{
+#ifdef _WIN32
+    static LARGE_INTEGER base = { 0 };
+    static LARGE_INTEGER freq = { 0 };
+    static bool	initialized = false;
+
+    if (!initialized)
+    {
+        QueryPerformanceCounter(&base);
+        QueryPerformanceFrequency(&freq);
+        initialized = true;
+    }
+
+    LARGE_INTEGER current;
+    QueryPerformanceCounter(&current);
+
+    LARGE_INTEGER elapsed;
+    elapsed.QuadPart = current.QuadPart - base.QuadPart;
+
+    // The elapsed time is now ticks/second.  We want to convert this to milliseconds.
+    // To do this, we need to convert to ms before dividing by the frequency
+    // so that we do not lose precision.
+    elapsed.QuadPart *= 1000;
+    elapsed.QuadPart /= freq.QuadPart;
+
+    // We can narrow convert to int32 because our time difference will always fit this.
+    curtime = static_cast<int>(elapsed.QuadPart);
+    return curtime;
+#else
+    static timespec base = { 0 };
+    static bool initialized = false;
+
+    if (!initialized)
+    {
+        clock_gettime(CLOCK_MONOTONIC, &base);
+        initialized = true;
+    }
+
+    timespec current;
+    clock_gettime(CLOCK_MONOTONIC, &current);
+
+    double base_ms = ((double)base.tv_sec * 1000) + ((double)base.tv_nsec / 1000000);
+    double current_ms = ((double)current.tv_sec * 1000) + ((double)current.tv_nsec / 1000000);
+
+    curtime = current_ms - base_ms;
+    return curtime;
+#endif
+}
+// Jump

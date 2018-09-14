@@ -119,6 +119,9 @@
     <ClInclude Include="jump.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jumptypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="jump.def">

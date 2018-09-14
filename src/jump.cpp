@@ -2,8 +2,12 @@
 
 namespace Jump
 {
-    static const int MaxMenuWidth = 32; // characters
+    static const char* SexTeamEasy = "female";
+    static const char* SexTeamHard = "male";
+    static const char* SkinTeamEasy = "ctf_r";
+    static const char* SkinTeamHard = "ctf_b";
 
+    static const int MaxMenuWidth = 32; // characters
     static const int MapNameLine = 2;
     static const int JoinEasyLine = 5;
     static const int NumPlayersEasyLine = 6;
@@ -72,7 +76,19 @@ namespace Jump
 
     void JoinTeam(edict_t* ent, team_t team)
     {
+        PMenu_Close(ent);
+        
+        ent->svflags &= ~SVF_NOCLIENT;
+        ent->client->resp.jump_team = team;
 
+        AssignTeamSkin(ent);
+
+        PutClientInServer(ent);
+        // add a teleportation effect
+        ent->s.event = EV_PLAYER_TELEPORT;
+        // hold in place briefly
+        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pmove.pm_time = 14;
     }
 
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd)
@@ -115,15 +131,21 @@ namespace Jump
         }
     }
 
-    char* TeamNameStr(team_t team)
+    void AssignTeamSkin(edict_t* ent)
     {
-        switch (team) {
+        int playernum = ent - g_edicts - 1;
+
+        switch (ent->client->resp.jump_team)
+        {
         case TEAM_EASY:
-            return "Easy";
+            gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\%s/%s", ent->client->pers.netname, SexTeamEasy, SkinTeamEasy));
+            break;
         case TEAM_HARD:
-            return "Hard";
+            gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\%s/%s", ent->client->pers.netname, SexTeamHard, SkinTeamHard));
+            break;
         default:
-            return "Unknown";
+            gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\female/invis", ent->client->pers.netname));
+            break;
         }
     }
 }

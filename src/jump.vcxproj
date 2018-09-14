@@ -168,6 +168,7 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
     <ClInclude Include="g_ctf.h" />
     <ClInclude Include="g_local.h" />
     <ClInclude Include="jump.h" />
+    <ClInclude Include="jumptypes.h" />
     <ClInclude Include="m_player.h" />
     <ClInclude Include="p_menu.h" />
     <ClInclude Include="q_shared.h" />

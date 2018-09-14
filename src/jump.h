@@ -20,5 +20,5 @@ namespace Jump
 
     void Cmd_Jump_Inven(edict_t* ent);
 
-    char* TeamNameStr(team_t team);
+    void AssignTeamSkin(edict_t* ent);
 }

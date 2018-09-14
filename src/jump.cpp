@@ -11,21 +11,21 @@ namespace Jump
     static const int ChaseCamLine = 9;
 
     static pmenu_t Menu_Join[] = {
-        { "*Quake II Jump", PMENU_ALIGN_CENTER, NULL },
-        { NULL, PMENU_ALIGN_CENTER, NULL },
-        { NULL /* mapname */, PMENU_ALIGN_CENTER, NULL },
-        { NULL, PMENU_ALIGN_CENTER, NULL },
-        { NULL, PMENU_ALIGN_CENTER, NULL },
-        { "Join Easy Team", PMENU_ALIGN_LEFT, JoinTeamEasy },
-        { NULL /* number of players */, PMENU_ALIGN_LEFT, NULL },
-        { "Join Hard Team", PMENU_ALIGN_LEFT, JoinTeamHard },
-        { NULL /* number of players */, PMENU_ALIGN_LEFT, NULL },
-        { NULL /* chase camera */, PMENU_ALIGN_LEFT, JoinChaseCam },
-        { NULL, PMENU_ALIGN_LEFT, NULL }, // TODO help commands menu
-        { NULL, PMENU_ALIGN_LEFT, NULL },
-        { "Highlight your choice and", PMENU_ALIGN_LEFT, NULL },
-        { "press ENTER.", PMENU_ALIGN_LEFT, NULL },
-        { "v" JUMP_STRING_VERSION, PMENU_ALIGN_RIGHT, NULL },
+        { "*Quake II Jump",               PMENU_ALIGN_CENTER, NULL },
+        { NULL,                           PMENU_ALIGN_CENTER, NULL },
+        { NULL /* mapname */,             PMENU_ALIGN_CENTER, NULL },
+        { NULL,                           PMENU_ALIGN_CENTER, NULL },
+        { NULL,                           PMENU_ALIGN_CENTER, NULL },
+        { "Join Easy Team",               PMENU_ALIGN_LEFT,   JoinTeamEasy },
+        { NULL /* number of players */,   PMENU_ALIGN_LEFT,   NULL },
+        { "Join Hard Team",               PMENU_ALIGN_LEFT,   JoinTeamHard },
+        { NULL /* number of players */,   PMENU_ALIGN_LEFT,   NULL },
+        { NULL /* chase camera */,        PMENU_ALIGN_LEFT,   JoinChaseCam },
+        { NULL,                           PMENU_ALIGN_LEFT,   NULL }, // TODO help commands menu
+        { NULL,                           PMENU_ALIGN_LEFT,   NULL },
+        { "Highlight your choice and",    PMENU_ALIGN_LEFT,   NULL },
+        { "press ENTER.",                 PMENU_ALIGN_LEFT,   NULL },
+        { "v" JUMP_STRING_VERSION,        PMENU_ALIGN_RIGHT,  NULL },
     };
 
 
@@ -53,7 +53,7 @@ namespace Jump
         {
             Menu_Join[ChaseCamLine].text = "Chase Camera";
         }
-        
+
         int cursor = JoinEasyLine;
         PMenu_Open(ent, Menu_Join, cursor, sizeof(Menu_Join) / sizeof(pmenu_t), NULL);
     }
@@ -70,7 +70,60 @@ namespace Jump
         return -1;
     }
 
-    void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd) {}
-    void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd) {}
+    void JoinTeam(edict_t* ent, team_t team)
+    {
+
+    }
+
+    void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd)
+    {
+        JoinTeam(ent, TEAM_EASY);
+    }
+
+    void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd)
+    {
+        JoinTeam(ent, TEAM_HARD);
+    }
+
     void JoinChaseCam(edict_t* ent, pmenuhnd_t* hnd) {}
+
+
+    bool JumpClientCommand(edict_t* ent)
+    {
+        char* cmd = gi.argv(0);
+
+        if (Q_stricmp(cmd, "inven") == 0)
+        {
+            Cmd_Jump_Inven(ent);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    void Cmd_Jump_Inven(edict_t* ent)
+    {
+        if (ent->client->menu) {
+            PMenu_Close(ent);
+            ent->client->update_chase = true;
+        }
+        else
+        {
+            OpenMenu_Join(ent);
+        }
+    }
+
+    char* TeamNameStr(team_t team)
+    {
+        switch (team) {
+        case TEAM_EASY:
+            return "Easy";
+        case TEAM_HARD:
+            return "Hard";
+        default:
+            return "Unknown";
+        }
+    }
 }

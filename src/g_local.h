@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 // g_local.h -- local definitions for game module
+#pragma once
 
 #include "q_shared.h"
 
@@ -30,6 +31,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //ZOID
 #include "p_menu.h"
 //ZOID
+
+// Jump
+#include "jumptypes.h"
+// Jump
 
 // the "gameversion" client command will print this plus compile date
 #define	GAMEVERSION	"baseq2"
@@ -892,6 +897,11 @@ typedef struct
 	qboolean	admin;
 	struct ghost_s *ghost; // for ghost codes
 //ZOID
+
+// Jump
+    Jump::team_t jump_team;
+// Jump
+
 	vec3_t		cmd_angles;			// angles sent over in the last command
 	int			game_helpchanged;
 	int			helpchanged;

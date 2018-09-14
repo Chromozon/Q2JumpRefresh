@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #include "g_local.h"
 #include "m_player.h"
-
+#include "jump.h"
 
 char *ClientTeam (edict_t *ent)
 {
@@ -957,6 +957,14 @@ void ClientCommand (edict_t *ent)
 
 	if (!ent->client)
 		return;		// not fully in game yet
+
+    // Jump
+    bool handled = Jump::JumpClientCommand(ent);
+    if (handled)
+    {
+        return;
+    }
+    // Jump
 
 	cmd = gi.argv(0);
 

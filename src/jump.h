@@ -37,4 +37,6 @@ namespace Jump
     void Cmd_Jump_Noclip(edict_t* ent);
 
     void AssignTeamSkin(edict_t* ent);
+
+    edict_t* SelectJumpSpawnPoint();
 }

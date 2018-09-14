@@ -76,8 +76,6 @@ namespace Jump
 
     void JoinTeam(edict_t* ent, team_t team)
     {
-        PMenu_Close(ent);
-        
         ent->svflags &= ~SVF_NOCLIENT;
         ent->client->resp.jump_team = team;
 
@@ -93,11 +91,13 @@ namespace Jump
 
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd)
     {
+        PMenu_Close(ent);
         JoinTeam(ent, TEAM_EASY);
     }
 
     void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd)
     {
+        PMenu_Close(ent);
         JoinTeam(ent, TEAM_HARD);
     }
 
@@ -169,6 +169,25 @@ namespace Jump
             gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\female/invis", ent->client->pers.netname));
             break;
         }
+    }
+
+    edict_t* SelectJumpSpawnPoint()
+    {
+        edict_t* spot = G_Find(NULL, FOFS(classname), "info_player_start");
+        if (spot != NULL)
+        {
+            return spot;
+        }
+        spot = G_Find(NULL, FOFS(classname), "info_player_deathmatch");
+        if (spot != NULL)
+        {
+            return spot;
+        }
+        // There are other valid spawn entities such as
+        // info_player_team1, info_player_team2, info_player_coop,
+        // and info_player_intermission, but we never want to use
+        // these as a spawn point.
+        return NULL;
     }
 
 

@@ -1161,3 +1161,6 @@ struct edict_s
 #include "g_ctf.h"
 //ZOID
 
+// Jump
+#include "jump.h"
+// Jump

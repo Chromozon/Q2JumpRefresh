@@ -902,6 +902,10 @@ void	SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles)
 {
 	edict_t	*spot = NULL;
 
+    // Jump
+    spot = Jump::SelectJumpSpawnPoint();
+
+#if 0
 	if (deathmatch->value)
 //ZOID
 		if (ctf->value)
@@ -911,6 +915,8 @@ void	SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles)
 			spot = SelectDeathmatchSpawnPoint ();
 	else if (coop->value)
 		spot = SelectCoopSpawnPoint (ent);
+#endif
+    // Jump
 
 	// find a single player start spot
 	if (!spot)

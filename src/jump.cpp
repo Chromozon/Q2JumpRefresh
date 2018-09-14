@@ -170,4 +170,40 @@ namespace Jump
             break;
         }
     }
+
+
+    StoreBuffer::StoreBuffer() : numStores(0), nextIndex(0), stores()
+    {
+    }
+
+    void StoreBuffer::PushStore(const store_data_t& data)
+    {
+        stores[nextIndex] = data;
+        nextIndex = (nextIndex + 1) % MAX_STORES;
+        if (numStores < MAX_STORES)
+        {
+            numStores++;
+        }
+    }
+
+    store_data_t StoreBuffer::GetStore(int prevNum)
+    {
+        int index = 0;
+        if (prevNum > numStores)
+        {
+            // If a user asks for a prev that is larger than
+            // what we have stored, we return the oldest data.
+            index = (nextIndex - numStores) % MAX_STORES;
+        }
+        else if (prevNum > 0)
+        {
+            index = (nextIndex - prevNum) % MAX_STORES;
+        }
+        return stores[index];
+    }
+
+    bool StoreBuffer::HasStore()
+    {
+        return numStores > 0;
+    }
 }

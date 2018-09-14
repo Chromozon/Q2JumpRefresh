@@ -4,8 +4,23 @@
 
 #define JUMP_STRING_VERSION "1.0slip"
 
+#define MAX_STORES 5
+
 namespace Jump
 {
+    class StoreBuffer
+    {
+    public:
+        StoreBuffer();
+        void PushStore(const store_data_t& data);
+        store_data_t GetStore(int prevNum);
+        bool HasStore();
+    private:
+        int numStores;
+        int nextIndex;
+        store_data_t stores[MAX_STORES];
+    };
+
     void OpenMenu_Join(edict_t* ent);
 
     int CountPlayersEasy();

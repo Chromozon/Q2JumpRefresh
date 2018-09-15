@@ -93,6 +93,7 @@ void UpdateChaseCam(edict_t *ent)
 	ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
 	gi.linkentity(ent);
 
+    //ZOID
 	if ((!ent->client->showscores && !ent->client->menu &&
 		!ent->client->showinventory && !ent->client->showhelp &&
 		!(level.framenum & 31)) || ent->client->update_chase) {
@@ -105,7 +106,7 @@ void UpdateChaseCam(edict_t *ent)
 		gi.WriteString (s);
 		gi.unicast(ent, false);
 	}
-
+    //ZOID
 }
 
 void ChaseNext(edict_t *ent)

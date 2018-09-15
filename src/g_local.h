@@ -351,6 +351,11 @@ typedef struct
 	int			body_que;			// dead bodies
 
 	int			power_cubes;		// ugly necessity for coop
+
+    // Jump
+    Jump::level_state_t state;
+    // Jump
+
 } level_locals_t;
 
 
@@ -900,6 +905,10 @@ typedef struct
 
 // Jump
     Jump::team_t jump_team;
+    int          jump_count;
+    int          jump_timer_begin;
+    qboolean     jump_timer_paused;
+    qboolean     jump_timer_finished;
 // Jump
 
 	vec3_t		cmd_angles;			// angles sent over in the last command

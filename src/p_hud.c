@@ -62,6 +62,7 @@ void MoveClientToIntermission (edict_t *ent)
 
 	// add the layout
 
+    // Jump TODO: change to best times scoreboard
 	if (deathmatch->value || coop->value)
 	{
 		DeathmatchScoreboardMessage (ent, NULL);

@@ -1521,6 +1521,16 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	level.current_entity = ent;
 	client = ent->client;
 
+    // Only start the timer if the player has moved
+    if (ent->client->resp.jump_timer_paused)
+    {
+        if (abs(ucmd->forwardmove) > 0 || abs(ucmd->upmove) > 0 || abs(ucmd->sidemove) > 0)
+        {
+            ent->client->resp.jump_timer_begin = Sys_Milliseconds();
+            ent->client->resp.jump_timer_paused = false;
+        }
+    }
+
 	if (level.intermissiontime)
 	{
 		client->ps.pmove.pm_type = PM_FREEZE;

@@ -118,6 +118,11 @@ namespace Jump
             Cmd_Jump_Noclip(ent);
             return true;
         }
+        else if (Q_stricmp(cmd, "test") == 0)
+        {
+            Cmd_Jump_Test(ent);
+            return true;
+        }
         else
         {
             return false;
@@ -151,6 +156,25 @@ namespace Jump
                 gi.cprintf(ent, PRINT_HIGH, "noclip ON\n");
             }
         }
+    }
+
+    // A function used to test stuff for development
+    void Cmd_Jump_Test(edict_t* ent)
+    {
+        if (ent->client->menu) 
+        {
+            PMenu_Close(ent);
+        }
+        ent->client->showscores = true;
+        
+        char string[1400] = { 0 };
+
+        Com_sprintf(string, sizeof(string),
+            "xv -16 yv 0 string2 \"Ping Pos Player          Best Comp Maps     %%\" ");
+
+        gi.WriteByte(svc_layout);
+        gi.WriteString(string);
+        gi.unicast(ent, true);
     }
 
     void AssignTeamSkin(edict_t* ent)
@@ -188,6 +212,14 @@ namespace Jump
         // and info_player_intermission, but we never want to use
         // these as a spawn point.
         return NULL;
+    }
+
+    void ResetJumpTimer(edict_t* ent)
+    {
+        ent->client->resp.jump_count = 0;
+        ent->client->resp.jump_timer_begin = 0;
+        ent->client->resp.jump_timer_finished = false;
+        ent->client->resp.jump_timer_paused = true;
     }
 
 

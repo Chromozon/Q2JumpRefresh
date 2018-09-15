@@ -7,10 +7,17 @@ namespace Jump
 {
     typedef enum
     {
-        TEAM_NONE,
+        TEAM_SPECTATOR,
         TEAM_EASY,
         TEAM_HARD
     } team_t;
+
+    typedef enum
+    {
+        STATE_FREEPLAY,
+        STATE_VOTING,
+        STATE_INTERMISSION
+    } level_state_t;
 
     typedef struct
     {

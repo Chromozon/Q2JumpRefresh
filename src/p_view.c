@@ -1080,6 +1080,7 @@ void ClientEndServerFrame (edict_t *ent)
 	// should be determined by the client
 	SV_CalcBlend (ent);
 
+    // Jump TODO: this updates the health, timer, etc. that you see in the HUD
 //ZOID
 	if (!ent->client->chase_target)
 //ZOID
@@ -1095,7 +1096,7 @@ void ClientEndServerFrame (edict_t *ent)
 			ent->client->ps.stats, 
 			sizeof(ent->client->ps.stats));
 		e->client->ps.stats[STAT_LAYOUTS] = 1;
-		break;
+		break; // Jump TODO: lilred commented this break out saying it fixes some bug
 	}
 //ZOID
 

@@ -643,23 +643,32 @@ void InitClientPersistant (gclient_t *client)
 void InitClientResp (gclient_t *client)
 {
 //ZOID
-	int ctf_team = client->resp.ctf_team;
-	qboolean id_state = client->resp.id_state;
+//	int ctf_team = client->resp.ctf_team;
+//	qboolean id_state = client->resp.id_state;
 //ZOID
+    
+    // Jump
+    // The current team is always saved across respawns
+    Jump::team_t team = client->resp.jump_team;
+    // Jump
 
 	memset (&client->resp, 0, sizeof(client->resp));
 	
+    // Jump
+    client->resp.jump_team = team;
+    // Jump
+
 //ZOID
-	client->resp.ctf_team = ctf_team;
-	client->resp.id_state = id_state;
+//	client->resp.ctf_team = ctf_team;
+//	client->resp.id_state = id_state;
 //ZOID
 
 	client->resp.enterframe = level.framenum;
 	client->resp.coop_respawn = client->pers;
  
 //ZOID
-	if (ctf->value && client->resp.ctf_team < CTF_TEAM1)
-		CTFAssignTeam(client);
+//	if (ctf->value && client->resp.ctf_team < CTF_TEAM1)
+//		CTFAssignTeam(client);
 //ZOID
 }
 
@@ -1369,6 +1378,27 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 		ent->client->pers.hand = atoi(s);
 	}
 
+    // fps
+    s = Info_ValueForKey(userinfo, "cl_maxfps");
+    if (strlen(s))
+    {
+        ent->client->pers.fps = atoi(s);
+        if (ent->client->pers.fps < 20)
+        {
+            char tempString[16];
+            gi.cprintf(ent, PRINT_HIGH, "[Server] You have been kicked for lowering CL_MAXFPS below 20\n");
+            sprintf(tempString, "kick %d\n", ent - g_edicts - 1);
+            gi.AddCommandString(tempString);
+        }
+        else if (ent->client->pers.fps > 120)
+        {
+            char tempString[16];
+            gi.cprintf(ent, PRINT_HIGH, "[Server] You have been kicked for raising CL_MAXFPS above 120\n");
+            sprintf(tempString, "kick %d\n", ent - g_edicts - 1);
+            gi.AddCommandString(tempString);
+        }
+    }
+
 	// save off the userinfo in case we want to check something later
 	strncpy (ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo)-1);
 }
@@ -1413,10 +1443,16 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 	// take it, otherwise spawn one from scratch
 	if (ent->inuse == false)
 	{
+        // Jump
+        // Although not necessary because the team will be assigned in ClientBegin(),
+        // it's safe to leave this here.
+        ent->client->resp.jump_team = Jump::TEAM_SPECTATOR;
+        // Jump
+
 		// clear the respawning variables
 //ZOID -- force team join
-		ent->client->resp.ctf_team = -1;
-		ent->client->resp.id_state = true; 
+//		ent->client->resp.ctf_team = -1;
+//		ent->client->resp.id_state = true; 
 //ZOID
 		InitClientResp (ent->client);
 		if (!game.autosaved || !ent->client->pers.weapon)

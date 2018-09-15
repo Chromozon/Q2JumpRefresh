@@ -880,6 +880,10 @@ typedef struct
 
 	int			power_cubes;	// used for tracking the cubes in coop games
 	int			score;			// for calculating total unit score in coop games
+
+    // Jump
+    int         fps;
+    // Jump
 } client_persistant_t;
 
 // client data that stays across deathmatch respawns

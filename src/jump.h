@@ -42,4 +42,9 @@ namespace Jump
     edict_t* SelectJumpSpawnPoint();
 
     void ResetJumpTimer(edict_t* ent);
+
+    void ClientBeginJump(edict_t* ent);
+    void InitAsSpectator(edict_t* ent);
+
+    void MoveClientToPosition(edict_t* ent, vec3_t origin, vec3_t angles);
 }

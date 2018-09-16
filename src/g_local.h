@@ -770,7 +770,7 @@ edict_t	*PlayerTrail_LastSpot (void);
 
 
 //
-// g_client.c
+// p_client.c
 //
 void respawn (edict_t *ent);
 void BeginIntermission (edict_t *targ);
@@ -780,6 +780,7 @@ void InitClientResp (gclient_t *client);
 void InitBodyQue (void);
 void ClientBeginServerFrame (edict_t *ent);
 void ClientUserinfoChanged (edict_t *ent, char *userinfo);
+void SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles);
 
 //
 // g_player.c

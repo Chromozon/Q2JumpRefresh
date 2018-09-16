@@ -646,17 +646,8 @@ void InitClientResp (gclient_t *client)
 //	int ctf_team = client->resp.ctf_team;
 //	qboolean id_state = client->resp.id_state;
 //ZOID
-    
-    // Jump
-    // The current team is always saved across respawns
-    Jump::team_t team = client->resp.jump_team;
-    // Jump
 
 	memset (&client->resp, 0, sizeof(client->resp));
-	
-    // Jump
-    client->resp.jump_team = team;
-    // Jump
 
 //ZOID
 //	client->resp.ctf_team = ctf_team;
@@ -1260,6 +1251,12 @@ to be placed into the game.  This will happen every level load.
 */
 void ClientBegin (edict_t *ent)
 {
+    // Jump
+    // We always want to use our overridden begin logic
+    Jump::ClientBeginJump(ent);
+    return;
+    // Jump
+
 	int		i;
 
 	ent->client = game.clients + (ent - g_edicts - 1);
@@ -1339,18 +1336,24 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 	s = Info_ValueForKey (userinfo, "name");
 	strncpy (ent->client->pers.netname, s, sizeof(ent->client->pers.netname)-1);
 
-	// set skin
-	s = Info_ValueForKey (userinfo, "skin");
+    // Jump
+    // We never let the user change their skin.
+    // We set the value here so that it stays correct across connects, team changes, etc.
+    Jump::AssignTeamSkin(ent);
+    // Jump
 
+//	// set skin
+//	s = Info_ValueForKey (userinfo, "skin");
+//
 	playernum = ent-g_edicts-1;
-
-	// combine name and skin into a configstring
-//ZOID
-	if (ctf->value)
-		CTFAssignSkin(ent, s);
-	else
-//ZOID
-		gi.configstring (CS_PLAYERSKINS+playernum, va("%s\\%s", ent->client->pers.netname, s) );
+//
+//	// combine name and skin into a configstring
+////ZOID
+//	if (ctf->value)
+//		CTFAssignSkin(ent, s);
+//	else
+////ZOID
+//		gi.configstring (CS_PLAYERSKINS+playernum, va("%s\\%s", ent->client->pers.netname, s) );
 
 //ZOID
 	// set player name field (used in id_state view)
@@ -1358,18 +1361,15 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 //ZOID
 
 	// fov
-	if (deathmatch->value && ((int)dmflags->value & DF_FIXED_FOV))
-	{
-		ent->client->ps.fov = 90;
-	}
-	else
-	{
-		ent->client->ps.fov = atoi(Info_ValueForKey(userinfo, "fov"));
-		if (ent->client->ps.fov < 1)
-			ent->client->ps.fov = 90;
-		else if (ent->client->ps.fov > 160)
-			ent->client->ps.fov = 160;
-	}
+    ent->client->ps.fov = atoi(Info_ValueForKey(ent->client->pers.userinfo, "fov"));
+    if (ent->client->ps.fov < 1)
+    {
+        ent->client->ps.fov = 90;
+    }
+    else if (ent->client->ps.fov > 160)
+    {
+        ent->client->ps.fov = 160;
+    }
 
 	// handedness
 	s = Info_ValueForKey (userinfo, "hand");

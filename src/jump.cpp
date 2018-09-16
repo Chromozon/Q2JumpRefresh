@@ -222,6 +222,112 @@ namespace Jump
         ent->client->resp.jump_timer_paused = true;
     }
 
+    // This is called once whenever a player first enters a map.
+    // We want to initialize everything to a clean state,
+    // make the player a spectator, and open the join team menu.
+    void ClientBeginJump(edict_t* ent)
+    {
+        G_InitEdict(ent);
+        memset(&ent->client->ps, 0, sizeof(ent->client->ps));
+        InitClientResp(ent->client);
+
+        char userinfo[MAX_INFO_STRING];
+        memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo));
+        InitClientPersistant(ent->client);
+
+        FetchClientEntData(ent);
+
+        ent->groundentity = NULL;
+        ent->takedamage = DAMAGE_AIM;
+        ent->viewheight = 22;
+        ent->inuse = true;
+        ent->classname = "player";
+        ent->mass = 200;
+        ent->deadflag = DEAD_NO;
+        ent->air_finished = level.time + 12;
+        ent->clipmask = MASK_PLAYERSOLID;
+        ent->pain = player_pain;
+        ent->die = player_die;
+        ent->waterlevel = 0;
+        ent->watertype = 0;
+        ent->flags &= ~FL_NO_KNOCKBACK;
+        ent->svflags &= ~SVF_DEADMONSTER;
+
+        vec3_t mins = { -16, -16, -24 };
+        vec3_t maxs = { 16, 16, 32 };
+        VectorCopy(mins, ent->mins);
+        VectorCopy(maxs, ent->maxs);
+        VectorClear(ent->velocity);
+
+        ent->client->ps.gunindex = gi.modelindex(ent->client->pers.weapon->view_model);
+
+        // clear entity state values
+        ent->s.effects = 0;
+        ent->s.skinnum = ent - g_edicts - 1;
+        ent->s.modelindex = 255;        // will use the skin specified model
+        ent->s.modelindex2 = 255;       // custom gun model
+        ent->s.skinnum = ent - g_edicts - 1;
+        ent->s.frame = 0;
+
+        InitAsSpectator(ent);
+        ClientUserinfoChanged(ent, userinfo);
+
+        if (level.intermissiontime || level.state == STATE_VOTING)
+        {
+            // TODO move to intermission
+            MoveClientToIntermission(ent);
+        }
+        else
+        {
+            vec3_t spawn_origin = { 0 };
+            vec3_t spawn_angles = { 0 };
+            SelectSpawnPoint(ent, spawn_origin, spawn_angles);
+            MoveClientToPosition(ent, spawn_origin, spawn_angles);
+            
+            // Send updates to the client before opening the menu
+            gi.linkentity(ent);
+
+            OpenMenu_Join(ent);
+        }
+
+        gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
+
+        // make sure all view stuff is valid
+        ClientEndServerFrame(ent);
+    }
+
+    void InitAsSpectator(edict_t* ent)
+    {
+        ent->movetype = MOVETYPE_NOCLIP;
+        ent->solid = SOLID_NOT;
+        ent->svflags |= SVF_NOCLIENT;
+        ent->client->resp.ctf_team = CTF_NOTEAM;
+        ent->client->ps.gunindex = 0;
+        ent->client->resp.jump_team = TEAM_SPECTATOR;
+    }
+
+    void MoveClientToPosition(edict_t* ent, vec3_t origin, vec3_t angles)
+    {
+        ent->client->ps.pmove.origin[0] = origin[0] * 8;
+        ent->client->ps.pmove.origin[1] = origin[1] * 8;
+        ent->client->ps.pmove.origin[2] = origin[2] * 8;
+
+        VectorCopy(origin, ent->s.origin);
+        ent->s.origin[2] += 1;	// make sure off ground
+        VectorCopy(ent->s.origin, ent->s.old_origin);
+
+        for (int i = 0; i < 3; i++)
+        {
+            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(angles[i] - ent->client->resp.cmd_angles[i]);
+        }
+
+        ent->s.angles[PITCH] = 0;
+        ent->s.angles[YAW] = angles[YAW];
+        ent->s.angles[ROLL] = 0;
+        VectorCopy(ent->s.angles, ent->client->ps.viewangles);
+        VectorCopy(ent->s.angles, ent->client->v_angle);
+    }
+
 
     StoreBuffer::StoreBuffer() : numStores(0), nextIndex(0), stores()
     {

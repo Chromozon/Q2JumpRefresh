@@ -1116,6 +1116,7 @@ void ClientEndServerFrame (edict_t *ent)
 	VectorClear (ent->client->kick_origin);
 	VectorClear (ent->client->kick_angles);
 
+    // Jump TODO
 	// if the scoreboard is up, update it
 	if (ent->client->showscores && !(level.framenum & 31) )
 	{
@@ -1126,7 +1127,7 @@ void ClientEndServerFrame (edict_t *ent)
 			ent->client->menutime = level.time;
 		} else
 //ZOID
-			DeathmatchScoreboardMessage (ent, ent->enemy);
+		//	DeathmatchScoreboardMessage (ent, ent->enemy);
 		gi.unicast (ent, false);
 	}
 }

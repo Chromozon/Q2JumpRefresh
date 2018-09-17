@@ -196,12 +196,22 @@ void InitGame (void)
 	filterban = gi.cvar ("filterban", "1", 0);
 
 	g_select_empty = gi.cvar ("g_select_empty", "0", CVAR_ARCHIVE);
+    
+    // Jump
+    // We don't want any view rotation while running
+    run_pitch = gi.cvar("run_pitch", "0.000", 0);
+    run_roll = gi.cvar("run_roll", "0.000", 0);
+    bob_up = gi.cvar("bob_up", "0.000", 0);
+    bob_pitch = gi.cvar("bob_pitch", "0.000", 0);
+    bob_roll = gi.cvar("bob_roll", "0.000", 0);
 
-	run_pitch = gi.cvar ("run_pitch", "0.002", 0);
-	run_roll = gi.cvar ("run_roll", "0.005", 0);
-	bob_up  = gi.cvar ("bob_up", "0.005", 0);
-	bob_pitch = gi.cvar ("bob_pitch", "0.002", 0);
-	bob_roll = gi.cvar ("bob_roll", "0.002", 0);
+    // Old values
+	//run_pitch = gi.cvar ("run_pitch", "0.002", 0);
+	//run_roll = gi.cvar ("run_roll", "0.005", 0);
+	//bob_up  = gi.cvar ("bob_up", "0.005", 0);
+	//bob_pitch = gi.cvar ("bob_pitch", "0.002", 0);
+	//bob_roll = gi.cvar ("bob_roll", "0.002", 0);
+    // Jump
 
 	// flood control
 	flood_msgs = gi.cvar ("flood_msgs", "4", 0);

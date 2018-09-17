@@ -43,8 +43,8 @@ namespace Jump
         char chaseCam[MaxMenuWidth] = { 0 };
 
         strncpy(mapName, level.mapname, MaxMenuWidth - 1);
-        sprintf(playersEasy, "  (%d players)", CountPlayersEasy());
-        sprintf(playersHard, "  (%d players)", CountPlayersHard());
+        sprintf(playersEasy, "  (%d players)", CountPlayersOnTeam(TEAM_EASY));
+        sprintf(playersHard, "  (%d players)", CountPlayersOnTeam(TEAM_HARD));
 
         Menu_Join[MapNameLine].text = mapName;
         Menu_Join[NumPlayersEasyLine].text = playersEasy;
@@ -62,16 +62,18 @@ namespace Jump
         PMenu_Open(ent, Menu_Join, cursor, sizeof(Menu_Join) / sizeof(pmenu_t), NULL);
     }
 
-    // TODO
-    int CountPlayersEasy()
+    int CountPlayersOnTeam(team_t team)
     {
-        return -1;
-    }
-
-    // TODO
-    int CountPlayersHard()
-    {
-        return -1;
+        int count = 0;
+        for (int i = 0; i < game.maxclients; ++i)
+        {
+            gclient_t* client = &game.clients[i];
+            if (client != NULL && client->resp.jump_team == team)
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     void JoinTeam(edict_t* ent, team_t team)

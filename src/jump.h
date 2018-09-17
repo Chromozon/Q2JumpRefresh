@@ -23,8 +23,7 @@ namespace Jump
 
     void OpenMenu_Join(edict_t* ent);
 
-    int CountPlayersEasy();
-    int CountPlayersHard();
+    int CountPlayersOnTeam(team_t team);
 
     void JoinTeam(edict_t* ent, team_t team);
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd);

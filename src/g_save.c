@@ -198,7 +198,7 @@ void InitGame (void)
 	g_select_empty = gi.cvar ("g_select_empty", "0", CVAR_ARCHIVE);
     
     // Jump
-    // We don't want any view rotation while running
+    // We don't want any view rotation while running or crouching
     run_pitch = gi.cvar("run_pitch", "0.000", 0);
     run_roll = gi.cvar("run_roll", "0.000", 0);
     bob_up = gi.cvar("bob_up", "0.000", 0);

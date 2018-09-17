@@ -2,6 +2,8 @@
 
 namespace Jump
 {
+    static const int DefaultHealth = 1000;
+
     static const char* SexTeamEasy = "female";
     static const char* SexTeamHard = "male";
     static const char* SkinTeamEasy = "ctf_r";
@@ -67,7 +69,7 @@ namespace Jump
         int count = 0;
         for (int i = 0; i < game.maxclients; ++i)
         {
-            gclient_t* client = &game.clients[i];
+            const gclient_t* client = &game.clients[i];
             if (client != NULL && client->resp.jump_team == team)
             {
                 count++;
@@ -78,17 +80,9 @@ namespace Jump
 
     void JoinTeam(edict_t* ent, team_t team)
     {
-        ent->svflags &= ~SVF_NOCLIENT;
         ent->client->resp.jump_team = team;
-
         AssignTeamSkin(ent);
-
-        PutClientInServer(ent);
-        // add a teleportation effect
-        ent->s.event = EV_PLAYER_TELEPORT;
-        // hold in place briefly
-        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-        ent->client->ps.pmove.pm_time = 14;
+        SpawnForJumping(ent);
     }
 
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd)
@@ -125,6 +119,16 @@ namespace Jump
             Cmd_Jump_Test(ent);
             return true;
         }
+        else if (Q_stricmp(cmd, "kill") == 0)
+        {
+            Cmd_Jump_Kill(ent);
+            return true;
+        }
+        else if (Q_stricmp(cmd, "recall") == 0)
+        {
+            Cmd_Jump_Recall(ent);
+            return true;
+        }
         else
         {
             return false;
@@ -135,7 +139,7 @@ namespace Jump
     {
         if (ent->client->menu) {
             PMenu_Close(ent);
-            ent->client->update_chase = true;
+            ent->client->update_chase = true; // TODO what is this for?
         }
         else
         {
@@ -179,6 +183,31 @@ namespace Jump
         gi.unicast(ent, true);
     }
 
+    void Cmd_Jump_Kill(edict_t* ent)
+    {
+        SpawnForJumping(ent);
+    }
+
+    void Cmd_Jump_Recall(edict_t* ent)
+    {
+        if (ent->client->resp.jump_team == TEAM_EASY)
+        {
+            // TODO
+            // if (ent->client->jump_numstores > 0) 
+            //{
+            //    go back to previous store
+            //}
+            //else 
+            //{
+            SpawnForJumping(ent);
+            //}
+        }
+        else
+        {
+            SpawnForJumping(ent);
+        }
+    }
+
     void AssignTeamSkin(edict_t* ent)
     {
         int playernum = ent - g_edicts - 1;
@@ -209,10 +238,6 @@ namespace Jump
         {
             return spot;
         }
-        // There are other valid spawn entities such as
-        // info_player_team1, info_player_team2, info_player_coop,
-        // and info_player_intermission, but we never want to use
-        // these as a spawn point.
         return NULL;
     }
 
@@ -246,7 +271,7 @@ namespace Jump
         ent->classname = "player";
         ent->mass = 200;
         ent->deadflag = DEAD_NO;
-        ent->air_finished = level.time + 12;
+        ent->air_finished = level.time + 12; // TODO: this is water air time, need this?
         ent->clipmask = MASK_PLAYERSOLID;
         ent->pain = player_pain;
         ent->die = player_die;
@@ -310,6 +335,11 @@ namespace Jump
 
     void MoveClientToPosition(edict_t* ent, vec3_t origin, vec3_t angles)
     {
+        // Stop all previous movement
+        ent->waterlevel = 0;
+        ent->watertype = 0;
+        VectorClear(ent->velocity);
+
         ent->client->ps.pmove.origin[0] = origin[0] * 8;
         ent->client->ps.pmove.origin[1] = origin[1] * 8;
         ent->client->ps.pmove.origin[2] = origin[2] * 8;
@@ -328,6 +358,66 @@ namespace Jump
         ent->s.angles[ROLL] = 0;
         VectorCopy(ent->s.angles, ent->client->ps.viewangles);
         VectorCopy(ent->s.angles, ent->client->v_angle);
+    }
+
+    void SpawnForJumping(edict_t* ent)
+    {
+        // Remove spectator flags
+        ent->movetype = MOVETYPE_WALK;
+        ent->solid = SOLID_BBOX;
+        ent->flags = 0;
+        ent->svflags = 0;
+        ent->deadflag = DEAD_NO;
+
+        // Clear inventory of all weapons and ammo and change to blaster
+        // TODO: simplify the weapon change code
+        char userinfo[MAX_INFO_STRING] = { 0 };
+        memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo));
+        InitClientPersistant(ent->client); // TODO: don't like this, should just set all the vars
+        ClientUserinfoChanged(ent, userinfo);
+
+        InitClientForRespawn(ent);
+
+        // Move to spawn
+        vec3_t spawn_origin = { 0 };
+        vec3_t spawn_angles = { 0 };
+        SelectSpawnPoint(ent, spawn_origin, spawn_angles);
+        MoveClientToPosition(ent, spawn_origin, spawn_angles);
+
+        // Reset timer
+        ent->client->resp.jump_count = 0;
+        ent->client->resp.jump_timer_begin = 0;
+        ent->client->resp.jump_timer_finished = false;
+        ent->client->resp.jump_timer_paused = true;
+
+        // Clear any special move effects
+        ent->s.event = EV_NONE;
+        ent->client->ps.pmove.pm_flags = 0;
+        ent->client->ps.pmove.pm_time = 0;
+
+        gi.linkentity(ent);
+    }
+
+    void InitClientForRespawn(edict_t* ent)
+    {
+        // Clear out the entire inventory
+        memset(ent->client->pers.inventory, 0, sizeof(ent->client->pers.inventory));
+
+        // Unequip all weapons
+        ent->client->pers.weapon = NULL;
+        ent->client->pers.lastweapon = NULL;
+        ent->client->pers.selected_item = 0;
+        VectorClear(ent->client->ps.gunangles);
+        VectorClear(ent->client->ps.gunoffset);
+        ent->client->ps.gunframe = 0;
+        ent->client->ps.gunindex = 0;
+
+        ent->client->pers.health = DefaultHealth;
+        ent->health = DefaultHealth;
+
+        // Score is unused in Jump
+        ent->client->resp.score = 0;
+        ent->client->pers.score = 0;
     }
 
 

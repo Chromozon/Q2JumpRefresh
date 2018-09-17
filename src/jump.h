@@ -35,6 +35,8 @@ namespace Jump
     void Cmd_Jump_Inven(edict_t* ent);
     void Cmd_Jump_Noclip(edict_t* ent);
     void Cmd_Jump_Test(edict_t* ent);
+    void Cmd_Jump_Kill(edict_t* ent);
+    void Cmd_Jump_Recall(edict_t* ent);
 
     void AssignTeamSkin(edict_t* ent);
 
@@ -46,4 +48,7 @@ namespace Jump
     void InitAsSpectator(edict_t* ent);
 
     void MoveClientToPosition(edict_t* ent, vec3_t origin, vec3_t angles);
+
+    void SpawnForJumping(edict_t* ent);
+    void InitClientForRespawn(edict_t* ent);
 }

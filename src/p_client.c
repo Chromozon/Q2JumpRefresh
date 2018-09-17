@@ -945,7 +945,12 @@ void	SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles)
 	}
 
 	VectorCopy (spot->s.origin, origin);
-	origin[2] += 9;
+
+    // Jump
+    // We don't want the spawn point to be floating above the spot on the ground
+	//origin[2] += 9;
+    // Jump
+
 	VectorCopy (spot->s.angles, angles);
 }
 
@@ -1193,6 +1198,7 @@ void PutClientInServer (edict_t *ent)
 		return;
 //ZOID
 
+    // Jump note: KillBox does the telefrag on spawn, so we don't need this in our code!
 	if (!KillBox (ent))
 	{	// could't spawn in?
 	}

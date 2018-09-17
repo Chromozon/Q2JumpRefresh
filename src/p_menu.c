@@ -89,6 +89,7 @@ void PMenu_Close(edict_t *ent)
 	free(hnd);
 	ent->client->menu = NULL;
 	ent->client->showscores = false;
+    ent->client->menudirty = false;
 }
 
 // only use on pmenu's that have been called with PMenu_Open

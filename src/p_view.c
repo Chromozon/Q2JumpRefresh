@@ -1125,9 +1125,11 @@ void ClientEndServerFrame (edict_t *ent)
 			PMenu_Do_Update(ent);
 			ent->client->menudirty = false;
 			ent->client->menutime = level.time;
-		} else
+		}
 //ZOID
+        // else {
 		//	DeathmatchScoreboardMessage (ent, ent->enemy);
+        // }
 		gi.unicast (ent, false);
 	}
 }

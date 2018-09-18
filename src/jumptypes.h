@@ -21,7 +21,7 @@ namespace Jump
 
     typedef struct
     {
-        int time;
+        int time_interval;
         vec3_t pos;
         vec3_t angles;
     } store_data_t;

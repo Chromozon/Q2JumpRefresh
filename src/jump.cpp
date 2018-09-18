@@ -233,7 +233,7 @@ namespace Jump
     {
         // Save all of the state
         store_data_t data = { 0 };
-        data.time = Sys_Milliseconds();
+        data.time_interval = Sys_Milliseconds() - ent->client->resp.jump_timer_begin;
         VectorCopy(ent->s.origin, data.pos);
         VectorCopy(ent->s.angles, data.angles);
         data.angles[ROLL] = 0; // fixes the problem where the view is tilted after recall
@@ -495,7 +495,7 @@ namespace Jump
             gi.error("Uh oh, tried to use a store on team hard.");
             return;
         }
-        ent->client->resp.jump_timer_begin = Sys_Milliseconds() - data.time;
+        ent->client->resp.jump_timer_begin = Sys_Milliseconds() - data.time_interval;
         MoveClientToPosition(ent, data.pos, data.angles);
     }
 

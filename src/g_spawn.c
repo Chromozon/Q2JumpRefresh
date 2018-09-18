@@ -833,7 +833,10 @@ void SP_worldspawn (edict_t *ent)
 
 	gi.configstring (CS_MAXCLIENTS, va("%i", (int)(maxclients->value) ) );
 
+    // Jump
+    // Removing all CTF HUD stuff for now
 	// status bar program
+#if 0
 	if (deathmatch->value)
 //ZOID
 		if (ctf->value) {
@@ -844,7 +847,7 @@ void SP_worldspawn (edict_t *ent)
 			gi.configstring (CS_STATUSBAR, dm_statusbar);
 	else
 		gi.configstring (CS_STATUSBAR, single_statusbar);
-
+#endif
 	//---------------
 
 

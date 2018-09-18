@@ -1737,6 +1737,19 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 		client->menudirty = false;
 	}
 //ZOID
+
+    // Jump: client side timer
+    // Jump TODO: this updates the health, timer, etc. that you see in the HUD
+    int time = Sys_Milliseconds() - ent->client->resp.jump_timer_begin;
+    if (time < 0 || ent->client->resp.jump_timer_paused)
+    {
+        time = 0;
+    }
+    char buffer[512] = { 0 };
+    Com_sprintf(buffer, sizeof(buffer), "xv 112 yb -58 string \" %d.%d \"", time / 1000, time % 1000);
+    gi.configstring(CS_STATUSBAR, buffer);
+    // Jump
+    gi.unicast(ent, true);
 }
 
 

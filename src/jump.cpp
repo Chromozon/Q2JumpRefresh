@@ -4,6 +4,8 @@ namespace Jump
 {
     static const int DefaultHealth = 1000;
 
+    static const char* StoreModel = "models/monsters/commandr/head/tris.md2";
+
     static const char* SexTeamEasy = "female";
     static const char* SexTeamHard = "male";
     static const char* SkinTeamEasy = "ctf_r";
@@ -129,6 +131,16 @@ namespace Jump
             Cmd_Jump_Recall(ent);
             return true;
         }
+        else if (Q_stricmp(cmd, "store") == 0)
+        {
+            Cmd_Jump_Store(ent);
+            return true;
+        }
+        else if (Q_stricmp(cmd, "reset") == 0)
+        {
+            Cmd_Jump_Reset(ent);
+            return true;
+        }
         else
         {
             return false;
@@ -192,15 +204,24 @@ namespace Jump
     {
         if (ent->client->resp.jump_team == TEAM_EASY)
         {
-            // TODO
-            // if (ent->client->jump_numstores > 0) 
-            //{
-            //    go back to previous store
-            //}
-            //else 
-            //{
-            SpawnForJumping(ent);
-            //}
+            if (ent->client->store_buffer.HasStore())
+            {
+                int num = 1;
+                if (gi.argc() >= 2)
+                {
+                    num = atoi(gi.argv(1));
+                    if (num == 0)
+                    {
+                        num++; // convert "recall 0" into "recall 1"
+                    }
+                }
+                store_data_t data = ent->client->store_buffer.GetStore(num);
+                SpawnAtStorePosition(ent, data);
+            }
+            else
+            {
+                SpawnForJumping(ent);
+            }
         }
         else
         {
@@ -208,8 +229,54 @@ namespace Jump
         }
     }
 
+    void Cmd_Jump_Store(edict_t* ent)
+    {
+        // Save all of the state
+        store_data_t data = { 0 };
+        data.time = Sys_Milliseconds();
+        VectorCopy(ent->s.origin, data.pos);
+        VectorCopy(ent->s.angles, data.angles);
+        data.angles[ROLL] = 0; // fixes the problem where the view is tilted after recall
+        ent->client->store_buffer.PushStore(data);
+
+        // Place an entity at the position
+        if (ent->client->store_ent)
+        {
+            G_FreeEdict(ent->client->store_ent);
+            ent->client->store_ent = NULL;
+        }
+        ent->client->store_ent = G_Spawn();
+        VectorCopy(data.pos, ent->client->store_ent->s.origin);
+        VectorCopy(data.pos, ent->client->store_ent->s.old_origin);
+        ent->client->store_ent->s.old_origin[2] -= 10;
+        ent->client->store_ent->s.origin[2] -= 10;
+        ent->client->store_ent->svflags = SVF_PROJECTILE;
+        VectorCopy(data.angles, ent->client->store_ent->s.angles);
+        ent->client->store_ent->movetype = MOVETYPE_NONE;
+        ent->client->store_ent->clipmask = MASK_PLAYERSOLID;
+        ent->client->store_ent->solid = SOLID_NOT;
+        ent->client->store_ent->s.renderfx = RF_TRANSLUCENT;
+        VectorClear(ent->client->store_ent->mins);
+        VectorClear(ent->client->store_ent->maxs);
+        ent->client->store_ent->s.modelindex = gi.modelindex(const_cast<char*>(StoreModel));
+        ent->client->store_ent->dmg = 0;
+        ent->client->store_ent->classname = "store_ent";
+        gi.linkentity(ent->client->store_ent);
+    }
+
+    void Cmd_Jump_Reset(edict_t* ent)
+    {
+        ent->client->store_buffer.Reset();
+        if (ent->client->store_ent)
+        {
+            G_FreeEdict(ent->client->store_ent);
+            ent->client->store_ent = NULL;
+        }
+    }
+
     void AssignTeamSkin(edict_t* ent)
     {
+        // TODO: doesn't seem to be working with the model
         int playernum = ent - g_edicts - 1;
 
         switch (ent->client->resp.jump_team)
@@ -348,16 +415,17 @@ namespace Jump
         ent->s.origin[2] += 1;	// make sure off ground
         VectorCopy(ent->s.origin, ent->s.old_origin);
 
-        for (int i = 0; i < 3; i++)
-        {
-            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(angles[i] - ent->client->resp.cmd_angles[i]);
-        }
-
         ent->s.angles[PITCH] = 0;
         ent->s.angles[YAW] = angles[YAW];
         ent->s.angles[ROLL] = 0;
         VectorCopy(ent->s.angles, ent->client->ps.viewangles);
         VectorCopy(ent->s.angles, ent->client->v_angle);
+        VectorClear(ent->client->ps.viewoffset);
+
+        for (int i = 0; i < 3; i++)
+        {
+            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->s.angles[i] - ent->client->resp.cmd_angles[i]);
+        }
     }
 
     void SpawnForJumping(edict_t* ent)
@@ -420,6 +488,17 @@ namespace Jump
         ent->client->pers.score = 0;
     }
 
+    void SpawnAtStorePosition(edict_t* ent, store_data_t data)
+    {
+        if (ent->client->resp.jump_team == TEAM_HARD) {
+            // Should never get here!
+            gi.error("Uh oh, tried to use a store on team hard.");
+            return;
+        }
+        ent->client->resp.jump_timer_begin = Sys_Milliseconds() - data.time;
+        MoveClientToPosition(ent, data.pos, data.angles);
+    }
+
 
     StoreBuffer::StoreBuffer() : numStores(0), nextIndex(0), stores()
     {
@@ -437,18 +516,26 @@ namespace Jump
 
     store_data_t StoreBuffer::GetStore(int prevNum)
     {
-        int index = 0;
-        if (prevNum > numStores)
+        int desired = prevNum;
+        if (desired > numStores)
         {
             // If a user asks for a prev that is larger than
             // what we have stored, we return the oldest data.
-            index = (nextIndex - numStores) % MAX_STORES;
+            desired = numStores;
         }
-        else if (prevNum > 0)
+        int index = nextIndex - desired;
+        if (index < 0)
         {
-            index = (nextIndex - prevNum) % MAX_STORES;
+            index = MAX_STORES - abs(nextIndex - desired);
         }
         return stores[index];
+    }
+
+    void StoreBuffer::Reset()
+    {
+        nextIndex = 0;
+        numStores = 0;
+        memset(stores, 0, sizeof(stores));
     }
 
     bool StoreBuffer::HasStore()

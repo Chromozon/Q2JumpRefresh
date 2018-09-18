@@ -25,4 +25,21 @@ namespace Jump
         vec3_t pos;
         vec3_t angles;
     } store_data_t;
+
+    // TODO move this somewhere else
+    #define MAX_STORES 5
+
+    class StoreBuffer
+    {
+    public:
+        StoreBuffer();
+        void PushStore(const store_data_t& data);
+        store_data_t GetStore(int prevNum);
+        void Reset();
+        bool HasStore();
+    private:
+        int numStores;
+        int nextIndex;
+        store_data_t stores[MAX_STORES];
+    };
 }

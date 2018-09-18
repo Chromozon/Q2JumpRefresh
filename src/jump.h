@@ -4,22 +4,11 @@
 
 #define JUMP_STRING_VERSION "1.0slip"
 
-#define MAX_STORES 5
+
 
 namespace Jump
 {
-    class StoreBuffer
-    {
-    public:
-        StoreBuffer();
-        void PushStore(const store_data_t& data);
-        store_data_t GetStore(int prevNum);
-        bool HasStore();
-    private:
-        int numStores;
-        int nextIndex;
-        store_data_t stores[MAX_STORES];
-    };
+
 
     void OpenMenu_Join(edict_t* ent);
 
@@ -37,6 +26,8 @@ namespace Jump
     void Cmd_Jump_Test(edict_t* ent);
     void Cmd_Jump_Kill(edict_t* ent);
     void Cmd_Jump_Recall(edict_t* ent);
+    void Cmd_Jump_Store(edict_t* ent);
+    void Cmd_Jump_Reset(edict_t* ent);
 
     void AssignTeamSkin(edict_t* ent);
 
@@ -51,4 +42,5 @@ namespace Jump
 
     void SpawnForJumping(edict_t* ent);
     void InitClientForRespawn(edict_t* ent);
+    void SpawnAtStorePosition(edict_t* ent, store_data_t data);
 }

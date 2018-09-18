@@ -1019,6 +1019,11 @@ struct gclient_s
 	float		menutime;			// time to update menu
 	qboolean	menudirty;
 //ZOID
+
+    // Jump
+    Jump::StoreBuffer store_buffer;
+    edict_t*          store_ent;
+    // Jump
 };
 
 

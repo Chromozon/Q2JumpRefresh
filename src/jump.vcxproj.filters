@@ -96,6 +96,12 @@
     <ClCompile Include="jump.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="jump_cmds.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="jump_types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h">
@@ -119,7 +125,10 @@
     <ClInclude Include="jump.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="jumptypes.h">
+    <ClInclude Include="jump_cmds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jump_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

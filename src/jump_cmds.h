@@ -1,0 +1,16 @@
+#pragma once
+
+#include "g_local.h"
+
+namespace Jump
+{
+    bool JumpClientCommand(edict_t* ent);
+
+    void Cmd_Jump_Inven(edict_t* ent);
+    void Cmd_Jump_Noclip(edict_t* ent);
+    void Cmd_Jump_Test(edict_t* ent);
+    void Cmd_Jump_Kill(edict_t* ent);
+    void Cmd_Jump_Recall(edict_t* ent);
+    void Cmd_Jump_Store(edict_t* ent);
+    void Cmd_Jump_Reset(edict_t* ent);
+}

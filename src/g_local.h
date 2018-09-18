@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //ZOID
 
 // Jump
-#include "jumptypes.h"
+#include "jump_types.h"
 // Jump
 
 // the "gameversion" client command will print this plus compile date

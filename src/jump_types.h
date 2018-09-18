@@ -3,6 +3,8 @@
 // Data types that only have dependencies on the base game engine headers
 #include "q_shared.h"
 
+#define MAX_STORES 5
+
 namespace Jump
 {
     typedef enum
@@ -25,9 +27,6 @@ namespace Jump
         vec3_t pos;
         vec3_t angles;
     } store_data_t;
-
-    // TODO move this somewhere else
-    #define MAX_STORES 5
 
     class StoreBuffer
     {

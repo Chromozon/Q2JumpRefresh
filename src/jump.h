@@ -4,12 +4,10 @@
 
 #define JUMP_STRING_VERSION "1.0slip"
 
-
+#define STORE_MODEL "models/monsters/commandr/head/tris.md2"
 
 namespace Jump
 {
-
-
     void OpenMenu_Join(edict_t* ent);
 
     int CountPlayersOnTeam(team_t team);
@@ -18,16 +16,6 @@ namespace Jump
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd);
     void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd);
     void JoinChaseCam(edict_t* ent, pmenuhnd_t* hnd);
-
-    bool JumpClientCommand(edict_t* ent);
-
-    void Cmd_Jump_Inven(edict_t* ent);
-    void Cmd_Jump_Noclip(edict_t* ent);
-    void Cmd_Jump_Test(edict_t* ent);
-    void Cmd_Jump_Kill(edict_t* ent);
-    void Cmd_Jump_Recall(edict_t* ent);
-    void Cmd_Jump_Store(edict_t* ent);
-    void Cmd_Jump_Reset(edict_t* ent);
 
     void AssignTeamSkin(edict_t* ent);
 

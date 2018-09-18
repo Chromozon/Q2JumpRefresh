@@ -945,12 +945,7 @@ void	SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles)
 	}
 
 	VectorCopy (spot->s.origin, origin);
-
-    // Jump
-    // We don't want the spawn point to be floating above the spot on the ground
-	//origin[2] += 9;
-    // Jump
-
+	origin[2] += 9;
 	VectorCopy (spot->s.angles, angles);
 }
 

@@ -1741,7 +1741,7 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
         time = 0;
     }
     char buffer[512] = { 0 };
-    Com_sprintf(buffer, sizeof(buffer), "xv 112 yb -58 string \" %d.%d \"", time / 1000, time % 1000);
+    Com_sprintf(buffer, sizeof(buffer), "xv 112 yb -58 string \" %d.%03d \"", time / 1000, time % 1000);
     gi.configstring(CS_STATUSBAR, buffer);
     // Jump
     gi.unicast(ent, true);

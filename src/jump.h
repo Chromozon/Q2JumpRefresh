@@ -31,4 +31,6 @@ namespace Jump
     void SpawnForJumping(edict_t* ent);
     void InitClientForRespawn(edict_t* ent);
     void SpawnAtStorePosition(edict_t* ent, store_data_t data);
+
+    qboolean PickupWeapon(edict_t* weap, edict_t* ent);
 }

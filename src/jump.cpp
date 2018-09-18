@@ -324,4 +324,29 @@ namespace Jump
         MoveClientToPosition(ent, data.pos, data.angles);
     }
 
+    qboolean PickupWeapon(edict_t* weap, edict_t* ent)
+    {
+        // TODO
+        // If rocket, grenade launcher, BFG
+        // and mset enabled, don't finish timer
+
+        if (!ent->client->resp.jump_timer_finished)
+        {
+            int finish_time = Sys_Milliseconds() - ent->client->resp.jump_timer_begin;
+            if (ent->client->resp.jump_team == TEAM_EASY)
+            {
+                gi.cprintf(ent, PRINT_HIGH, "You would have obtained this weapon in %d.%03d seconds.\n", finish_time / 1000, finish_time % 1000);
+            }
+            else // TEAM_HARD
+            {
+                // TODO: save time!
+                gi.bprintf(PRINT_HIGH, "%s finished in %d.%03d seconds (PB %1.3f | 1st +%1.3f)\n",
+                    ent->client->pers.netname, finish_time / 1000, finish_time % 1000, 0.0, 0.0);
+            }
+            ent->client->resp.jump_timer_finished = true;
+        }
+
+        return false; // leave the weapon there
+    }
+
 }

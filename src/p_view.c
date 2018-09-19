@@ -1132,5 +1132,15 @@ void ClientEndServerFrame (edict_t *ent)
         // }
 		gi.unicast (ent, false);
 	}
+
+    // Jump
+    if (ent->client->resp.jump_team == Jump::TEAM_HARD)
+    {
+        if (!ent->client->resp.jump_timer_finished && !ent->client->resp.jump_timer_paused)
+        {
+            Jump::SaveReplayFrame(ent);
+        }
+    }
+    // Jump
 }
 

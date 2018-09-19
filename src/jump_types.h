@@ -4,6 +4,7 @@
 #include "q_shared.h"
 
 #define MAX_STORES 5
+#define MAX_REPLAY_FRAMES 10000 // 10 frames/sec are recorded for replays
 
 namespace Jump
 {
@@ -16,10 +17,34 @@ namespace Jump
 
     typedef enum
     {
-        STATE_FREEPLAY,
-        STATE_VOTING,
-        STATE_INTERMISSION
+        LEVEL_STATE_FREEPLAY,
+        LEVEL_STATE_VOTING,
+        LEVEL_STATE_INTERMISSION
     } level_state_t;
+
+    typedef enum
+    {
+        KEY_STATE_FORWARD = 1,
+        KEY_STATE_BACK = 2,
+        KEY_STATE_LEFT = 4,
+        KEY_STATE_RIGHT = 8,
+        KEY_STATE_JUMP = 16,
+        KEY_STATE_CROUCH = 32
+    } key_state_t;
+
+    typedef struct
+    {
+        vec3_t pos;
+        vec3_t angles;
+        char key_states;
+        char fps;
+    } replay_frame_t;
+
+    typedef struct
+    {
+        replay_frame_t frames[MAX_REPLAY_FRAMES];
+        int next_frame_index;
+    } replay_buffer_t;
 
     typedef struct
     {

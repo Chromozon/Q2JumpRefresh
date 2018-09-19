@@ -191,7 +191,7 @@ namespace Jump
         InitAsSpectator(ent);
         ClientUserinfoChanged(ent, userinfo);
 
-        if (level.intermissiontime || level.state == STATE_VOTING)
+        if (level.intermissiontime || level.state == LEVEL_STATE_VOTING)
         {
             // TODO move to intermission
             MoveClientToIntermission(ent);
@@ -283,6 +283,9 @@ namespace Jump
         ent->client->resp.jump_timer_finished = false;
         ent->client->resp.jump_timer_paused = true;
 
+        // Clear replay
+        ClearReplayData(ent);
+
         // Clear any special move effects
         ent->s.event = EV_NONE;
         ent->client->ps.pmove.pm_flags = 0;
@@ -339,14 +342,45 @@ namespace Jump
             }
             else // TEAM_HARD
             {
-                // TODO: save time!
                 gi.bprintf(PRINT_HIGH, "%s finished in %d.%03d seconds (PB %1.3f | 1st +%1.3f)\n",
                     ent->client->pers.netname, finish_time / 1000, finish_time % 1000, 0.0, 0.0);
+
+                // TODO: save time!
+                if (level.replay_fastest_time == 0 || finish_time < level.replay_fastest_time)
+                {
+                    level.replay_fastest_time = finish_time;
+                    strncpy(level.replay_fastest_name, ent->client->pers.netname, 15);
+                    level.replay_fastest_buffer = ent->client->replay_buffer;
+                    gi.cprintf(ent, PRINT_HIGH, "You've set a new fastest time!\n");
+                }
             }
             ent->client->resp.jump_timer_finished = true;
         }
 
         return false; // leave the weapon there
+    }
+
+    void SaveReplayFrame(edict_t* ent)
+    {
+        int index = ent->client->replay_buffer.next_frame_index;
+        if (index < MAX_REPLAY_FRAMES)
+        {
+            replay_frame_t* frame = &ent->client->replay_buffer.frames[index];
+
+            VectorCopy(ent->s.origin, frame->pos);
+            VectorCopy(ent->client->v_angle, frame->angles);
+            // TODO keystates
+            // TODO fps
+
+            ent->client->replay_buffer.next_frame_index++;
+
+            gi.cprintf(ent, PRINT_HIGH, "Saved replay frame %d\n", index);
+        }
+    }
+
+    void ClearReplayData(edict_t* ent)
+    {
+        memset(&ent->client->replay_buffer, 0, sizeof(ent->client->replay_buffer));
     }
 
 }

@@ -33,4 +33,7 @@ namespace Jump
     void SpawnAtStorePosition(edict_t* ent, store_data_t data);
 
     qboolean PickupWeapon(edict_t* weap, edict_t* ent);
+
+    void SaveReplayFrame(edict_t* ent);
+    void ClearReplayData(edict_t* ent);
 }

@@ -1804,4 +1804,33 @@ void ClientBeginServerFrame (edict_t *ent)
 			PlayerTrail_Add (ent->s.old_origin);
 
 	client->latched_buttons = 0;
+
+    // Jump
+    if (ent->client->update_replay)
+    {
+        VectorCopy(level.replay_fastest_buffer.frames[ent->client->replay_current_frame].pos, ent->s.origin);
+        VectorCopy(level.replay_fastest_buffer.frames[ent->client->replay_current_frame].angles, ent->client->v_angle);
+        VectorCopy(level.replay_fastest_buffer.frames[ent->client->replay_current_frame].angles, ent->client->ps.viewangles);
+        // TODO keys, fps
+
+        // Since we only send a position update every server frame (10 fps),
+        // the client needs to smoothen the movement between the two frames.
+        // Setting these flags will do this.
+        ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
+        ent->client->ps.pmove.pm_type = PM_FREEZE;
+
+        for (int i = 0; i < 3; i++)
+        {
+            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
+        }
+
+        ent->client->replay_current_frame++;
+        if (ent->client->replay_current_frame >= level.replay_fastest_buffer.next_frame_index)
+        {
+            ent->client->ps.pmove.pm_flags = 0;
+            ent->client->ps.pmove.pm_type = PM_SPECTATOR;
+            ent->client->update_replay = false;
+        }
+    }
+    // Jump
 }

@@ -13,4 +13,5 @@ namespace Jump
     void Cmd_Jump_Recall(edict_t* ent);
     void Cmd_Jump_Store(edict_t* ent);
     void Cmd_Jump_Reset(edict_t* ent);
+    void Cmd_Jump_Replay(edict_t* ent);
 }

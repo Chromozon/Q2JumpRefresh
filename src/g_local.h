@@ -354,6 +354,10 @@ typedef struct
 
     // Jump
     Jump::level_state_t state;
+
+    char replay_fastest_name[16];
+    int replay_fastest_time;
+    Jump::replay_buffer_t replay_fastest_buffer;
     // Jump
 
 } level_locals_t;
@@ -1023,6 +1027,11 @@ struct gclient_s
     // Jump
     Jump::StoreBuffer store_buffer;
     edict_t*          store_ent;
+
+    Jump::replay_buffer_t replay_buffer;
+    int                   replay_current_frame;
+
+    qboolean update_replay; // TODO clean up?
     // Jump
 };
 

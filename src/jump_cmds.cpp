@@ -44,6 +44,11 @@ namespace Jump
             Cmd_Jump_Reset(ent);
             return true;
         }
+        else if (Q_stricmp(cmd, "replay") == 0)
+        {
+            Cmd_Jump_Replay(ent);
+            return true;
+        }
         else
         {
             return false;
@@ -174,6 +179,36 @@ namespace Jump
         {
             G_FreeEdict(ent->client->store_ent);
             ent->client->store_ent = NULL;
+        }
+    }
+
+    void Cmd_Jump_Replay(edict_t* ent)
+    {
+        // Right now we only support "replay now"
+        if (Q_stricmp(gi.argv(1), "now") == 0)
+        {
+            if (level.replay_fastest_time <= 0)
+            {
+                gi.cprintf(ent, PRINT_HIGH, "No time set\n");
+            }
+            else
+            {
+                ResetJumpTimer(ent); // is this needed?
+                ClearReplayData(ent); // is this needed?
+
+                // Move client to a spectator
+                InitAsSpectator(ent);
+
+                // Set to replay state
+                ent->client->replay_current_frame = 0;
+                ent->client->update_replay = true;
+
+                gi.cprintf(ent, PRINT_HIGH, "Replaying %s with a time of %d.%03d seconds\n",
+                    level.replay_fastest_name, 
+                    level.replay_fastest_time / 1000, 
+                    level.replay_fastest_time % 1000
+                );
+            }
         }
     }
 }

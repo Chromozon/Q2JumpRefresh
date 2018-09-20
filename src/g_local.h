@@ -1032,6 +1032,9 @@ struct gclient_s
     int                   replay_current_frame;
 
     qboolean update_replay; // TODO clean up?
+
+    int key_states;
+    int fps;
     // Jump
 };
 

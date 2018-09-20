@@ -24,6 +24,7 @@ namespace Jump
 
     typedef enum
     {
+        KEY_STATE_NONE = 0,
         KEY_STATE_FORWARD = 1,
         KEY_STATE_BACK = 2,
         KEY_STATE_LEFT = 4,
@@ -36,8 +37,8 @@ namespace Jump
     {
         vec3_t pos;
         vec3_t angles;
-        char key_states;
-        char fps;
+        int key_states;
+        int fps;
     } replay_frame_t;
 
     typedef struct

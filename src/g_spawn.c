@@ -20,6 +20,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "g_local.h"
 
+// Jump
+#include "jump_hud.h"
+// Jump
+
 typedef struct
 {
 	char	*name;
@@ -988,5 +992,9 @@ void SP_worldspawn (edict_t *ent)
 
 	// 63 testing
 	gi.configstring(CS_LIGHTS+63, "a");
+
+    // Jump
+    Jump::SetConfigStrings();
+    // Jump
 }
 

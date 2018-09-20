@@ -19,6 +19,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #include "g_local.h"
 
+// Jump
+#include "jump_hud.h"
+// Jump
 
 
 /*
@@ -538,8 +541,12 @@ void G_SetStats (edict_t *ent)
 	else
 		ent->client->ps.stats[STAT_HELPICON] = 0;
 
+    // Jump
+    Jump::SetStats(ent);
+    // Jump
+
 //ZOID
-	SetCTFStats(ent);
+	//SetCTFStats(ent);
 //ZOID
 }
 

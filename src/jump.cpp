@@ -369,12 +369,10 @@ namespace Jump
 
             VectorCopy(ent->s.origin, frame->pos);
             VectorCopy(ent->client->v_angle, frame->angles);
-            // TODO keystates
-            // TODO fps
+            frame->key_states = ent->client->key_states;
+            frame->fps = ent->client->fps;
 
             ent->client->replay_buffer.next_frame_index++;
-
-            gi.cprintf(ent, PRINT_HIGH, "Saved replay frame %d\n", index);
         }
     }
 
@@ -382,5 +380,4 @@ namespace Jump
     {
         memset(&ent->client->replay_buffer, 0, sizeof(ent->client->replay_buffer));
     }
-
 }

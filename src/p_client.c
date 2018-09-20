@@ -1742,7 +1742,41 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
     }
     char buffer[512] = { 0 };
     Com_sprintf(buffer, sizeof(buffer), "xv 112 yb -58 string \" %d.%03d \"", time / 1000, time % 1000);
-    gi.configstring(CS_STATUSBAR, buffer);
+    //gi.configstring(CS_STATUSBAR, buffer);
+
+    // Key states are not actually sent to the server frames.  They are used to compute a move state,
+    // and that value is sent to the server.  So we need to figure out key states here.
+    // Note: although the client can hold down forward/back or left/right at the same time,
+    // only one of the keys is actually registered.
+    ent->client->key_states = 0;
+
+    if (ucmd->forwardmove > 10)
+    {
+        ent->client->key_states |= Jump::KEY_STATE_FORWARD;
+    }
+    else if (ucmd->forwardmove < -10)
+    {
+        ent->client->key_states |= Jump::KEY_STATE_BACK;
+    }
+
+    if (ucmd->sidemove > 10)
+    {
+        ent->client->key_states |= Jump::KEY_STATE_RIGHT;
+    }
+    else if (ucmd->sidemove < -10)
+    {
+        ent->client->key_states |= Jump::KEY_STATE_LEFT;
+    }
+
+    if (ucmd->upmove > 10)
+    {
+        ent->client->key_states |= Jump::KEY_STATE_JUMP;
+    }
+    else if (ucmd->upmove < -10)
+    {
+        ent->client->key_states |= Jump::KEY_STATE_CROUCH;
+    }
+
     // Jump
     gi.unicast(ent, true);
 }

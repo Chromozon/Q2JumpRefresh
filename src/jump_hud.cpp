@@ -68,7 +68,13 @@ namespace Jump
             ent->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = 0;
             ent->client->ps.stats[STAT_JUMP_TIMER_MS] = 0;
         }
-        else
+        else if (ent->client->resp.jump_timer_finished)
+        {
+            int time = ent->client->resp.jump_timer_end - ent->client->resp.jump_timer_begin;
+            ent->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = time / 1000;
+            ent->client->ps.stats[STAT_JUMP_TIMER_MS] = (time % 1000) / 100;
+        }
+        else // active timer
         {
             int time = Sys_Milliseconds() - ent->client->resp.jump_timer_begin;
             ent->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = time / 1000;

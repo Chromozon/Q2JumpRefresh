@@ -916,6 +916,7 @@ typedef struct
     Jump::team_t jump_team;
     int          jump_count;
     int          jump_timer_begin;
+    int          jump_timer_end;
     qboolean     jump_timer_paused;
     qboolean     jump_timer_finished;
 // Jump

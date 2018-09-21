@@ -280,6 +280,7 @@ namespace Jump
         // Reset timer
         ent->client->resp.jump_count = 0;
         ent->client->resp.jump_timer_begin = 0;
+        ent->client->resp.jump_timer_end = 0;
         ent->client->resp.jump_timer_finished = false;
         ent->client->resp.jump_timer_paused = true;
 
@@ -335,20 +336,21 @@ namespace Jump
 
         if (!ent->client->resp.jump_timer_finished)
         {
-            int finish_time = Sys_Milliseconds() - ent->client->resp.jump_timer_begin;
+            ent->client->resp.jump_timer_end = Sys_Milliseconds();
+            int time_diff = ent->client->resp.jump_timer_end - ent->client->resp.jump_timer_begin;
             if (ent->client->resp.jump_team == TEAM_EASY)
             {
-                gi.cprintf(ent, PRINT_HIGH, "You would have obtained this weapon in %d.%03d seconds.\n", finish_time / 1000, finish_time % 1000);
+                gi.cprintf(ent, PRINT_HIGH, "You would have obtained this weapon in %d.%03d seconds.\n", time_diff / 1000, time_diff % 1000);
             }
             else // TEAM_HARD
             {
                 gi.bprintf(PRINT_HIGH, "%s finished in %d.%03d seconds (PB %1.3f | 1st +%1.3f)\n",
-                    ent->client->pers.netname, finish_time / 1000, finish_time % 1000, 0.0, 0.0);
+                    ent->client->pers.netname, time_diff / 1000, time_diff % 1000, 0.0, 0.0);
 
                 // TODO: save time!
-                if (level.replay_fastest_time == 0 || finish_time < level.replay_fastest_time)
+                if (level.replay_fastest_time == 0 || time_diff < level.replay_fastest_time)
                 {
-                    level.replay_fastest_time = finish_time;
+                    level.replay_fastest_time = time_diff;
                     strncpy(level.replay_fastest_name, ent->client->pers.netname, 15);
                     level.replay_fastest_buffer = ent->client->replay_buffer;
                     gi.cprintf(ent, PRINT_HIGH, "You've set a new fastest time!\n");

@@ -2,6 +2,7 @@
 #include "jump_cmds.h"
 #include "jump.h"
 #include "jump_types.h"
+#include "libpq-fe.h"
 
 namespace Jump
 {
@@ -58,6 +59,8 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        //PGconn* conn = PQconnectStart("postgresql://[user[:password]@][netloc][:port][,...][/dbname][?param1=value1&...]");
+
         if (ent->client->menu)
         {
             PMenu_Close(ent);

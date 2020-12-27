@@ -2,10 +2,39 @@
 #include "jump_cmds.h"
 #include "jump.h"
 #include "jump_types.h"
-#include "libpq-fe.h"
+#include "jump_database.h"
+
+#include <unordered_map>
+#include <string>
 
 namespace Jump
 {
+    typedef void(*CmdFunction)(edict_t* ent);
+
+    static std::unordered_map<std::string, CmdFunction> CmdTable = {
+        { "inven", Cmd_Jump_Inven },
+        { "noclip", Cmd_Jump_Noclip },
+        { "test", Cmd_Jump_Test },
+        { "kill", Cmd_Jump_Kill},
+        { "recall", Cmd_Jump_Recall },
+        { "store", Cmd_Jump_Store },
+        { "reset", Cmd_Jump_Reset },
+        { "replay", Cmd_Jump_Replay },
+    };
+
+    bool HandleJumpCommand(edict_t* ent)
+    {
+        std::string cmd = gi.argv(0);
+        const auto cmdPair = CmdTable.find(cmd);
+        if (cmdPair != CmdTable.end())
+        {
+            CmdFunction cmdFunction = cmdPair->second;
+            cmdFunction(ent);
+            return true;
+        }
+        return false;
+    }
+       
     bool JumpClientCommand(edict_t* ent)
     {
         char* cmd = gi.argv(0);
@@ -59,7 +88,9 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        //PGconn* conn = PQconnectStart("postgresql://[user[:password]@][netloc][:port][,...][/dbname][?param1=value1&...]");
+        DatabaseConnection dbconn;
+        bool is_valid = dbconn.Isvalid();
+        const char* err = dbconn.GetError();
 
         if (ent->client->menu)
         {

@@ -3,6 +3,10 @@
 // Data types that only have dependencies on the base game engine headers
 #include "q_shared.h"
 
+const int REPLAY_FRAMES_PER_SECOND = 10;
+const int MAX_REPLAY_LENGTH_SECONDS = 24 * 60 * 60; // 24 hours
+const int MAX_REPLAY_FRAMES2 = MAX_REPLAY_LENGTH_SECONDS * REPLAY_FRAMES_PER_SECOND;
+
 #define MAX_STORES 5
 #define MAX_REPLAY_FRAMES 10000 // 10 frames/sec are recorded for replays
 

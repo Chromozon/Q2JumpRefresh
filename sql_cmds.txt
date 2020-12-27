@@ -1,0 +1,34 @@
+
+-- Adding a new user:
+INSERT INTO public."Users"
+    ("UserId", "LastSeen", "UserName", "DateAdded")
+VALUES
+    (DEFAULT, DEFAULT, 'TestUser3', DEFAULT);
+
+-- Updating last seen:
+UPDATE public."Users"
+SET "LastSeen" = CURRENT_TIMESTAMP
+WHERE "UserId" = $1;
+
+-- Changing a user's name:
+UPDATE public."Users" 
+SET "UserName" = 'MyNewUserName'
+WHERE "UserId" = 3;
+
+-- Getting a user's id:
+SELECT "UserId" FROM public."Users"
+WHERE "UserName" = 'TestUser1'; 
+
+-- Updating a map record that already exists:
+UPDATE public."MapTimes"
+SET
+    "Time" = $1
+    "Date" = CURRENT_TIMESTAMP
+    "Completions" = "Completions" + 1
+    "ServerId" = $2
+    "Replay" = $3
+WHERE "MapId" = $4 AND "UserId" = $5 AND "Time" > $1
+
+-- Seeing if a current time exists:
+SELECT "Time" from public."MapTimes"
+WHERE "UserId" = $1 AND "MapId" = $2;

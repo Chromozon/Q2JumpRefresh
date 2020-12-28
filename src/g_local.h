@@ -888,6 +888,7 @@ typedef struct
 
     // Jump
     int         fps;
+	char        userip[32];
     // Jump
 } client_persistant_t;
 

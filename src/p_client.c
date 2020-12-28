@@ -1341,6 +1341,9 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
     // We never let the user change their skin.
     // We set the value here so that it stays correct across connects, team changes, etc.
     Jump::AssignTeamSkin(ent);
+
+	s = Info_ValueForKey(userinfo, "ip");
+	strncpy(ent->client->pers.userip, s, sizeof(ent->client->pers.userip) - 1);
     // Jump
 
 //	// set skin
@@ -1427,7 +1430,6 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 		Info_SetValueForKey(userinfo, "rejmsg", "Banned.");
 		return false;
 	}
-
 
 	// check for a password
 	value = Info_ValueForKey (userinfo, "password");

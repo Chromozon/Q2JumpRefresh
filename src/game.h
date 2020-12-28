@@ -166,8 +166,17 @@ typedef struct
 	void	(*FreeTags) (int tag);
 
 	// console variable interaction
+    // cvars are key-value pairs, they are stored in a linked list, so unlimited size
+
+    // creates the variable if it doesn't exist, or returns the existing one
+    // if it exists, the value will not be changed, but flags will be ORed in
+    // that allows variables to be unarchived without needing bitflags
 	cvar_t	*(*cvar) (char *var_name, char *value, int flags);
+
+    // will create the variable if it doesn't exist
 	cvar_t	*(*cvar_set) (char *var_name, char *value);
+
+    // will set the variable even if NOSET or LATCH
 	cvar_t	*(*cvar_forceset) (char *var_name, char *value);
 
 	// ClientCommand and ServerCommand parameter access

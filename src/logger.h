@@ -5,11 +5,18 @@
 #include <fstream>
 #include <time.h>
 
+// The directory that stores the various log files.
+// Note that the full path will be as follows: Quake2/<JumpGame>/<Port>/<SERVER_LOGS_DIR>/
+#define LOGS_DIR "logs"
+
+// This file stores general server activity (players joining and leaving, players talking, etc.)
+#define ACTIVITY_LOG_FILENAME "activity.txt"
+
 // The server log file stores errors, warnings, info, and debug messages
-#define PATH_TO_SERVER_LOGFILE "logs/log.txt"
+#define SERVER_LOG_FILENAME "server.txt"
 
 // The server completions log stores a record of every time a client completes a map
-#define PATH_TO_SERVER_COMPLETIONS_LOG "logs/completions.txt"
+#define COMPLETIONS_LOG_FILENAME "completions.txt"
 
 // To use the Logger, simply call the functions:
 //
@@ -20,105 +27,30 @@
 //
 //   Logger::Completion("Slippery", "alt20", 17258);
 //
+//   Logger::Activity("Someone joined the game");
+///
 
 namespace Jump
 {
     class Logger
     {
     public:
-
-        static void Error(const std::string& error)
-        {
-            if (GetLogHandle())
-            {
-                log_handle << GetCurrentTimeUTC() << '\t' << "ERROR: " << error << '\n';
-                log_handle.flush();
-            }
-        }
-
-        static void Warning(const std::string& warning)
-        {
-            if (GetLogHandle())
-            {
-                log_handle << GetCurrentTimeUTC() << '\t' << "WARNING: " << warning << '\n';
-                log_handle.flush();
-            }
-        }
-
-        static void Info(const std::string& info)
-        {
-            if (GetLogHandle())
-            {
-                log_handle << GetCurrentTimeUTC() << '\t' << "INFO: " << info << '\n';
-            }
-        }
-
-        static void Debug(const std::string& debug)
-        {
-            #ifdef _DEBUG
-            if (GetLogHandle())
-            {
-                log_handle << GetCurrentTimeUTC() << '\t' << "DEBUG: " << debug << '\n';
-            }
-            #endif
-        }
-
-        static void Completion(const std::string& client_name, const std::string& map_name, int64_t map_time_ms)
-        {
-            if (GetCompletionsHandle())
-            {
-                char buffer[1024];
-                snprintf(buffer, sizeof(buffer), "%s\t%s\t%s\t%lld.%03lld\n",
-                    GetCurrentTimeUTC(),
-                    map_name.c_str(),
-                    client_name.c_str(),
-                    map_time_ms / 1000,
-                    map_time_ms % 1000);
-                completions_handle << buffer;
-                completions_handle.flush();
-            }
-        }
+        static void Error(const std::string& error);
+        static void Warning(const std::string& warning);
+        static void Info(const std::string& info);
+        static void Debug(const std::string& debug);
+        static void Completion(
+            const std::string& client_name,
+            const std::string& client_ip,
+            const std::string& map_name,
+            int64_t map_time_ms);
+        static void Activity(const std::string& msg);
 
     private:
         Logger() = delete;
-
-        static constexpr char* log_path = PATH_TO_SERVER_LOGFILE;
-        static constexpr char* completions_path = PATH_TO_SERVER_COMPLETIONS_LOG;
-        static std::fstream log_handle;
-        static std::fstream completions_handle;
-
-        static bool GetLogHandle()
-        {
-            if (!log_handle.is_open())
-            {
-                log_handle.open(log_path, std::ios::app);
-                if (!log_handle.is_open())
-                {
-                    std::cerr << "Could not open log file " << log_path << "\n";
-                }
-            }
-            return log_handle.is_open();
-        }
-
-        static bool GetCompletionsHandle()
-        {
-            if (!completions_handle.is_open())
-            {
-                completions_handle.open(completions_path, std::ios::app);
-                if (!completions_handle.is_open())
-                {
-                    std::cerr << "Could not open log file " << completions_path << "\n";
-                }
-            }
-            return completions_handle.is_open();
-        }
-
-        static char* GetCurrentTimeUTC()
-        {
-            time_t when;
-            ::time(&when);
-            struct tm* timeinfo = ::gmtime(&when);
-            return ::asctime(timeinfo);
-        }
+        static bool GetServerLogHandle();
+        static bool GetCompletionsLogHandle();
+        static bool GetActivityLogHandle();
+        static const char* GetCurrentTimeUTC();
     };
 }

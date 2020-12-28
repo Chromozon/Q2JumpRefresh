@@ -959,7 +959,7 @@ void ClientCommand (edict_t *ent)
 		return;		// not fully in game yet
 
     // Jump
-    bool handled = Jump::JumpClientCommand(ent);
+    bool handled = Jump::HandleJumpCommand(ent);
     if (handled)
     {
         return;

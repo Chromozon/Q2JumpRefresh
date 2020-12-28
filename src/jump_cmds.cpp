@@ -2,8 +2,6 @@
 #include "jump_cmds.h"
 #include "jump.h"
 #include "jump_types.h"
-#include "jump_database.h"
-
 #include <unordered_map>
 #include <string>
 
@@ -20,78 +18,52 @@ namespace Jump
         { "store", Cmd_Jump_Store },
         { "reset", Cmd_Jump_Reset },
         { "replay", Cmd_Jump_Replay },
+
+        // TODO
+        { "showtimes", Cmd_Jump_Void },
+        { "nominate", Cmd_Jump_Void },
+        { "votetime", Cmd_Jump_Void },
+        { "timevote", Cmd_Jump_Void },
+        { "mapvote", Cmd_Jump_Void },
+        { "yes", Cmd_Jump_Void },
+        { "no", Cmd_Jump_Void },
+        { "maplist", Cmd_Jump_Void },
+        { "playertimes", Cmd_Jump_Void },
+        { "playermaps", Cmd_Jump_Void },
+        { "playerscores", Cmd_Jump_Void },
+        { "globaltimes", Cmd_Jump_Void },
+        { "globalmaps", Cmd_Jump_Void },
+        { "globalscores", Cmd_Jump_Void },
+        { "jumpers", Cmd_Jump_Void },
+        { "playerlist", Cmd_Jump_Void },
+        { "maptimes", Cmd_Jump_Void },
+        { "mapsdone", Cmd_Jump_Void },
+        { "mapsleft", Cmd_Jump_Void },
+        { "!stats", Cmd_Jump_Void },
+        { "compare", Cmd_Jump_Void },
+        { "1st", Cmd_Jump_Void },
+        { "!seen", Cmd_Jump_Void },
+        { "!help", Cmd_Jump_Void },
+        { "boot", Cmd_Jump_Void },
+        { "silence", Cmd_Jump_Void },
     };
 
-    bool HandleJumpCommand(edict_t* ent)
+    bool HandleJumpCommand(edict_t* client)
     {
         std::string cmd = gi.argv(0);
         const auto cmdPair = CmdTable.find(cmd);
         if (cmdPair != CmdTable.end())
         {
             CmdFunction cmdFunction = cmdPair->second;
-            cmdFunction(ent);
+            cmdFunction(client);
             return true;
         }
         return false;
-    }
-       
-    bool JumpClientCommand(edict_t* ent)
-    {
-        char* cmd = gi.argv(0);
-
-        if (Q_stricmp(cmd, "inven") == 0)
-        {
-            Cmd_Jump_Inven(ent);
-            return true;
-        }
-        else if (Q_stricmp(cmd, "noclip") == 0)
-        {
-            Cmd_Jump_Noclip(ent);
-            return true;
-        }
-        else if (Q_stricmp(cmd, "test") == 0)
-        {
-            Cmd_Jump_Test(ent);
-            return true;
-        }
-        else if (Q_stricmp(cmd, "kill") == 0)
-        {
-            Cmd_Jump_Kill(ent);
-            return true;
-        }
-        else if (Q_stricmp(cmd, "recall") == 0)
-        {
-            Cmd_Jump_Recall(ent);
-            return true;
-        }
-        else if (Q_stricmp(cmd, "store") == 0)
-        {
-            Cmd_Jump_Store(ent);
-            return true;
-        }
-        else if (Q_stricmp(cmd, "reset") == 0)
-        {
-            Cmd_Jump_Reset(ent);
-            return true;
-        }
-        else if (Q_stricmp(cmd, "replay") == 0)
-        {
-            Cmd_Jump_Replay(ent);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
     }
 
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        DatabaseConnection dbconn;
-        bool is_valid = dbconn.Isvalid();
-        const char* err = dbconn.GetError();
-
         if (ent->client->menu)
         {
             PMenu_Close(ent);
@@ -245,4 +217,10 @@ namespace Jump
             }
         }
     }
-}
+
+    void Cmd_Jump_Void(edict_t * ent)
+    {
+        // Empty
+    }
+
+} // namespace Jump

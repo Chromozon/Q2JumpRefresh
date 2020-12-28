@@ -45,6 +45,7 @@ namespace Jump
         int fps;
     } replay_frame_t;
 
+    // TODO: the current frame of the replay buffer should be stored elsewhere
     typedef struct
     {
         replay_frame_t frames[MAX_REPLAY_FRAMES];

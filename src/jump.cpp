@@ -1,4 +1,5 @@
 #include "jump.h"
+#include "logger.h"
 
 namespace Jump
 {
@@ -346,6 +347,8 @@ namespace Jump
             {
                 gi.bprintf(PRINT_HIGH, "%s finished in %d.%03d seconds (PB %1.3f | 1st +%1.3f)\n",
                     ent->client->pers.netname, time_diff / 1000, time_diff % 1000, 0.0, 0.0);
+
+                Logger::Completion(ent->client->pers.netname, ent->client->pers.userip, level.mapname, time_diff);
 
                 // TODO: save time!
                 if (level.replay_fastest_time == 0 || time_diff < level.replay_fastest_time)

@@ -105,6 +105,9 @@
     <ClCompile Include="jump_hud.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="logger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h">
@@ -135,9 +138,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="jump_hud.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="jump_database.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="logger.h">

@@ -1,8 +1,25 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <fstream>
 #include <time.h>
+
+// The server log file stores errors, warnings, info, and debug messages
+#define PATH_TO_SERVER_LOGFILE "logs/log.txt"
+
+// The server completions log stores a record of every time a client completes a map
+#define PATH_TO_SERVER_COMPLETIONS_LOG "logs/completions.txt"
+
+// To use the Logger, simply call the functions:
+//
+//   Logger::Error("Oh no, an error");
+//   Logger::Warning("Something strange happened");
+//   Logger::Info("Someone joined the server");
+//   Logger::Debug("This will only show up in debug builds");
+//
+//   Logger::Completion("Slippery", "alt20", 17258);
+//
 
 namespace Jump
 {
@@ -65,8 +82,8 @@ namespace Jump
     private:
         Logger() = delete;
 
-        static constexpr char* log_path = "logs/log.txt";
-        static constexpr char* completions_path = "logs/completions.txt";
+        static constexpr char* log_path = PATH_TO_SERVER_LOGFILE;
+        static constexpr char* completions_path = PATH_TO_SERVER_COMPLETIONS_LOG;
         static std::fstream log_handle;
         static std::fstream completions_handle;
 
@@ -75,6 +92,10 @@ namespace Jump
             if (!log_handle.is_open())
             {
                 log_handle.open(log_path, std::ios::app);
+                if (!log_handle.is_open())
+                {
+                    std::cerr << "Could not open log file " << log_path << "\n";
+                }
             }
             return log_handle.is_open();
         }
@@ -84,6 +105,10 @@ namespace Jump
             if (!completions_handle.is_open())
             {
                 completions_handle.open(completions_path, std::ios::app);
+                if (!completions_handle.is_open())
+                {
+                    std::cerr << "Could not open log file " << completions_path << "\n";
+                }
             }
             return completions_handle.is_open();
         }

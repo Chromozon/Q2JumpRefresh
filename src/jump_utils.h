@@ -5,6 +5,7 @@
 namespace Jump
 {
     std::string GetModDir();
+    std::string RemovePathFromFilename(const std::string& fileWithPath);
     std::string RemoveFileExtension(const std::string& filename);
     const char* GetCurrentTimeUTC();
     std::string AsciiToLower(const std::string& str);

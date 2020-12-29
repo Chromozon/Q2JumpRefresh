@@ -24,6 +24,12 @@ namespace Jump
         return path;
     }
 
+    // Returns just the filename from a given path
+    std::string RemovePathFromFilename(const std::string& fileWithPath)
+    {
+        return std::filesystem::path(fileWithPath).filename().generic_string();
+    }
+
     // Removes anything after the last period
     std::string RemoveFileExtension(const std::string& filename)
     {

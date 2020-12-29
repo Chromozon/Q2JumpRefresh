@@ -14,20 +14,31 @@
 
 #define SCORES_DIR "scores"
 #define TIME_FILE_EXTENSION "time"
+#define TOP_HIGHSCORE_NUM 15    // The "top N" best times to keep track of for statistics (top 15, top 10, etc.)
 
 #include <string>
+#include <vector>
 
 namespace Jump
 {
+    typedef std::string user_key; // The user key is the username in lowercase
+
     typedef struct {
+        std::string filepath;
         int64_t time_ms;
         std::string date;
         int32_t completions;
     } user_time_file_record;
 
+    typedef struct {
+        std::string username;
+        int32_t total_maps;
+        std::vector<std::string> highscore_maps[TOP_HIGHSCORE_NUM]; // [0] is a list of all first places, [1] is all second places, etc.
+    } user_overall_record;
+
     void LoadTimesForMap(const std::string& mapname);
     void SaveTime(const std::string& mapname, const std::string& username, int64_t time_ms);
-    void SaveTimeRecordToFile(const std::string& path, const user_time_file_record& record);
+    void SaveTimeRecordToFile(const user_time_file_record& record);
 
 } // namespace Jump
 

@@ -7,33 +7,29 @@
 
 namespace Jump
 {
-    static std::unordered_map<std::string, user_time_file_record> current_map_time_records;
+    static std::unordered_map<user_key, user_time_file_record> current_map_time_records;
 
     void LoadTimesForMap(const std::string& mapname)
     {
         current_map_time_records.clear();
 
-        std::string path = GetModDir();
-        path += '/';
-        path += SCORES_DIR;
-        path += '/';
-        path += mapname;
+        std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
         std::filesystem::create_directories(path);
 
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
             if (entry.is_regular_file())
             {
-                std::string filename = entry.path().string();
-                std::string username = RemoveFileExtension(filename);
-                username = AsciiToLower(username); // we always save lowercase filenames, but just in case
+                std::string filepath = entry.path().generic_string();
+                std::string username = RemoveFileExtension(RemovePathFromFilename(filepath));
+                std::string username_lower = AsciiToLower(username);
                 if (username == "")
                 {
                     Jump::Logger::Warning("Invalid filename");
                 }
                 else
                 {
-                    std::ifstream file(filename);
+                    std::ifstream file(filepath);
                     if (!file.is_open())
                     {
                         Jump::Logger::Warning("Could not open time file");
@@ -48,10 +44,11 @@ namespace Jump
                         int32_t completions = 0;
                         file >> completions;
                         user_time_file_record record;
+                        record.filepath = filepath;
                         record.time_ms = time_ms;
                         record.date = date;
                         record.completions = completions;
-                        current_map_time_records.insert({ username, record });
+                        current_map_time_records.insert({ username_lower, record });
                     }
                 }
             }
@@ -62,15 +59,9 @@ namespace Jump
     {
         std::string username_lower = AsciiToLower(username);
 
-        std::string path = GetModDir();
-        path += '/';
-        path += SCORES_DIR;
-        path += '/';
-        path += mapname;
+        std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
         std::filesystem::create_directories(path);
-        path += '/';
-        path += username_lower;
-        path += '.';
+        path += '/' + username + '.' + TIME_FILE_EXTENSION;
         path += TIME_FILE_EXTENSION;
 
         auto cached_record = current_map_time_records.find(username_lower);
@@ -78,11 +69,12 @@ namespace Jump
         {
             // New user time for this map, need to create a new record in table
             user_time_file_record record;
+            record.filepath = path;
             record.time_ms = time_ms;
             record.date = GetCurrentTimeUTC();
             record.completions = 1;
             current_map_time_records.insert({ username_lower, record });
-            SaveTimeRecordToFile(path, record);
+            SaveTimeRecordToFile(record);
         }
         else
         {
@@ -93,16 +85,16 @@ namespace Jump
                 cached_record->second.time_ms = time_ms;
                 cached_record->second.date = GetCurrentTimeUTC();
             }
-            SaveTimeRecordToFile(path, cached_record->second);
+            SaveTimeRecordToFile(cached_record->second);
         }
     }
 
-    void SaveTimeRecordToFile(const std::string& path, const user_time_file_record& record)
+    void SaveTimeRecordToFile(const user_time_file_record& record)
     {
-        std::ofstream file(path, std::ios::trunc);
+        std::ofstream file(record.filepath, std::ios::trunc);
         if (!file.is_open())
         {
-            Logger::Error("Could not create time file \"" + path + "\"");
+            Logger::Error("Could not create time file \"" + record.filepath + "\"");
             return;
         }
         file << GetCompletionTimeDisplayString(record.time_ms) << '\n';

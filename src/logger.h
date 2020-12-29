@@ -51,6 +51,5 @@ namespace Jump
         static bool GetServerLogHandle();
         static bool GetCompletionsLogHandle();
         static bool GetActivityLogHandle();
-        static const char* GetCurrentTimeUTC();
     };
 }

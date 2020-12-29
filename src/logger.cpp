@@ -1,5 +1,6 @@
 #include "logger.h"
 #include "g_local.h"
+#include "jump_utils.h"
 #include <filesystem>
 
 namespace Jump
@@ -52,7 +53,7 @@ namespace Jump
     {
         if (GetCompletionsLogHandle())
         {
-            char buffer[1024];
+            char buffer[256];
             snprintf(buffer, sizeof(buffer), "%s\t%s\t%s\t%s\t%lld.%03lld\n",
                 GetCurrentTimeUTC(),
                 client_name.c_str(),
@@ -77,24 +78,16 @@ namespace Jump
     {
         if (!server_log_handle.is_open())
         {
-            cvar_t* game = gi.cvar("game", "", 0);
-            cvar_t* port = gi.cvar("port", "", 0);
-            if (game != NULL && port != NULL)
+            std::string path = GetModDir();
+            path += '/';
+            path += LOGS_DIR;
+            std::filesystem::create_directories(path);
+            path += '/';
+            path += SERVER_LOG_FILENAME;
+            server_log_handle.open(path, std::ios::app);
+            if (!server_log_handle.is_open())
             {
-                std::string path;
-                path += game->string;
-                path += '/';
-                path += port->string;
-                path += '/';
-                path += LOGS_DIR;
-                std::filesystem::create_directories(path);
-                path += '/';
-                path += SERVER_LOG_FILENAME;
-                server_log_handle.open(path, std::ios::app);
-                if (!server_log_handle.is_open())
-                {
-                    std::cerr << "Could not open log file \"" << path << "\"\n";
-                }
+                std::cerr << "Could not open log file \"" << path << "\"\n";
             }
         }
         return server_log_handle.is_open();
@@ -104,24 +97,16 @@ namespace Jump
     {
         if (!completions_log_handle.is_open())
         {
-            cvar_t* game = gi.cvar("game", "", 0);
-            cvar_t* port = gi.cvar("port", "", 0);
-            if (game != NULL && port != NULL)
+            std::string path = GetModDir();
+            path += '/';
+            path += LOGS_DIR;
+            std::filesystem::create_directories(path);
+            path += '/';
+            path += COMPLETIONS_LOG_FILENAME;
+            completions_log_handle.open(path, std::ios::app);
+            if (!completions_log_handle.is_open())
             {
-                std::string path;
-                path += game->string;
-                path += '/';
-                path += port->string;
-                path += '/';
-                path += LOGS_DIR;
-                std::filesystem::create_directories(path);
-                path += '/';
-                path += COMPLETIONS_LOG_FILENAME;
-                completions_log_handle.open(path, std::ios::app);
-                if (!completions_log_handle.is_open())
-                {
-                    std::cerr << "Could not open log file \"" << path << "\"\n";
-                }
+                std::cerr << "Could not open log file \"" << path << "\"\n";
             }
         }
         return completions_log_handle.is_open();
@@ -131,37 +116,19 @@ namespace Jump
     {
         if (!activity_log_handle.is_open())
         {
-            cvar_t* game = gi.cvar("game", "", 0);
-            cvar_t* port = gi.cvar("port", "", 0);
-            if (game != NULL && port != NULL)
+            std::string path = GetModDir();
+            path += '/';
+            path += LOGS_DIR;
+            std::filesystem::create_directories(path);
+            path += '/';
+            path += ACTIVITY_LOG_FILENAME;
+            activity_log_handle.open(path, std::ios::app);
+            if (!activity_log_handle.is_open())
             {
-                std::string path;
-                path += game->string;
-                path += '/';
-                path += port->string;
-                path += '/';
-                path += LOGS_DIR;
-                std::filesystem::create_directories(path);
-                path += '/';
-                path += ACTIVITY_LOG_FILENAME;
-                activity_log_handle.open(path, std::ios::app);
-                if (!activity_log_handle.is_open())
-                {
-                    std::cerr << "Could not open log file \"" << path << "\"\n";
-                }
+                std::cerr << "Could not open log file \"" << path << "\"\n";
             }
         }
         return activity_log_handle.is_open();
-    }
-
-    const char* Logger::GetCurrentTimeUTC()
-    {
-        static char buffer[128] = {};
-        time_t when;
-        ::time(&when);
-        struct tm* timeinfo = ::gmtime(&when);
-        strftime(buffer, sizeof(buffer), "%F %T", timeinfo); // YYYY-MM-DD HH:MM:SS
-        return buffer;
     }
 
 } // namespace Jump

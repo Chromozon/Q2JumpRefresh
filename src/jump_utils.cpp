@@ -29,4 +29,35 @@ namespace Jump
         return filename.substr(0, filename.find_last_of("."));
     }
 
+    // Returns a time string of format "YYYY-MM-DD HH:MM:SS"
+    const char* GetCurrentTimeUTC()
+    {
+        static char buffer[128] = {};
+        time_t when;
+        ::time(&when);
+        struct tm* timeinfo = ::gmtime(&when);
+        strftime(buffer, sizeof(buffer), "%F %T", timeinfo);
+        return buffer;
+    }
+
+    // Converts an ASCII string to all lowercase
+    std::string AsciiToLower(const std::string& str)
+    {
+        std::string lower;
+        lower.resize(str.size());
+        for (size_t i = 0; i < str.size(); ++i)
+        {
+            lower[i] = static_cast<char>(std::tolower(str[i]));
+        }
+        return lower;
+    }
+
+    // Given a time in milliseconds, converts to a display string of the form "54.830"
+    std::string GetCompletionTimeDisplayString(int64_t time_ms)
+    {
+        char buff[64] = {};
+        snprintf(buff, sizeof(buff), "%lld.%03lld", time_ms / 1000, time_ms % 1000);
+        return buff;
+    }
+
 } // namespace Jump

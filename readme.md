@@ -1,5 +1,5 @@
 ## Q2 Jump Refresh
-A reimplementation of Quake 2 jump mod.
+A reimplementation of Quake 2 jump mod.  The code currently compiles with C++17.
 
 ## Goals
 - Redesign the code from the ground up so it's easy to understand and less bug-prone when adding new features.
@@ -8,8 +8,15 @@ A reimplementation of Quake 2 jump mod.
 - Multiple servers on one machine sharing the same data?  No need for this, use the global time database instead.
 
 ## Design
-Each server will store its data locally.  In the future, it will pull in the global highscores data.
-Server data is stored in `C:/Quake2/jump/<port>/`.  This allows you to run multiple servers on the same machine.
+- Server data is stored in `C:/Quake2/jump/<port>/`.  Each server stores a local copy of all the maptimes.
+- Logs are stored in `C:/Quake2/jump/<port>/logs/`.
+  - Log file `server.txt` stores errors, warnings, info, and debug messages.
+  - Log file `activity.txt` stores general server activity (players joining and leaving, players talking, etc.).
+  - Log file `completions.txt` stores a record of every time a client completes a map.
+- Map completion times and demos are stored in `C:/Quake2/jump/<port>/scores`.
+  - There is a subfolder for each map, ex: `/scores/slipmap33/`, `scores/ddrace/`, etc.
+  - Inside each map subfolder are `<username>.time` files which store completion time, date, and number of completions.
+  - Each map subfolder also contains a `<username>.demo` file.  This is an arbitrary length replay.
 
 ## TODO
 - Remove the unused CTF stuff
@@ -33,3 +40,5 @@ Server data is stored in `C:/Quake2/jump/<port>/`.  This allows you to run multi
 - Replays should be arbitrary length.  There's no need to cap replays at 1000 seconds.
 
 - "Store" should save equipped weapons and ammo, "recall" should reset the inventory back to the stored point
+
+- [Big Project] Design and implement the global highscores table

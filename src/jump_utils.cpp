@@ -24,19 +24,19 @@ namespace Jump
         return path;
     }
 
-    // Returns just the filename from a given path
-    std::string RemovePathFromFilename(const std::string& fileWithPath)
+    // Removes the folder path from a filename if there is one
+    std::string RemovePathFromFilename(const std::string& filepath)
     {
-        return std::filesystem::path(fileWithPath).filename().generic_string();
+        return std::filesystem::path(filepath).filename().generic_string();
     }
 
-    // Removes anything after the last period
+    // Removes the file extension (the last period and everything after)
     std::string RemoveFileExtension(const std::string& filename)
     {
         return filename.substr(0, filename.find_last_of("."));
     }
 
-    // Returns a time string of format "YYYY-MM-DD HH:MM:SS"
+    // Returns a UTC time string of format "YYYY-MM-DD HH:MM:SS"
     const char* GetCurrentTimeUTC()
     {
         static char buffer[128] = {};

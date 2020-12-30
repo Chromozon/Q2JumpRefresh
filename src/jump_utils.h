@@ -4,12 +4,29 @@
 
 namespace Jump
 {
+    // Returns the path to the mod files relative to the root q2 folder ("jumprefresh/27910")
     std::string GetModDir();
-    std::string RemovePathFromFilename(const std::string& fileWithPath);
+
+    // Removes the folder path from a filename if there is one
+    std::string RemovePathFromFilename(const std::string& filepath);
+
+    // Removes the file extension (the last period and everything after)
     std::string RemoveFileExtension(const std::string& filename);
+
+    // Returns a UTC time string of format "YYYY-MM-DD HH:MM:SS"
     const char* GetCurrentTimeUTC();
+
+    // Converts an ASCII string to all lowercase
     std::string AsciiToLower(const std::string& str);
+
+    // Converts an ASCII string to all uppercase
     std::string AsciiToUpper(const std::string& str);
+
+    // Given a time in milliseconds, converts to a display string of the form "54.830"
     std::string GetCompletionTimeDisplayString(int64_t time_ms);
+
+    // We use the username in file paths, so make sure it doesn't contain any invalid characters or reserved words.
+    // NOTE: Q2 allows the username to have special characters that aren't allowed in filenames.
+    // This currently only affects a very small number of users, not sure any are active players.
     bool IsUsernameValid(const std::string& username);
 }

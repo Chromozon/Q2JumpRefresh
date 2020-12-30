@@ -114,6 +114,9 @@
     <ClCompile Include="jump_scores.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="jump_menu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h">
@@ -153,6 +156,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="jump_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jump_menu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -134,7 +134,7 @@ namespace Jump
                     continue;
                 }
                 user_time_record record;
-                if (LoadTimeFileRecord(entry.path().generic_string(), record))
+                if (LoadTimeRecordFromFile(entry.path().generic_string(), record))
                 {
                     all_maptimes_cache[mapname].push_back(record);
                 }
@@ -143,11 +143,11 @@ namespace Jump
             std::sort(
                 all_maptimes_cache[mapname].begin(),
                 all_maptimes_cache[mapname].end(),
-                SortUserTimeFileRecordByTime);
+                SortTimeRecordByTime);
         }
     }
 
-    bool LoadTimeFileRecord(const std::string& filepath, user_time_record& record)
+    bool LoadTimeRecordFromFile(const std::string& filepath, user_time_record& record)
     {
         std::ifstream file(filepath);
         if (!file.is_open())
@@ -174,7 +174,7 @@ namespace Jump
         }
     }
 
-    bool SortUserTimeFileRecordByTime(const user_time_record& left, const user_time_record& right)
+    bool SortTimeRecordByTime(const user_time_record& left, const user_time_record& right)
     {
         return left.time_ms < right.time_ms;
     }
@@ -199,6 +199,11 @@ namespace Jump
             }
             return true;
         }
+    }
+
+    bool GetHighscoresForCurrentMap()
+    {
+        return false;
     }
 
 } // namespace Jump

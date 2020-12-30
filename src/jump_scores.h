@@ -42,8 +42,8 @@ namespace Jump
     void SaveTime(const std::string& mapname, const std::string& username, int64_t time_ms);
     void SaveTimeRecordToFile(const user_time_record& record);
     void LoadAllStatistics();
-    bool LoadTimeFileRecord(const std::string& filepath, user_time_record& record);
-    bool SortUserTimeFileRecordByTime(const user_time_record& left, const user_time_record& right);
+    bool LoadTimeRecordFromFile(const std::string& filepath, user_time_record& record);
+    bool SortTimeRecordByTime(const user_time_record& left, const user_time_record& right);
     bool GetHighscoresForMap(const std::string& mapname, std::vector<user_time_record>& highscores, int& completions);
 
 } // namespace Jump

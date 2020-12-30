@@ -4,6 +4,8 @@
 #include "jump_types.h"
 #include <unordered_map>
 #include <string>
+#include "jump_scores.h"
+#include "jump_menu.h"
 
 namespace Jump
 {
@@ -64,20 +66,27 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        if (ent->client->menu)
-        {
-            PMenu_Close(ent);
-        }
-        ent->client->showscores = true;
+        LoadAllStatistics();
 
-        char string[1400] = { 0 };
+        BestTimesScoreboardMessage(ent);
 
-        Com_sprintf(string, sizeof(string),
-            "xv -16 yv 0 string2 \"Ping Pos Player          Best Comp Maps     %%\" ");
+        //LoadAllStatistics();
+        //LoadTimesForMap(level.mapname);
 
-        gi.WriteByte(svc_layout);
-        gi.WriteString(string);
-        gi.unicast(ent, true);
+        //if (ent->client->menu)
+        //{
+        //    PMenu_Close(ent);
+        //}
+        //ent->client->showscores = true;
+
+        //char string[1400] = { 0 };
+
+        //Com_sprintf(string, sizeof(string),
+        //    "xv -16 yv 0 string2 \"Ping Pos Player          Best Comp Maps     %%\" ");
+
+        //gi.WriteByte(svc_layout);
+        //gi.WriteString(string);
+        //gi.unicast(ent, true);
     }
 
     void Cmd_Jump_Inven(edict_t* ent)
@@ -188,6 +197,7 @@ namespace Jump
         }
     }
 
+    // TODO: support replay self, replay n, replay, replay <username>
     void Cmd_Jump_Replay(edict_t* ent)
     {
         // Right now we only support "replay now"

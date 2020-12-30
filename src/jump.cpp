@@ -1,5 +1,6 @@
 #include "jump.h"
 #include "logger.h"
+#include "jump_scores.h"
 
 namespace Jump
 {
@@ -349,6 +350,8 @@ namespace Jump
                     ent->client->pers.netname, time_diff / 1000, time_diff % 1000, 0.0, 0.0);
 
                 Logger::Completion(ent->client->pers.netname, ent->client->pers.userip, level.mapname, time_diff);
+
+                SaveTime(level.mapname, ent->client->pers.netname, time_diff);
 
                 // TODO: save time!
                 if (level.replay_fastest_time == 0 || time_diff < level.replay_fastest_time)

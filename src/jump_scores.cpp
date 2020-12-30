@@ -7,7 +7,7 @@
 
 namespace Jump
 {
-    static std::unordered_map<user_key, user_time_file_record> current_map_time_records;
+    static std::unordered_map<user_key, user_time_record> current_map_time_records;
 
     void LoadTimesForMap(const std::string& mapname)
     {
@@ -21,6 +21,9 @@ namespace Jump
             if (entry.is_regular_file())
             {
                 std::string filepath = entry.path().generic_string();
+
+                // TODO: skip if this is a demo file
+
                 std::string username = RemoveFileExtension(RemovePathFromFilename(filepath));
                 std::string username_lower = AsciiToLower(username);
                 if (username == "")
@@ -43,7 +46,7 @@ namespace Jump
                         file >> date;
                         int32_t completions = 0;
                         file >> completions;
-                        user_time_file_record record;
+                        user_time_record record;
                         record.filepath = filepath;
                         record.time_ms = time_ms;
                         record.date = date;
@@ -61,14 +64,13 @@ namespace Jump
 
         std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
         std::filesystem::create_directories(path);
-        path += '/' + username + '.' + TIME_FILE_EXTENSION;
-        path += TIME_FILE_EXTENSION;
+        path += '/' + username + TIME_FILE_EXTENSION;
 
         auto cached_record = current_map_time_records.find(username_lower);
         if (cached_record == current_map_time_records.end())
         {
             // New user time for this map, need to create a new record in table
-            user_time_file_record record;
+            user_time_record record;
             record.filepath = path;
             record.time_ms = time_ms;
             record.date = GetCurrentTimeUTC();
@@ -89,7 +91,7 @@ namespace Jump
         }
     }
 
-    void SaveTimeRecordToFile(const user_time_file_record& record)
+    void SaveTimeRecordToFile(const user_time_record& record)
     {
         std::ofstream file(record.filepath, std::ios::trunc);
         if (!file.is_open())
@@ -103,5 +105,100 @@ namespace Jump
         file.flush();
     }
 
+    std::unordered_map<mapname_key, std::vector<user_time_record>> all_maptimes_cache;
+
+    void LoadAllStatistics()
+    {
+        all_maptimes_cache.clear();
+
+        std::string scores_dir = GetModDir() + '/' + SCORES_DIR;
+        std::filesystem::create_directories(scores_dir);
+
+        for (const auto& map_dir : std::filesystem::directory_iterator(scores_dir))
+        {
+            if (!map_dir.is_directory())
+            {
+                continue;
+            }
+            std::string mapname = map_dir.path().filename().generic_string();
+            all_maptimes_cache.insert({ mapname, std::vector<user_time_record>() });
+
+            for (const auto& entry : std::filesystem::directory_iterator(map_dir))
+            {
+                if (!entry.is_regular_file())
+                {
+                    continue;
+                }
+                if (entry.path().extension().generic_string() != TIME_FILE_EXTENSION)
+                {
+                    continue;
+                }
+                user_time_record record;
+                if (LoadTimeFileRecord(entry.path().generic_string(), record))
+                {
+                    all_maptimes_cache[mapname].push_back(record);
+                }
+            }
+
+            std::sort(
+                all_maptimes_cache[mapname].begin(),
+                all_maptimes_cache[mapname].end(),
+                SortUserTimeFileRecordByTime);
+        }
+    }
+
+    bool LoadTimeFileRecord(const std::string& filepath, user_time_record& record)
+    {
+        std::ifstream file(filepath);
+        if (!file.is_open())
+        {
+            Logger::Warning("Could no open file " + filepath);
+            return false;
+        }
+        else
+        {
+            std::string line;
+
+            std::getline(file, line);
+            double time = std::stod(line);
+            record.time_ms = static_cast<int64_t>(time * 1000);
+
+            std::getline(file, line);
+            record.date = line;
+
+            std::getline(file, line);
+            record.completions = std::stoi(line);
+
+            record.filepath = filepath;
+            return true;
+        }
+    }
+
+    bool SortUserTimeFileRecordByTime(const user_time_record& left, const user_time_record& right)
+    {
+        return left.time_ms < right.time_ms;
+    }
+
+    bool GetHighscoresForMap(const std::string& mapname, std::vector<user_time_record>& highscores, int& completions)
+    {
+        highscores.clear();
+        completions = 0;
+
+        auto it = all_maptimes_cache.find(mapname);
+        if (it == all_maptimes_cache.end())
+        {
+            return false;
+        }
+        else
+        {
+            size_t max_highscores = std::min<size_t>(MAX_HIGHSCORES, it->second.size());
+            std::copy_n(it->second.begin(), max_highscores, std::back_inserter(highscores));
+            for (const auto& record : it->second)
+            {
+                completions += record.completions;
+            }
+            return true;
+        }
+    }
 
 } // namespace Jump

@@ -20,6 +20,7 @@ namespace Jump
 		GetHighscoresForMap(level.mapname, highscores, total_completions);
 
 		// TODO fresh time
+		bool fresh_time = true;
 
 		// Sideways arrow symbol
 		char symbol_arrow = 13;
@@ -31,15 +32,37 @@ namespace Jump
 		{
 			if (i < highscores.size())
 			{
-				// There is a time set for this highscore position
 				std::string username = RemoveFileExtension(RemovePathFromFilename(highscores[i].filepath));
 				std::string time = GetCompletionTimeDisplayString(highscores[i].time_ms);
 				std::string date = highscores[i].date.substr(0, highscores[i].date.find_first_of(' '));
 
-				// TODO fresh time!!
-				ss << "yv " << (i * 10) + 16 << " string \"" << std::setw(2) << std::right << i + 1;
-				ss << symbol_arrow << "  " << std::setw(16) << std::left << username;
+				// Position the text vertically, make it a white string
+				ss << "yv " << (i * 10) + 16 << " string \"";
+
+				// Show the highscore number
+				ss << std::setw(2) << std::right << i + 1;
+
+				// Show the arrow symbol (indicates a replay is available for this time)
+				// TODO: can remove this
+				ss << symbol_arrow;
+
+				// Show the fresh time symbol or not
+				if (fresh_time)
+				{
+					ss << " *";
+				}
+				else
+				{
+					ss << "  ";
+				}
+
+				// Show the username
+				ss << std::setw(16) << std::left << username;
+
+				// Show the completion time
 				ss << std::setw(11) << std::right << time;
+
+				// Show the date of completion
 				ss << "  " << date << "\" ";
 			}
 			else

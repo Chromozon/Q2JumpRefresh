@@ -6,6 +6,7 @@
 #include <string>
 #include "jump_scores.h"
 #include "jump_menu.h"
+#include "jump_utils.h"
 
 namespace Jump
 {
@@ -20,6 +21,7 @@ namespace Jump
         { "store", Cmd_Jump_Store },
         { "reset", Cmd_Jump_Reset },
         { "replay", Cmd_Jump_Replay },
+        { "maptimes", Cmd_Jump_Maptimes },
 
         // TODO
         { "showtimes", Cmd_Jump_Void },
@@ -38,7 +40,6 @@ namespace Jump
         { "globalscores", Cmd_Jump_Void },
         { "jumpers", Cmd_Jump_Void },
         { "playerlist", Cmd_Jump_Void },
-        { "maptimes", Cmd_Jump_Void },
         { "mapsdone", Cmd_Jump_Void },
         { "mapsleft", Cmd_Jump_Void },
         { "!stats", Cmd_Jump_Void },
@@ -48,6 +49,9 @@ namespace Jump
         { "!help", Cmd_Jump_Void },
         { "boot", Cmd_Jump_Void },
         { "silence", Cmd_Jump_Void },
+        { "+hook", Cmd_Jump_Void },
+
+        // TODO: all of the admin commands- remtime, addmap, etc.
     };
 
     bool HandleJumpCommand(edict_t* client)
@@ -231,6 +235,70 @@ namespace Jump
     void Cmd_Jump_Void(edict_t * ent)
     {
         // Empty
+    }
+
+
+    void Cmd_Jump_Maptimes(edict_t* player)
+    {
+        // TODO
+        LoadAllStatistics();
+
+        std::string mapname = level.mapname;
+        if (gi.argc() >= 2)
+        {
+            mapname = gi.argv(1);
+        }
+
+        std::vector<user_time_record> highscores;
+        int completions = 0;
+        if (!GetHighscoresForMap(mapname, highscores, completions))
+        {
+            gi.cprintf(player, PRINT_HIGH, "Invalid map.\n");
+            return;
+        }
+        if (highscores.size() == 0)
+        {
+            gi.cprintf(player, PRINT_HIGH, "No times for %s\n", mapname.c_str());
+            return;
+        }
+
+        gi.cprintf(player, PRINT_HIGH, "--------------------------------------------------------\n");
+        gi.cprintf(player, PRINT_HIGH, "Best Times for %s\n", mapname.c_str());
+
+        std::string header = "No. Name             Date                           Time";
+        header = GetGreenConsoleText(header);
+        gi.cprintf(player, PRINT_HIGH, "%s\n", header.c_str());
+
+        int64_t best_time = highscores[0].time_ms;
+
+        for (size_t i = 0; i < highscores.size(); ++i)
+        {
+            std::string username = RemoveFileExtension(RemovePathFromFilename(highscores[i].filepath));
+            std::string date = highscores[i].date.substr(0, highscores[i].date.find_first_of(' '));
+            std::string time = GetCompletionTimeDisplayString(highscores[i].time_ms);
+
+            int64_t time_diff = highscores[i].time_ms - best_time;
+            std::string time_diff_str = "0.000";
+            if (time_diff > 0)
+            {
+                time_diff_str = GetCompletionTimeDisplayString(time_diff);
+                time_diff_str.insert(0, "-");
+            }
+
+            gi.cprintf(player, PRINT_HIGH, "%-3d %-16s %s %12s %11s\n",
+                i + 1, username.c_str(), date.c_str(), time_diff_str.c_str(), time.c_str());
+        }
+
+        bool completed = HasUserCompletedMap(mapname, player->client->pers.netname);
+        if (completed)
+        {
+            gi.cprintf(player, PRINT_HIGH, "You have completed this map\n");
+        }
+        else
+        {
+            gi.cprintf(player, PRINT_HIGH, "You have NOT completed this map\n");
+        }
+        gi.cprintf(player, PRINT_HIGH, "--------------------------------------------------------\n");
     }
 
 } // namespace Jump

@@ -201,6 +201,29 @@ namespace Jump
         }
     }
 
+    bool HasUserCompletedMap(const std::string& mapname, const std::string& username)
+    {
+        auto it = all_maptimes_cache.find(mapname);
+        if (it == all_maptimes_cache.end())
+        {
+            return false;
+        }
+        else
+        {
+            // TODO replace this with a call to the list of maps created for each user because this can be slow
+            for (const auto& record : it->second)
+            {
+                std::string username_lower = AsciiToLower(username);
+                std::string test_lower = AsciiToLower(RemoveFileExtension(RemovePathFromFilename(record.filepath)));
+                if (username_lower == test_lower)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     bool GetHighscoresForCurrentMap()
     {
         return false;

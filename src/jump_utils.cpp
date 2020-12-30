@@ -118,4 +118,26 @@ namespace Jump
         return keywords.find(username_upper) == keywords.end();
     }
 
+    // Gets the console green text version of the given string.  The given string must be ASCII (0-127).
+    // The conversion is to simply add 128 to each char value.  Invalid characters are replaced with space.
+    std::string GetGreenConsoleText(const std::string& str)
+    {
+        std::string green;
+        green.resize(str.size());
+        for (size_t i = 0; i < str.size(); ++i)
+        {
+            unsigned char c = str[i];
+            if (c > 127)
+            {
+                c = ' '; // replace invalid characters with space
+            }
+            else
+            {
+                c = c + 128;
+            }
+            green[i] = c;
+        }
+        return green;
+    }
+
 } // namespace Jump

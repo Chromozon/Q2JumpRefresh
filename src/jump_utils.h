@@ -29,4 +29,9 @@ namespace Jump
     // NOTE: Q2 allows the username to have special characters that aren't allowed in filenames.
     // This currently only affects a very small number of users, not sure any are active players.
     bool IsUsernameValid(const std::string& username);
+
+    // Gets the console green text version of the given string.  The given string must be ASCII (0-127).
+    // The conversion is to simply add 128 to each char value.  Invalid characters are replaced with space.
+    std::string GetGreenConsoleText(const std::string& str);
+
 }

@@ -58,7 +58,11 @@ namespace Jump
         }
     }
 
-    void SaveTime(const std::string& mapname, const std::string& username, int64_t time_ms)
+    void SaveMapCompletion(
+        const std::string& mapname,
+        const std::string& username,
+        int64_t time_ms,
+        const std::vector<replay_frame_t>& replay_buffer)
     {
         std::string username_lower = AsciiToLower(username);
 
@@ -77,6 +81,7 @@ namespace Jump
             record.completions = 1;
             current_map_time_records.insert({ username_lower, record });
             SaveTimeRecordToFile(record);
+            SaveReplayToFile(mapname, username, time_ms, replay_buffer);
         }
         else
         {
@@ -86,6 +91,7 @@ namespace Jump
             {
                 cached_record->second.time_ms = time_ms;
                 cached_record->second.date = GetCurrentTimeUTC();
+                SaveReplayToFile(mapname, username, time_ms, replay_buffer);
             }
             SaveTimeRecordToFile(cached_record->second);
         }
@@ -222,6 +228,103 @@ namespace Jump
             }
             return false;
         }
+    }
+
+    void SaveReplayToFile(
+        const std::string& mapname,
+        const std::string& username,
+        int64_t time_ms,
+        const std::vector<replay_frame_t>& replay_buffer)
+    {
+        std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
+        std::filesystem::create_directories(path);
+        path += '/' + username + DEMO_FILE_EXTENSION;
+        std::string path_old = path + ".old";
+
+        // Rename the current demo file as backup in case writing the new one fails
+        if (std::filesystem::exists(path))
+        {
+            std::filesystem::rename(path, path_old);
+        }
+
+        // Write the demo file
+        std::ofstream file(path, std::ios::binary);
+        if (!file.is_open())
+        {
+            Logger::Error("Could not create demo file for user " + username + " on map " + mapname);
+            std::filesystem::rename(path_old, path);
+            return;
+        }
+        else
+        {
+            try
+            {
+                file << GetCompletionTimeDisplayString(time_ms) << std::endl;
+                file << GetCurrentTimeUTC() << std::endl;
+                file << replay_buffer.size() << std::endl;
+                for (size_t i = 0; i < replay_buffer.size(); ++i)
+                {
+                    const replay_frame_t& frame = replay_buffer[i];
+                    file.write(reinterpret_cast<const char*>(&frame.pos), sizeof(frame.pos));
+                    file.write(reinterpret_cast<const char*>(&frame.angles), sizeof(frame.angles));
+                    file.write(reinterpret_cast<const char*>(&frame.key_states), sizeof(frame.key_states));
+                    file.write(reinterpret_cast<const char*>(&frame.fps), sizeof(frame.fps));
+                    file.write(reinterpret_cast<const char*>(&frame.reserved1), sizeof(frame.reserved1));
+                    file.write(reinterpret_cast<const char*>(&frame.reserved2), sizeof(frame.reserved2));
+                }
+                file.flush();
+            }
+            catch (...)
+            {
+                Logger::Error("Could not write demo file for user " + username + " on map " + mapname);
+                std::filesystem::rename(path_old, path);
+                return;
+            }
+        }
+        file.close();
+        std::filesystem::remove(path_old);
+    }
+
+    bool LoadReplayFromFile(
+        const std::string& mapname,
+        const std::string& username,
+        std::vector<replay_frame_t>& replay_buffer)
+    {
+        replay_buffer.clear();
+
+        std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname + '/' + username + DEMO_FILE_EXTENSION;
+        if (!std::filesystem::exists(path))
+        {
+            Logger::Warning("Replay file does not exist for user " + username + ", map " + mapname);
+            return false;
+        }
+
+        std::ifstream file(path, std::ios::binary);
+        if (!file.is_open())
+        {
+            Logger::Error("Could not open replay file for user " + username + ", map " + mapname);
+            return false;
+        }
+        std::string line;
+        std::getline(file, line);
+        // std::string time = line; // unused
+        std::getline(file, line);
+        // std::string date = line; // unused
+        std::getline(file, line);
+        size_t frames = std::stoul(line);
+
+        replay_buffer.resize(frames);
+        for (size_t i = 0; i < frames; ++i)
+        {
+            replay_frame_t& frame = replay_buffer[i];
+            file.read(reinterpret_cast<char*>(&frame.pos), sizeof(frame.pos));
+            file.read(reinterpret_cast<char*>(&frame.angles), sizeof(frame.angles));
+            file.read(reinterpret_cast<char*>(&frame.key_states), sizeof(frame.key_states));
+            file.read(reinterpret_cast<char*>(&frame.fps), sizeof(frame.fps));
+            file.read(reinterpret_cast<char*>(&frame.reserved1), sizeof(frame.reserved1));
+            file.read(reinterpret_cast<char*>(&frame.reserved2), sizeof(frame.reserved2));
+        }
+        return true;
     }
 
     bool GetHighscoresForCurrentMap()

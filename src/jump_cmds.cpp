@@ -7,6 +7,7 @@
 #include "jump_scores.h"
 #include "jump_menu.h"
 #include "jump_utils.h"
+#include "logger.h"
 
 namespace Jump
 {
@@ -204,6 +205,23 @@ namespace Jump
     // TODO: support replay self, replay n, replay, replay <username>
     void Cmd_Jump_Replay(edict_t* ent)
     {
+        auto it = all_client_data.find(ent);
+        if (it == all_client_data.end())
+        {
+            Logger::Error("Client data not loaded for ent " + std::string(ent->client->pers.netname));
+            return;
+        }
+
+        LoadReplayFromFile(level.mapname, ent->client->pers.netname, it->second.replay_buffer_spectating);
+
+        // Move client to a spectator
+        InitAsSpectator(ent);
+
+        // Set to replay state
+        ent->client->replay_current_frame = 0;
+        ent->client->update_replay = true;
+
+        #if 0
         // Right now we only support "replay now"
         if (Q_stricmp(gi.argv(1), "now") == 0)
         {
@@ -230,6 +248,7 @@ namespace Jump
                 );
             }
         }
+        #endif
     }
 
     void Cmd_Jump_Void(edict_t * ent)

@@ -3,6 +3,7 @@
 // Data types that only have dependencies on the base game engine headers
 #include "q_shared.h"
 #include <stdint.h>
+#include <vector>
 
 const int REPLAY_FRAMES_PER_SECOND = 10;
 const int MAX_REPLAY_LENGTH_SECONDS = 24 * 60 * 60; // 24 hours
@@ -87,5 +88,18 @@ namespace Jump
         int numStores;
         int nextIndex;
         store_data_t stores[MAX_STORES];
+    };
+
+    class client_data_t
+    {
+    public:
+        client_data_t()
+            : replay_buffer(), replay_buffer_spectating()
+        {
+            replay_buffer.reserve(10000);
+        }
+
+        std::vector<replay_frame_t> replay_buffer; // TODO: rename to replay_recording
+        std::vector<replay_frame_t> replay_buffer_spectating; // TODO: rename to replay_spectating
     };
 }

@@ -1426,6 +1426,7 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 
 int	curtime; // Part of the q_shared time API, although unused.
 
+// TODO: rework this to just use int64
 int Sys_Milliseconds(void)
 {
 #ifdef _WIN32

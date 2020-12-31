@@ -1,9 +1,12 @@
 #include "jump.h"
 #include "logger.h"
 #include "jump_scores.h"
+#include <unordered_map>
 
 namespace Jump
 {
+    std::unordered_map<edict_t*, client_data_t> all_client_data;
+
     static const int DefaultHealth = 1000;
 
     static const char* SexTeamEasy = "female";
@@ -351,7 +354,11 @@ namespace Jump
 
                 Logger::Completion(ent->client->pers.netname, ent->client->pers.userip, level.mapname, time_diff);
 
-                SaveTime(level.mapname, ent->client->pers.netname, time_diff);
+                auto it = all_client_data.find(ent);
+                if (it != all_client_data.end())
+                {
+                    SaveMapCompletion(level.mapname, ent->client->pers.netname, time_diff, it->second.replay_buffer);
+                }
 
                 // TODO: save time!
                 if (level.replay_fastest_time == 0 || time_diff < level.replay_fastest_time)
@@ -368,24 +375,93 @@ namespace Jump
         return false; // leave the weapon there
     }
 
+
+
     void SaveReplayFrame(edict_t* ent)
     {
-        int index = ent->client->replay_buffer.next_frame_index;
-        if (index < MAX_REPLAY_FRAMES)
+        replay_frame_t frame = {};
+        VectorCopy(ent->s.origin, frame.pos);
+        VectorCopy(ent->client->v_angle, frame.angles);
+        frame.key_states = ent->client->key_states;
+        frame.fps = ent->client->fps;
+
+        auto it = all_client_data.find(ent);
+        if (it != all_client_data.end())
         {
-            replay_frame_t* frame = &ent->client->replay_buffer.frames[index];
-
-            VectorCopy(ent->s.origin, frame->pos);
-            VectorCopy(ent->client->v_angle, frame->angles);
-            frame->key_states = ent->client->key_states;
-            frame->fps = ent->client->fps;
-
-            ent->client->replay_buffer.next_frame_index++;
+            it->second.replay_buffer.push_back(frame);
         }
     }
 
     void ClearReplayData(edict_t* ent)
     {
-        memset(&ent->client->replay_buffer, 0, sizeof(ent->client->replay_buffer));
+        auto it = all_client_data.find(ent);
+        if (it != all_client_data.end())
+        {
+            it->second.replay_buffer.clear();
+        }
+    }
+
+    void JumpClientConnect(edict_t* ent)
+    {
+        // Remove any old cached client data just in case
+        all_client_data.erase(ent);
+
+        // Add this client to the client data cache and initialize the data to default values
+        all_client_data.insert({ ent, client_data_t() });
+    }
+
+    void JumpClientDisconnect(edict_t* ent)
+    {
+        all_client_data.erase(ent);
+    }
+
+    void AdvanceSpectatingReplayFrame(edict_t* ent)
+    {
+        if (ent->client->update_replay)
+        {
+            auto it = all_client_data.find(ent);
+            if (it == all_client_data.end())
+            {
+                Logger::Error("Cannot find client data for user " + std::string(ent->client->pers.netname));
+                ent->client->update_replay = false;
+                ent->client->replay_current_frame = 0;
+                return;
+            }
+
+            int frame_num = ent->client->replay_current_frame;
+            if (frame_num >= it->second.replay_buffer_spectating.size())
+            {
+                Logger::Error("Replay advanced past the end of the replay spectating buffer");
+                ent->client->update_replay = false;
+                ent->client->replay_current_frame = 0;
+                return;
+            }
+
+            const replay_frame_t& frame = it->second.replay_buffer_spectating[frame_num];
+
+            VectorCopy(frame.pos, ent->s.origin);
+            VectorCopy(frame.angles, ent->client->v_angle);
+            VectorCopy(frame.angles, ent->client->ps.viewangles);
+            // TODO keys, fps
+
+            // Since we only send a position update every server frame (10 fps),
+            // the client needs to smoothen the movement between the two frames.
+            // Setting these flags will do this.
+            ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
+            ent->client->ps.pmove.pm_type = PM_FREEZE;
+
+            for (int i = 0; i < 3; i++)
+            {
+                ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
+            }
+
+            ent->client->replay_current_frame++;
+            if (ent->client->replay_current_frame >= it->second.replay_buffer_spectating.size())
+            {
+                ent->client->ps.pmove.pm_flags = 0;
+                ent->client->ps.pmove.pm_type = PM_SPECTATOR;
+                ent->client->update_replay = false;
+            }
+        }
     }
 }

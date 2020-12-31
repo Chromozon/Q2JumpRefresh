@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #include "g_local.h"
 #include "m_player.h"
+#include "jump.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -1444,6 +1445,7 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 
 	// if there is already a body waiting for us (a loadgame), just
 	// take it, otherwise spawn one from scratch
+	// TODO: comment doesn't match this code for inuse
 	if (ent->inuse == false)
 	{
         // Jump
@@ -1466,6 +1468,10 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 
 	if (game.maxclients > 1)
 		gi.dprintf ("%s connected\n", ent->client->pers.netname);
+
+	// Jump
+	Jump::JumpClientConnect(ent);
+	// Jump
 
 	ent->client->pers.connected = true;
 	return true;
@@ -1508,6 +1514,10 @@ void ClientDisconnect (edict_t *ent)
 
 	playernum = ent-g_edicts-1;
 	gi.configstring (CS_PLAYERSKINS+playernum, "");
+
+	// Jump
+	Jump::JumpClientDisconnect(ent);
+	// Jump
 }
 
 
@@ -1779,6 +1789,11 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
         ent->client->key_states |= Jump::KEY_STATE_CROUCH;
     }
 
+	if (ucmd->buttons & BUTTON_ATTACK)
+	{
+		ent->client->key_states |= Jump::KEY_STATE_ATTACK;
+	}
+
     // Jump
     gi.unicast(ent, true);
 }
@@ -1842,6 +1857,8 @@ void ClientBeginServerFrame (edict_t *ent)
 	client->latched_buttons = 0;
 
     // Jump
+	Jump::AdvanceSpectatingReplayFrame(ent);
+	#if 0
     if (ent->client->update_replay)
     {
         VectorCopy(level.replay_fastest_buffer.frames[ent->client->replay_current_frame].pos, ent->s.origin);
@@ -1868,5 +1885,6 @@ void ClientBeginServerFrame (edict_t *ent)
             ent->client->update_replay = false;
         }
     }
+	#endif
     // Jump
 }

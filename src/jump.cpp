@@ -73,7 +73,7 @@ namespace Jump
         for (int i = 0; i < game.maxclients; ++i)
         {
             const gclient_t* client = &game.clients[i];
-            if (client != NULL && client->resp.jump_team == team)
+            if (client != NULL && client->pers.connected && client->jumpdata != NULL && client->jumpdata->team == team)
             {
                 count++;
             }
@@ -83,7 +83,7 @@ namespace Jump
 
     void JoinTeam(edict_t* ent, team_t team)
     {
-        ent->client->resp.jump_team = team;
+        ent->client->jumpdata->team = team;
         AssignTeamSkin(ent);
         SpawnForJumping(ent);
     }
@@ -107,7 +107,7 @@ namespace Jump
         // TODO: doesn't seem to be working with the model
         int playernum = ent - g_edicts - 1;
 
-        switch (ent->client->resp.jump_team)
+        switch (ent->client->jumpdata->team)
         {
         case TEAM_EASY:
             gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\%s/%s", ent->client->pers.netname, SexTeamEasy, SkinTeamEasy));
@@ -134,14 +134,6 @@ namespace Jump
             return spot;
         }
         return NULL;
-    }
-
-    void ResetJumpTimer(edict_t* ent)
-    {
-        ent->client->resp.jump_count = 0;
-        ent->client->resp.jump_timer_begin = 0;
-        ent->client->resp.jump_timer_finished = false;
-        ent->client->resp.jump_timer_paused = true;
     }
 
     // This is called once whenever a player first enters a map.
@@ -194,7 +186,7 @@ namespace Jump
         InitAsSpectator(ent);
         ClientUserinfoChanged(ent, userinfo);
 
-        if (level.intermissiontime || level.state == LEVEL_STATE_VOTING)
+        if (level.intermissiontime || jump_server.state == LEVEL_STATE_VOTING)
         {
             // TODO move to intermission
             MoveClientToIntermission(ent);
@@ -225,7 +217,7 @@ namespace Jump
         ent->svflags |= SVF_NOCLIENT;
         ent->client->resp.ctf_team = CTF_NOTEAM;
         ent->client->ps.gunindex = 0;
-        ent->client->resp.jump_team = TEAM_SPECTATOR;
+        ent->client->jumpdata->team = TEAM_SPECTATOR;
     }
 
     void MoveClientToPosition(edict_t* ent, vec3_t origin, vec3_t angles)
@@ -281,11 +273,10 @@ namespace Jump
         MoveClientToPosition(ent, spawn_origin, spawn_angles);
 
         // Reset timer
-        ent->client->resp.jump_count = 0;
-        ent->client->resp.jump_timer_begin = 0;
-        ent->client->resp.jump_timer_end = 0;
-        ent->client->resp.jump_timer_finished = false;
-        ent->client->resp.jump_timer_paused = true;
+        ent->client->jumpdata->timer_begin = 0;
+        ent->client->jumpdata->timer_end = 0;
+        ent->client->jumpdata->timer_paused = true;
+        ent->client->jumpdata->timer_finished = false;
 
         // Clear replay
         ClearReplayData(ent);
@@ -322,12 +313,12 @@ namespace Jump
 
     void SpawnAtStorePosition(edict_t* ent, store_data_t data)
     {
-        if (ent->client->resp.jump_team == TEAM_HARD) {
+        if (ent->client->jumpdata->team == TEAM_HARD) {
             // Should never get here!
             gi.error("Uh oh, tried to use a store on team hard.");
             return;
         }
-        ent->client->resp.jump_timer_begin = Sys_Milliseconds() - data.time_interval;
+        ent->client->jumpdata->timer_begin = Sys_Milliseconds() - data.time_interval;
         MoveClientToPosition(ent, data.pos, data.angles);
     }
 
@@ -337,11 +328,11 @@ namespace Jump
         // If rocket, grenade launcher, BFG
         // and mset enabled, don't finish timer
 
-        if (!ent->client->resp.jump_timer_finished)
+        if (!ent->client->jumpdata->timer_finished)
         {
-            ent->client->resp.jump_timer_end = Sys_Milliseconds();
-            int time_diff = ent->client->resp.jump_timer_end - ent->client->resp.jump_timer_begin;
-            if (ent->client->resp.jump_team == TEAM_EASY)
+            ent->client->jumpdata->timer_end = Sys_Milliseconds();
+            int time_diff = ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin;
+            if (ent->client->jumpdata->team == TEAM_EASY)
             {
                 gi.cprintf(ent, PRINT_HIGH, "You would have obtained this weapon in %d.%03d seconds.\n", time_diff / 1000, time_diff % 1000);
             }
@@ -350,19 +341,13 @@ namespace Jump
                 gi.bprintf(PRINT_HIGH, "%s finished in %d.%03d seconds (PB %1.3f | 1st +%1.3f)\n",
                     ent->client->pers.netname, time_diff / 1000, time_diff % 1000, 0.0, 0.0);
 
-                Logger::Completion(ent->client->pers.netname, ent->client->pers.userip, level.mapname, time_diff);
-                SaveMapCompletion(level.mapname, ent->client->pers.netname, time_diff, ent->client->jumpdata->replay_buffer);
+                Logger::Completion(ent->client->pers.netname, ent->client->jumpdata->ip, level.mapname, time_diff);
+                SaveMapCompletion(level.mapname, ent->client->pers.netname, time_diff, ent->client->jumpdata->replay_recording);
 
-                // TODO: save time!
-                if (level.replay_fastest_time == 0 || time_diff < level.replay_fastest_time)
-                {
-                    level.replay_fastest_time = time_diff;
-                    strncpy(level.replay_fastest_name, ent->client->pers.netname, 15);
-                    level.replay_fastest_buffer = ent->client->replay_buffer;
-                    gi.cprintf(ent, PRINT_HIGH, "You've set a new fastest time!\n");
-                }
+                // TODO: save replay now fastest time, udpate fresh time list, update statistics cache
+
             }
-            ent->client->resp.jump_timer_finished = true;
+            ent->client->jumpdata->timer_finished = true;
         }
 
         return false; // leave the weapon there
@@ -375,14 +360,14 @@ namespace Jump
         replay_frame_t frame = {};
         VectorCopy(ent->s.origin, frame.pos);
         VectorCopy(ent->client->v_angle, frame.angles);
-        frame.key_states = ent->client->key_states;
-        frame.fps = ent->client->fps;
-        ent->client->jumpdata->replay_buffer.push_back(frame);
+        frame.key_states = ent->client->jumpdata->key_states;
+        frame.fps = ent->client->jumpdata->fps;
+        ent->client->jumpdata->replay_recording.push_back(frame);
     }
 
     void ClearReplayData(edict_t* ent)
     {
-        ent->client->jumpdata->replay_buffer.clear();
+        ent->client->jumpdata->replay_recording.clear();
     }
 
     void JumpClientConnect(edict_t* ent)
@@ -403,18 +388,18 @@ namespace Jump
 
     void AdvanceSpectatingReplayFrame(edict_t* ent)
     {
-        if (ent->client->update_replay)
+        if (ent->client->jumpdata->update_replay_spectating)
         {
-            int frame_num = ent->client->replay_current_frame;
-            if (frame_num >= ent->client->jumpdata->replay_buffer_spectating.size())
+            int frame_num = ent->client->jumpdata->replay_spectating_framenum;
+            if (frame_num >= ent->client->jumpdata->replay_spectating.size())
             {
                 Logger::Error("Replay advanced past the end of the replay spectating buffer");
-                ent->client->update_replay = false;
-                ent->client->replay_current_frame = 0;
+                ent->client->jumpdata->update_replay_spectating = false;
+                ent->client->jumpdata->replay_spectating_framenum = 0;
                 return;
             }
 
-            const replay_frame_t& frame = ent->client->jumpdata->replay_buffer_spectating[frame_num];
+            const replay_frame_t& frame = ent->client->jumpdata->replay_spectating[frame_num];
 
             VectorCopy(frame.pos, ent->s.origin);
             VectorCopy(frame.angles, ent->client->v_angle);
@@ -432,12 +417,12 @@ namespace Jump
                 ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
             }
 
-            ent->client->replay_current_frame++;
-            if (ent->client->replay_current_frame >= ent->client->jumpdata->replay_buffer_spectating.size())
+            ent->client->jumpdata->replay_spectating_framenum++;
+            if (ent->client->jumpdata->replay_spectating_framenum >= ent->client->jumpdata->replay_spectating.size())
             {
                 ent->client->ps.pmove.pm_flags = 0;
                 ent->client->ps.pmove.pm_type = PM_SPECTATOR;
-                ent->client->update_replay = false;
+                ent->client->jumpdata->update_replay_spectating = false;
             }
         }
     }

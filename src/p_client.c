@@ -1343,8 +1343,8 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
     // We set the value here so that it stays correct across connects, team changes, etc.
     Jump::AssignTeamSkin(ent);
 
-	s = Info_ValueForKey(userinfo, "ip");
-	strncpy(ent->client->pers.userip, s, sizeof(ent->client->pers.userip) - 1);
+	std::string ip = Info_ValueForKey(userinfo, "ip");
+	ent->client->jumpdata->ip = ip.substr(0, ip.find_first_of(':')); // remove port from ip address
     // Jump
 
 //	// set skin
@@ -1387,15 +1387,15 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
     s = Info_ValueForKey(userinfo, "cl_maxfps");
     if (strlen(s))
     {
-        ent->client->pers.fps = atoi(s);
-        if (ent->client->pers.fps < 20)
+        ent->client->jumpdata->fps = atoi(s);
+        if (ent->client->jumpdata->fps < 20)
         {
             char tempString[16];
             gi.cprintf(ent, PRINT_HIGH, "[Server] You have been kicked for lowering CL_MAXFPS below 20\n");
             sprintf(tempString, "kick %d\n", ent - g_edicts - 1);
             gi.AddCommandString(tempString);
         }
-        else if (ent->client->pers.fps > 120)
+        else if (ent->client->jumpdata->fps > 120)
         {
             char tempString[16];
             gi.cprintf(ent, PRINT_HIGH, "[Server] You have been kicked for raising CL_MAXFPS above 120\n");
@@ -1448,12 +1448,6 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 	// TODO: comment doesn't match this code for inuse
 	if (ent->inuse == false)
 	{
-        // Jump
-        // Although not necessary because the team will be assigned in ClientBegin(),
-        // it's safe to leave this here.
-        ent->client->resp.jump_team = Jump::TEAM_SPECTATOR;
-        // Jump
-
 		// clear the respawning variables
 //ZOID -- force team join
 //		ent->client->resp.ctf_team = -1;
@@ -1464,14 +1458,14 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 			InitClientPersistant (ent->client);
 	}
 
+	// Jump
+	Jump::JumpClientConnect(ent);
+	// Jump
+
 	ClientUserinfoChanged (ent, userinfo);
 
 	if (game.maxclients > 1)
 		gi.dprintf ("%s connected\n", ent->client->pers.netname);
-
-	// Jump
-	Jump::JumpClientConnect(ent);
-	// Jump
 
 	ent->client->pers.connected = true;
 	return true;
@@ -1571,12 +1565,12 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	client = ent->client;
 
     // Only start the timer if the player has moved
-    if (ent->client->resp.jump_timer_paused)
+    if (ent->client->jumpdata->timer_paused)
     {
         if (abs(ucmd->forwardmove) > 0 || abs(ucmd->upmove) > 0 || abs(ucmd->sidemove) > 0)
         {
-            ent->client->resp.jump_timer_begin = Sys_Milliseconds();
-            ent->client->resp.jump_timer_paused = false;
+            ent->client->jumpdata->timer_begin = Sys_Milliseconds();
+            ent->client->jumpdata->timer_paused = false;
         }
     }
 
@@ -1747,8 +1741,8 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
     // Jump: client side timer
     // Jump TODO: this updates the health, timer, etc. that you see in the HUD
-    int time = Sys_Milliseconds() - ent->client->resp.jump_timer_begin;
-    if (time < 0 || ent->client->resp.jump_timer_paused)
+    int time = Sys_Milliseconds() - ent->client->jumpdata->timer_begin;
+    if (time < 0 || ent->client->jumpdata->timer_paused)
     {
         time = 0;
     }
@@ -1760,38 +1754,38 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
     // and that value is sent to the server.  So we need to figure out key states here.
     // Note: although the client can hold down forward/back or left/right at the same time,
     // only one of the keys is actually registered.
-    ent->client->key_states = 0;
+    ent->client->jumpdata->key_states = 0;
 
     if (ucmd->forwardmove > 10)
     {
-        ent->client->key_states |= Jump::KEY_STATE_FORWARD;
+        ent->client->jumpdata->key_states |= Jump::KEY_STATE_FORWARD;
     }
     else if (ucmd->forwardmove < -10)
     {
-        ent->client->key_states |= Jump::KEY_STATE_BACK;
+        ent->client->jumpdata->key_states |= Jump::KEY_STATE_BACK;
     }
 
     if (ucmd->sidemove > 10)
     {
-        ent->client->key_states |= Jump::KEY_STATE_RIGHT;
+        ent->client->jumpdata->key_states |= Jump::KEY_STATE_RIGHT;
     }
     else if (ucmd->sidemove < -10)
     {
-        ent->client->key_states |= Jump::KEY_STATE_LEFT;
+        ent->client->jumpdata->key_states |= Jump::KEY_STATE_LEFT;
     }
 
     if (ucmd->upmove > 10)
     {
-        ent->client->key_states |= Jump::KEY_STATE_JUMP;
+        ent->client->jumpdata->key_states |= Jump::KEY_STATE_JUMP;
     }
     else if (ucmd->upmove < -10)
     {
-        ent->client->key_states |= Jump::KEY_STATE_CROUCH;
+        ent->client->jumpdata->key_states |= Jump::KEY_STATE_CROUCH;
     }
 
 	if (ucmd->buttons & BUTTON_ATTACK)
 	{
-		ent->client->key_states |= Jump::KEY_STATE_ATTACK;
+		ent->client->jumpdata->key_states |= Jump::KEY_STATE_ATTACK;
 	}
 
     // Jump

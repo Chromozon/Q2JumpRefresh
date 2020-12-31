@@ -1134,9 +1134,9 @@ void ClientEndServerFrame (edict_t *ent)
 	}
 
     // Jump
-    if (ent->client->resp.jump_team == Jump::TEAM_HARD)
+    if (ent->client->jumpdata->team == Jump::TEAM_HARD)
     {
-        if (!ent->client->resp.jump_timer_finished && !ent->client->resp.jump_timer_paused)
+        if (!ent->client->jumpdata->timer_finished && !ent->client->jumpdata->timer_paused)
         {
             Jump::SaveReplayFrame(ent);
         }

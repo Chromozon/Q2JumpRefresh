@@ -1424,11 +1424,17 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 #include <sys/time.h>
 #endif
 
-int	curtime; // Part of the q_shared time API, although unused.
+#include <chrono>
 
-// TODO: rework this to just use int64
-int Sys_Milliseconds(void)
+// Jump curtime unused
+//int	curtime; // Part of the q_shared time API, although unused.
+
+int64_t Sys_Milliseconds()
 {
+	int64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::steady_clock::now().time_since_epoch()).count();
+	return ms;
+	#if 0
 #ifdef _WIN32
     static LARGE_INTEGER base = { 0 };
     static LARGE_INTEGER freq = { 0 };
@@ -1475,5 +1481,6 @@ int Sys_Milliseconds(void)
     curtime = current_ms - base_ms;
     return curtime;
 #endif
+	#endif
 }
 // Jump

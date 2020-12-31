@@ -29,54 +29,54 @@ namespace Jump
         ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = CS_JUMP_EMPTY;
         ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = CS_JUMP_EMPTY;
 
-        if (ent->client->key_states & KEY_STATE_FORWARD)
+        if (ent->client->jumpdata->key_states & KEY_STATE_FORWARD)
         {
             ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = CS_JUMP_KEY_FORWARD;
         }
-        else if (ent->client->key_states & KEY_STATE_BACK)
+        else if (ent->client->jumpdata->key_states & KEY_STATE_BACK)
         {
             ent->client->ps.stats[STAT_JUMP_KEY_BACK] = CS_JUMP_KEY_BACK;
         }
 
-        if (ent->client->key_states & KEY_STATE_LEFT)
+        if (ent->client->jumpdata->key_states & KEY_STATE_LEFT)
         {
             ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = CS_JUMP_KEY_LEFT;
         }
-        else if (ent->client->key_states & KEY_STATE_RIGHT)
+        else if (ent->client->jumpdata->key_states & KEY_STATE_RIGHT)
         {
             ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = CS_JUMP_KEY_RIGHT;
         }
 
-        if (ent->client->key_states & KEY_STATE_JUMP)
+        if (ent->client->jumpdata->key_states & KEY_STATE_JUMP)
         {
             ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = CS_JUMP_KEY_JUMP;
         }
-        else if (ent->client->key_states & KEY_STATE_CROUCH)
+        else if (ent->client->jumpdata->key_states & KEY_STATE_CROUCH)
         {
             ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = CS_JUMP_KEY_CROUCH;
         }
 
-        ent->client->ps.stats[STAT_JUMP_FPS] = ent->client->pers.fps;
+        ent->client->ps.stats[STAT_JUMP_FPS] = ent->client->jumpdata->fps;
 
         UpdateTimer(ent);
     }
 
     void UpdateTimer(edict_t * ent)
     {
-        if (ent->client->resp.jump_timer_paused)
+        if (ent->client->jumpdata->timer_paused)
         {
             ent->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = 0;
             ent->client->ps.stats[STAT_JUMP_TIMER_MS] = 0;
         }
-        else if (ent->client->resp.jump_timer_finished)
+        else if (ent->client->jumpdata->timer_finished)
         {
-            int time = ent->client->resp.jump_timer_end - ent->client->resp.jump_timer_begin;
+            int time = ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin;
             ent->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = time / 1000;
             ent->client->ps.stats[STAT_JUMP_TIMER_MS] = (time % 1000) / 100;
         }
         else // active timer
         {
-            int time = Sys_Milliseconds() - ent->client->resp.jump_timer_begin;
+            int time = Sys_Milliseconds() - ent->client->jumpdata->timer_begin;
             ent->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = time / 1000;
             ent->client->ps.stats[STAT_JUMP_TIMER_MS] = (time % 1000) / 100;
         }

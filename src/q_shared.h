@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdint.h>
 
 #if (defined _M_IX86 || defined __i386__) && !defined C_ONLY && !defined __sun__
 #define id386	1
@@ -264,9 +265,10 @@ SYSTEM SPECIFIC
 ==============================================================
 */
 
-extern	int	curtime;		// time returned by last Sys_Milliseconds
+// Jump: curtime is unused
+// extern	int	curtime;		// time returned by last Sys_Milliseconds
 
-int		Sys_Milliseconds (void);
+int64_t Sys_Milliseconds();
 void	Sys_Mkdir (char *path);
 
 // large block stack allocation routines

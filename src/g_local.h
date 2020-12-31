@@ -351,15 +351,6 @@ typedef struct
 	int			body_que;			// dead bodies
 
 	int			power_cubes;		// ugly necessity for coop
-
-    // Jump
-    Jump::level_state_t state;
-
-    char replay_fastest_name[16];
-    int replay_fastest_time;
-    Jump::replay_buffer_t replay_fastest_buffer;
-    // Jump
-
 } level_locals_t;
 
 
@@ -885,11 +876,6 @@ typedef struct
 
 	int			power_cubes;	// used for tracking the cubes in coop games
 	int			score;			// for calculating total unit score in coop games
-
-    // Jump
-    int         fps;
-	char        userip[32];
-    // Jump
 } client_persistant_t;
 
 // client data that stays across deathmatch respawns
@@ -912,16 +898,6 @@ typedef struct
 	qboolean	admin;
 	struct ghost_s *ghost; // for ghost codes
 //ZOID
-
-// Jump
-    Jump::team_t jump_team;
-    int          jump_count;
-    int          jump_timer_begin;
-    int          jump_timer_end;
-    qboolean     jump_timer_paused;
-    qboolean     jump_timer_finished;
-// Jump
-
 	vec3_t		cmd_angles;			// angles sent over in the last command
 	int			game_helpchanged;
 	int			helpchanged;
@@ -1027,17 +1003,6 @@ struct gclient_s
 //ZOID
 
     // Jump
-    Jump::StoreBuffer store_buffer;
-    edict_t*          store_ent;
-
-    Jump::replay_buffer_t replay_buffer;
-    int                   replay_current_frame;
-
-    qboolean update_replay; // TODO clean up?
-
-    int key_states;
-    int fps;
-
 	Jump::client_data_t* jumpdata;
     // Jump
 };

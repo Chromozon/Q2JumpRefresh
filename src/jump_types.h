@@ -1,9 +1,14 @@
 #pragma once
 
-// Data types that only have dependencies on the base game engine headers
 #include "q_shared.h"
+#define GAME_INCLUDE
+#include "game.h"
 #include <stdint.h>
 #include <vector>
+#include <string>
+
+// Forward declarations
+//struct edict_t;
 
 const int REPLAY_FRAMES_PER_SECOND = 10;
 const int MAX_REPLAY_LENGTH_SECONDS = 24 * 60 * 60; // 24 hours
@@ -40,6 +45,29 @@ namespace Jump
         KEY_STATE_ATTACK = 1 << 6,
     } key_state_t;
 
+    typedef enum
+    {
+        REPLAY_SPEED_NEG_100 = -10000,
+        REPLAY_SPEED_NEG_25 = -2500,
+        REPLAY_SPEED_NEG_10 = -1000,
+        REPLAY_SPEED_NEG_5 = -500,
+        REPLAY_SPEED_NEG_2 = -200,
+        REPLAY_SPEED_NEG_1 = -100,
+        REPLAY_SPEED_NEG_HALF = -50,
+        REPLAY_SPEED_NEG_FIFTH = -20,
+        REPLAY_SPEED_NEG_TENTH = -10,
+        REPLAY_SPEED_0 = 0,
+        REPLAY_SPEED_TENTH = 10,
+        REPLAY_SPEED_FIFTH = 20,
+        REPLAY_SPEED_HALF = 50,
+        REPLAY_SPEED_1 = 100,
+        REPLAY_SPEED_2 = 200,
+        REPLAY_SPEED_5 = 500,
+        REPLAY_SPEED_10 = 1000,
+        REPLAY_SPEED_25 = 2500,
+        REPLAY_SPEED_100 = 10000,
+    } replay_speed_t;
+
     // How much disk space is required to store a replay:
     // 40 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 400 bytes/s
     // 15 seconds = 6 kB
@@ -62,24 +90,18 @@ namespace Jump
         int32_t reserved2;  // (4 bytes) reserved bytes for future use
     } replay_frame_t;
 
-    // TODO: the current frame of the replay buffer should be stored elsewhere
     typedef struct
     {
-        replay_frame_t frames[MAX_REPLAY_FRAMES];
-        int next_frame_index;
-    } replay_buffer_t;
-
-    typedef struct
-    {
-        int time_interval;
+        int64_t time_interval;
         vec3_t pos;
         vec3_t angles;
+        // todo weapons
     } store_data_t;
 
-    class StoreBuffer
+    class store_buffer_t
     {
     public:
-        StoreBuffer();
+        store_buffer_t();
         void PushStore(const store_data_t& data);
         store_data_t GetStore(int prevNum);
         void Reset();
@@ -93,13 +115,33 @@ namespace Jump
     class client_data_t
     {
     public:
-        client_data_t()
-            : replay_buffer(), replay_buffer_spectating()
-        {
-            replay_buffer.reserve(10000);
-        }
+        client_data_t();
 
-        std::vector<replay_frame_t> replay_buffer; // TODO: rename to replay_recording
-        std::vector<replay_frame_t> replay_buffer_spectating; // TODO: rename to replay_spectating
+        std::vector<replay_frame_t> replay_recording;
+        std::vector<replay_frame_t> replay_spectating;
+        int replay_spectating_framenum;
+        bool update_replay_spectating;
+
+        int fps;
+        std::string ip;
+        team_t team;
+        int64_t timer_begin;
+        int64_t timer_end;
+        bool timer_paused;
+        bool timer_finished;
+
+        store_buffer_t stores;
+        edict_t* store_ent;
+
+        int key_states; // input actions that are currently active
     };
+
+    class server_data_t
+    {
+    public:
+        server_data_t() = default;
+        level_state_t state;    // freeplay, voting, or intermission
+    };
+
+    extern server_data_t jump_server;
 }

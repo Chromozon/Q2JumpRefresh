@@ -5,8 +5,6 @@
 
 namespace Jump
 {
-    std::unordered_map<edict_t*, client_data_t> all_client_data;
-
     static const int DefaultHealth = 1000;
 
     static const char* SexTeamEasy = "female";
@@ -353,12 +351,7 @@ namespace Jump
                     ent->client->pers.netname, time_diff / 1000, time_diff % 1000, 0.0, 0.0);
 
                 Logger::Completion(ent->client->pers.netname, ent->client->pers.userip, level.mapname, time_diff);
-
-                auto it = all_client_data.find(ent);
-                if (it != all_client_data.end())
-                {
-                    SaveMapCompletion(level.mapname, ent->client->pers.netname, time_diff, it->second.replay_buffer);
-                }
+                SaveMapCompletion(level.mapname, ent->client->pers.netname, time_diff, ent->client->jumpdata->replay_buffer);
 
                 // TODO: save time!
                 if (level.replay_fastest_time == 0 || time_diff < level.replay_fastest_time)
@@ -384,52 +377,36 @@ namespace Jump
         VectorCopy(ent->client->v_angle, frame.angles);
         frame.key_states = ent->client->key_states;
         frame.fps = ent->client->fps;
-
-        auto it = all_client_data.find(ent);
-        if (it != all_client_data.end())
-        {
-            it->second.replay_buffer.push_back(frame);
-        }
+        ent->client->jumpdata->replay_buffer.push_back(frame);
     }
 
     void ClearReplayData(edict_t* ent)
     {
-        auto it = all_client_data.find(ent);
-        if (it != all_client_data.end())
-        {
-            it->second.replay_buffer.clear();
-        }
+        ent->client->jumpdata->replay_buffer.clear();
     }
 
     void JumpClientConnect(edict_t* ent)
     {
-        // Remove any old cached client data just in case
-        all_client_data.erase(ent);
-
-        // Add this client to the client data cache and initialize the data to default values
-        all_client_data.insert({ ent, client_data_t() });
+        ent->client->jumpdata = new client_data_t();
     }
 
     void JumpClientDisconnect(edict_t* ent)
     {
-        all_client_data.erase(ent);
+        delete ent->client->jumpdata;
+        ent->client->jumpdata = NULL;
+    }
+
+    void JumpInitGame()
+    {
+        LoadAllStatistics();
     }
 
     void AdvanceSpectatingReplayFrame(edict_t* ent)
     {
         if (ent->client->update_replay)
         {
-            auto it = all_client_data.find(ent);
-            if (it == all_client_data.end())
-            {
-                Logger::Error("Cannot find client data for user " + std::string(ent->client->pers.netname));
-                ent->client->update_replay = false;
-                ent->client->replay_current_frame = 0;
-                return;
-            }
-
             int frame_num = ent->client->replay_current_frame;
-            if (frame_num >= it->second.replay_buffer_spectating.size())
+            if (frame_num >= ent->client->jumpdata->replay_buffer_spectating.size())
             {
                 Logger::Error("Replay advanced past the end of the replay spectating buffer");
                 ent->client->update_replay = false;
@@ -437,7 +414,7 @@ namespace Jump
                 return;
             }
 
-            const replay_frame_t& frame = it->second.replay_buffer_spectating[frame_num];
+            const replay_frame_t& frame = ent->client->jumpdata->replay_buffer_spectating[frame_num];
 
             VectorCopy(frame.pos, ent->s.origin);
             VectorCopy(frame.angles, ent->client->v_angle);
@@ -456,7 +433,7 @@ namespace Jump
             }
 
             ent->client->replay_current_frame++;
-            if (ent->client->replay_current_frame >= it->second.replay_buffer_spectating.size())
+            if (ent->client->replay_current_frame >= ent->client->jumpdata->replay_buffer_spectating.size())
             {
                 ent->client->ps.pmove.pm_flags = 0;
                 ent->client->ps.pmove.pm_type = PM_SPECTATOR;

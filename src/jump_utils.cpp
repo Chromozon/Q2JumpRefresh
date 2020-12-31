@@ -140,4 +140,18 @@ namespace Jump
         return green;
     }
 
+    // Tries to convert a string to an int.  If the string is an int, returns true, else false.
+    bool StringToIntMaybe(const std::string& str, int& num)
+    {
+        try
+        {
+            num = std::stoi(str);
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
 } // namespace Jump

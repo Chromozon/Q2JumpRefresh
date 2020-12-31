@@ -9,10 +9,6 @@
 
 namespace Jump
 {
-    // TODO: can just make this a vector, and just store a pointer to each individual item
-    // in the ent->client struct.
-    extern std::unordered_map<edict_t*, client_data_t> all_client_data;
-
     void OpenMenu_Join(edict_t* ent);
 
     int CountPlayersOnTeam(team_t team);
@@ -44,6 +40,7 @@ namespace Jump
 
     void JumpClientConnect(edict_t* ent);
     void JumpClientDisconnect(edict_t* ent);
+    void JumpInitGame();
 
     void AdvanceSpectatingReplayFrame(edict_t* ent);
 }

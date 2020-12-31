@@ -1037,6 +1037,8 @@ struct gclient_s
 
     int key_states;
     int fps;
+
+	Jump::client_data_t* jumpdata;
     // Jump
 };
 

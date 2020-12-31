@@ -34,4 +34,7 @@ namespace Jump
     // The conversion is to simply add 128 to each char value.  Invalid characters are replaced with space.
     std::string GetGreenConsoleText(const std::string& str);
 
+    // Tries to convert a string to an int.  If the string is an int, returns true, else false.
+    bool StringToIntMaybe(const std::string& str, int& num);
+
 }

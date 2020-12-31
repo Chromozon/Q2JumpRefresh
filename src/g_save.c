@@ -242,6 +242,10 @@ void InitGame (void)
 //ZOID
 	CTFInit();
 //ZOID
+
+	// Jump
+	Jump::JumpInitGame();
+	// Jump
 }
 
 //=========================================================

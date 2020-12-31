@@ -17,9 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-
-// TODO!!
-//#pragma once
+#pragma once
 
 // game.h -- game dll information visible to server
 
@@ -251,4 +249,4 @@ typedef struct
 	int			max_edicts;
 } game_export_t;
 
-game_export_t *GetGameApi (game_import_t *import);
+game_export_t *GetGameAPI (game_import_t *import);

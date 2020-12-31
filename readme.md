@@ -14,7 +14,7 @@ A reimplementation of Quake 2 jump mod.  The code currently compiles with C++17.
   - Log file `activity.txt` stores general server activity (players joining and leaving, players talking, etc.).
   - Log file `completions.txt` stores a record of every time a client completes a map.
 - Map completion times and demos are stored in `C:/Quake2/jump/<port>/scores`.
-  - There is a subfolder for each map, ex: `/scores/slipmap33/`, `scores/ddrace/`, etc.
+  - There is a subfolder for each map, ex: `/scores/slipmap33/`, `/scores/ddrace/`, etc.
   - Inside each map subfolder are `<username>.time` files which store completion time, date, and number of completions.
   - Each map subfolder also contains a `<username>.demo` file.  This is an arbitrary length replay.
 
@@ -42,3 +42,21 @@ A reimplementation of Quake 2 jump mod.  The code currently compiles with C++17.
 - "Store" should save equipped weapons and ammo, "recall" should reset the inventory back to the stored point
 
 - [Big Project] Design and implement the global highscores table
+
+## Notes
+See `g_main.c GetGameAPI()` for the main logic entry points.
+- `InitGame`
+- `ShutdownGame`
+- `SpawnEntities`
+- `WriteGame`
+- `ReadGame`
+- `WriteLevel`
+- `ReadLevel`
+- `ClientThink`
+- `ClientConnect`
+- `ClientUserinfoChanged`
+- `ClientDisconnect`
+- `ClientBegin`
+- `ClientCommand`
+- `G_RunFrame`
+- `ServerCommand`

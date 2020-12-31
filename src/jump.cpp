@@ -1,5 +1,5 @@
 #include "jump.h"
-#include "logger.h"
+#include "jump_logger.h"
 #include "jump_scores.h"
 #include <unordered_map>
 

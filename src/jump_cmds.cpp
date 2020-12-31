@@ -7,7 +7,7 @@
 #include "jump_scores.h"
 #include "jump_menu.h"
 #include "jump_utils.h"
-#include "logger.h"
+#include "jump_logger.h"
 
 namespace Jump
 {

@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include <fstream>
-#include "logger.h"
+#include "jump_logger.h"
 #include "jump_utils.h"
 
 namespace Jump

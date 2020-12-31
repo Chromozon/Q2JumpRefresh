@@ -167,7 +167,7 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
     <ClCompile Include="jump_scores.cpp" />
     <ClCompile Include="jump_types.cpp" />
     <ClCompile Include="jump_utils.cpp" />
-    <ClCompile Include="logger.cpp" />
+    <ClCompile Include="jump_logger.cpp" />
     <ClCompile Include="m_move.c" />
     <ClCompile Include="p_client.c" />
     <ClCompile Include="p_hud.c" />
@@ -188,7 +188,7 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
     <ClInclude Include="jump_types.h" />
     <ClInclude Include="jump_cmds.h" />
     <ClInclude Include="jump_utils.h" />
-    <ClInclude Include="logger.h" />
+    <ClInclude Include="jump_logger.h" />
     <ClInclude Include="m_player.h" />
     <ClInclude Include="p_menu.h" />
     <ClInclude Include="q_shared.h" />

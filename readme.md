@@ -71,7 +71,7 @@ See `g_main.c GetGameAPI()` for the main logic entry points.
 The layout of the HUD is sent to all clients with `gi.configstring(CS_STATUSBAR, "<HUD layout string>"`.  The HUD layout string is the same for all clients.
 Values specific to each client (such as jump timer, current fps, and keys hit) are transferred by STAT_ values.
 The HUD layout string has STAT_ placeholders for client specific values that change often.  These can be changed each server frame by setting them in `ent->client->ps.stats[STAT_]`.
-Note that there are only 32 max STAT_ values available for use (0 to 31, but always treat 0 as an empty value).
+Note that there are only 32 max STAT_ indices available for use (0 to 31).
 
 STAT_ values can be used directly, or they can be used to lookup a display value in the configstring table.  For example, if the HUD layout string has `stat_string 26`,
 the client will find the value of `ps.stats[26]` and will use that value to look up the corresponding string in the configstrings.

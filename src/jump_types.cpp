@@ -3,7 +3,6 @@
 
 namespace Jump
 {
-    server_data_t jump_server;
 
     store_buffer_t::store_buffer_t() : numStores(0), nextIndex(0), stores()
     {

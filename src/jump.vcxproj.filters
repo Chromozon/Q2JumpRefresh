@@ -117,6 +117,9 @@
     <ClCompile Include="jump_logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="old.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h">

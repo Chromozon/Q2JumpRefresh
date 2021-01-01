@@ -776,6 +776,7 @@ void InitBodyQue (void);
 void ClientBeginServerFrame (edict_t *ent);
 void ClientUserinfoChanged (edict_t *ent, char *userinfo);
 void SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles);
+void StuffCmd(edict_t* user, const char* cmd);
 
 //
 // g_player.c

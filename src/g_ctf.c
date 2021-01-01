@@ -410,9 +410,9 @@ int CTFOtherTeam(int team)
 
 /*--------------------------------------------------------------------------*/
 
-edict_t *SelectRandomDeathmatchSpawnPoint (void);
-edict_t *SelectFarthestDeathmatchSpawnPoint (void);
-float	PlayersRangeFromSpot (edict_t *spot);
+//edict_t *SelectRandomDeathmatchSpawnPoint (void);
+//edict_t *SelectFarthestDeathmatchSpawnPoint (void);
+//float	PlayersRangeFromSpot (edict_t *spot);
 
 void CTFAssignSkin(edict_t *ent, char *s)
 {
@@ -479,84 +479,6 @@ void CTFAssignTeam(gclient_t *who)
 		who->resp.ctf_team = CTF_TEAM1;
 	else
 		who->resp.ctf_team = CTF_TEAM2;
-}
-
-/*
-================
-SelectCTFSpawnPoint
-
-go to a ctf point, but NOT the two points closest
-to other players
-================
-*/
-edict_t *SelectCTFSpawnPoint (edict_t *ent)
-{
-	edict_t	*spot, *spot1, *spot2;
-	int		count = 0;
-	int		selection;
-	float	range, range1, range2;
-	char	*cname;
-
-	if (ent->client->resp.ctf_state)
-		if ( (int)(dmflags->value) & DF_SPAWN_FARTHEST)
-			return SelectFarthestDeathmatchSpawnPoint ();
-		else
-			return SelectRandomDeathmatchSpawnPoint ();
-
-	ent->client->resp.ctf_state++;
-
-	switch (ent->client->resp.ctf_team) {
-	case CTF_TEAM1:
-		cname = "info_player_team1";
-		break;
-	case CTF_TEAM2:
-		cname = "info_player_team2";
-		break;
-	default:
-		return SelectRandomDeathmatchSpawnPoint();
-	}
-
-	spot = NULL;
-	range1 = range2 = 99999;
-	spot1 = spot2 = NULL;
-
-	while ((spot = G_Find (spot, FOFS(classname), cname)) != NULL)
-	{
-		count++;
-		range = PlayersRangeFromSpot(spot);
-		if (range < range1)
-		{
-			range1 = range;
-			spot1 = spot;
-		}
-		else if (range < range2)
-		{
-			range2 = range;
-			spot2 = spot;
-		}
-	}
-
-	if (!count)
-		return SelectRandomDeathmatchSpawnPoint();
-
-	if (count <= 2)
-	{
-		spot1 = spot2 = NULL;
-	}
-	else
-		count -= 2;
-
-	selection = rand() % count;
-
-	spot = NULL;
-	do
-	{
-		spot = G_Find (spot, FOFS(classname), cname);
-		if (spot == spot1 || spot == spot2)
-			selection++;
-	} while(selection--);
-
-	return spot;
 }
 
 /*------------------------------------------------------------------------*/

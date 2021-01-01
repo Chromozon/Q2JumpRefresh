@@ -140,8 +140,7 @@ namespace Jump
     {
     public:
         server_data_t() = default;
+
         level_state_t state;    // freeplay, voting, or intermission
     };
-
-    extern server_data_t jump_server;
 }

@@ -9,6 +9,8 @@
 
 namespace Jump
 {
+    extern server_data_t jump_server;
+
     void OpenMenu_Join(edict_t* ent);
 
     int CountPlayersOnTeam(team_t team);

@@ -5,6 +5,8 @@
 
 namespace Jump
 {
+    server_data_t jump_server;
+
     static const int DefaultHealth = 1000;
 
     static const char* SexTeamEasy = "female";

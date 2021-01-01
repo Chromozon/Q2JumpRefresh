@@ -14,6 +14,7 @@ namespace Jump
         gi.configstring(CS_JUMP_KEY_JUMP, CS_STR_JUMP_KEY_JUMP);
         gi.configstring(CS_JUMP_KEY_CROUCH, CS_STR_JUMP_KEY_CROUCH);
         gi.configstring(CS_JUMP_FPS, CS_STR_JUMP_FPS);
+        // TODO attack!
         //gi.configstring(CS_JUMP_TEAM_EASY, "    Team: ≈бущ");
         //gi.configstring(CS_JUMP_TEAM_HARD, "    Team: »бтд");
         //gi.configstring(CS_JUMP_TEAM_SPEC, "    Team: ѕвуетцет");

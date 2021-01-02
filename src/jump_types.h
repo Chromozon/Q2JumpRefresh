@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include <unordered_set>
 
 // Forward declarations
 //struct edict_t;
@@ -139,8 +140,24 @@ namespace Jump
     class server_data_t
     {
     public:
-        server_data_t() = default;
+        server_data_t()
+        {
+            level_state = LEVEL_STATE_FREEPLAY;
+            time_added_mins = 0;
+            replay_now_time_ms = INT64_MAX;
+        }
 
-        level_state_t state;    // freeplay, voting, or intermission
+        level_state_t level_state;    // freeplay, voting, or intermission
+        int time_added_mins;
+
+        std::string last_map1;
+        std::string last_map2;
+        std::string last_map3;
+
+        std::unordered_set<std::string> fresh_times;   // username keys (lowercase)
+
+        std::vector<replay_frame_t> replay_now_frames;
+        std::string replay_now_username;
+        int64_t replay_now_time_ms;
     };
 }

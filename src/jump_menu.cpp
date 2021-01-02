@@ -47,6 +47,7 @@ namespace Jump
 				ss << symbol_arrow;
 
 				// Show the fresh time symbol or not
+				bool fresh_time = jump_server.fresh_times.find(AsciiToLower(username)) != jump_server.fresh_times.end();
 				if (fresh_time)
 				{
 					ss << " *";

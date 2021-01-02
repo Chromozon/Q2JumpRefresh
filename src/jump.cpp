@@ -2,6 +2,7 @@
 #include "jump_logger.h"
 #include "jump_scores.h"
 #include <unordered_map>
+#include "jump_utils.h"
 
 namespace Jump
 {
@@ -188,7 +189,7 @@ namespace Jump
         InitAsSpectator(ent);
         ClientUserinfoChanged(ent, userinfo);
 
-        if (level.intermissiontime || jump_server.state == LEVEL_STATE_VOTING)
+        if (level.intermissiontime || jump_server.level_state == LEVEL_STATE_VOTING)
         {
             // TODO move to intermission
             MoveClientToIntermission(ent);
@@ -326,6 +327,13 @@ namespace Jump
 
     qboolean PickupWeapon(edict_t* weap, edict_t* ent)
     {
+        if (ent->client->jumpdata->timer_finished)
+        {
+            // If we have already completed the map, ignore any weapon pickups
+            return false;
+            // TODO: make sure recall on easy mode resets timer_finished
+        }
+
         // TODO
         // If rocket, grenade launcher, BFG
         // and mset enabled, don't finish timer
@@ -333,18 +341,66 @@ namespace Jump
         if (!ent->client->jumpdata->timer_finished)
         {
             ent->client->jumpdata->timer_end = Sys_Milliseconds();
-            int time_diff = ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin;
+            int64_t time_diff = ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin;
             if (ent->client->jumpdata->team == TEAM_EASY)
             {
-                gi.cprintf(ent, PRINT_HIGH, "You would have obtained this weapon in %d.%03d seconds.\n", time_diff / 1000, time_diff % 1000);
+                gi.cprintf(ent, PRINT_HIGH, "You would have obtained this weapon in %s seconds.\n",
+                    GetCompletionTimeDisplayString(time_diff).c_str());
             }
             else // TEAM_HARD
             {
-                gi.bprintf(PRINT_HIGH, "%s finished in %d.%03d seconds (PB %1.3f | 1st +%1.3f)\n",
-                    ent->client->pers.netname, time_diff / 1000, time_diff % 1000, 0.0, 0.0);
+                // TODO see jumpmod.c, tourney_log()
+                // TODO PB and 1st time
+                int64_t pb = 11000;
+                int64_t first = 10700;
+
+                int64_t pb_diff = std::abs(time_diff - pb);
+                std::string pb_str = GetCompletionTimeDisplayString(pb_diff);
+                if (time_diff > pb)
+                {
+                    pb_str.insert(pb_str.begin(), '+');
+                }
+                else if (time_diff < pb)
+                {
+                    pb_str.insert(pb_str.begin(), '-');
+                }
+
+                int64_t first_diff = std::abs(time_diff - first);
+                std::string first_str = GetCompletionTimeDisplayString(first_diff);
+                if (time_diff > first)
+                {
+                    first_str.insert(first_str.begin(), '+');
+                }
+                else if (time_diff < first)
+                {
+                    first_str.insert(first_str.begin(), '-');
+                }
+
+                // TODO: first completion on map shouldn't show PB and 1st place time offset
+                // TODO: first completeion for user shouldn't show PB offset, still show 1st offset if there is one
+                // TODO: first place should show a special message
+
+                if (time_diff < pb)
+                {
+                    // Set a new best time for user
+                    jump_server.fresh_times.insert(AsciiToLower(ent->client->pers.netname));
+                }
+
+                gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (PB %s | 1st %s)\n",
+                    ent->client->pers.netname,
+                    GetCompletionTimeDisplayString(time_diff).c_str(),
+                    pb_str.c_str(),
+                    first_str.c_str());
 
                 Logger::Completion(ent->client->pers.netname, ent->client->jumpdata->ip, level.mapname, time_diff);
                 SaveMapCompletion(level.mapname, ent->client->pers.netname, time_diff, ent->client->jumpdata->replay_recording);
+
+                if (time_diff < jump_server.replay_now_time_ms)
+                {
+                    jump_server.replay_now_time_ms = time_diff;
+                    jump_server.replay_now_username = ent->client->pers.netname;
+                    jump_server.replay_now_frames = ent->client->jumpdata->replay_recording;
+                }
 
                 // TODO: save replay now fastest time, udpate fresh time list, update statistics cache
 
@@ -385,7 +441,8 @@ namespace Jump
 
     void JumpInitGame()
     {
-        LoadAllStatistics();
+        LoadLocalMapList();
+        LoadAllLocalTimes();
     }
 
     void AdvanceSpectatingReplayFrame(edict_t* ent)

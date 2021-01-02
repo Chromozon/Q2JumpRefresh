@@ -23,6 +23,7 @@ namespace Jump
     std::string AsciiToUpper(const std::string& str);
 
     // Given a time in milliseconds, converts to a display string of the form "54.830"
+    // This function expects the given time to always be > 0.
     std::string GetCompletionTimeDisplayString(int64_t time_ms);
 
     // We use the username in file paths, so make sure it doesn't contain any invalid characters or reserved words.

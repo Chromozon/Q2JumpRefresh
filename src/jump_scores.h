@@ -16,6 +16,7 @@
 #define TIME_FILE_EXTENSION ".time"
 #define DEMO_FILE_EXTENSION ".demo"
 #define MAX_HIGHSCORES 15    // The "top N" best times to keep track of for statistics (top 15, top 10, etc.)
+#define MAPLIST_FILENAME "maplist.txt"
 
 #include <string>
 #include <vector>
@@ -39,7 +40,7 @@ namespace Jump
     } user_overall_record;
 
     typedef std::string mapname_key; // The mapname key is just the mapname
-
+    
     void LoadTimesForMap(const std::string& mapname);
     void SaveMapCompletion(
         const std::string& mapname,
@@ -47,7 +48,8 @@ namespace Jump
         int64_t time_ms,
         const std::vector<replay_frame_t>& replay_buffer);
     void SaveTimeRecordToFile(const user_time_record& record);
-    void LoadAllStatistics();
+    void LoadLocalMapList();
+    void LoadAllLocalTimes();
     bool LoadTimeRecordFromFile(const std::string& filepath, user_time_record& record);
     bool SortTimeRecordByTime(const user_time_record& left, const user_time_record& right);
     bool GetHighscoresForMap(const std::string& mapname, std::vector<user_time_record>& highscores, int& completions);

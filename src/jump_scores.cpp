@@ -22,7 +22,7 @@ namespace Jump
             {
                 std::string filepath = entry.path().generic_string();
 
-                // TODO: skip if this is a demo file
+                // TODO: skip if this is a .demo file
 
                 std::string username = RemoveFileExtension(RemovePathFromFilename(filepath));
                 std::string username_lower = AsciiToLower(username);
@@ -111,23 +111,45 @@ namespace Jump
         file.flush();
     }
 
-    std::unordered_map<mapname_key, std::vector<user_time_record>> all_maptimes_cache;
+    std::unordered_set<std::string> maplist;
 
-    void LoadAllStatistics()
+    void LoadLocalMapList()
     {
-        all_maptimes_cache.clear();
+        maplist.clear();
+        std::string path = GetModDir() + '/' + MAPLIST_FILENAME;
+        std::ifstream file(path);
+        if (!file.is_open())
+        {
+            Logger::Warning(va("Maplist file \"%s\" not found, scores will not be saved", path.c_str()));
+            return;
+        }
+        std::string line;
+        while (std::getline(file, line))
+        {
+            if (!line.empty())
+            {
+                maplist.insert(line);
+            }
+        }
+        Logger::Info(va("Loaded %d maps from maplist \"%s\"", static_cast<int>(maplist.size()), path.c_str()));
+    }
+
+    // Table of all maps with the times sorted best to worst
+    std::unordered_map<mapname_key, std::vector<user_time_record>> all_local_times_cache;
+
+    void LoadAllLocalTimes()
+    {
+        all_local_times_cache.clear();
 
         std::string scores_dir = GetModDir() + '/' + SCORES_DIR;
         std::filesystem::create_directories(scores_dir);
 
-        for (const auto& map_dir : std::filesystem::directory_iterator(scores_dir))
+        for (const std::string& mapname : maplist)
         {
-            if (!map_dir.is_directory())
-            {
-                continue;
-            }
-            std::string mapname = map_dir.path().filename().generic_string();
-            all_maptimes_cache.insert({ mapname, std::vector<user_time_record>() });
+            std::string map_dir = scores_dir + '/' + mapname;
+            std::filesystem::create_directories(map_dir);
+
+            all_local_times_cache.insert({ mapname, std::vector<user_time_record>() });
 
             for (const auto& entry : std::filesystem::directory_iterator(map_dir))
             {
@@ -142,15 +164,15 @@ namespace Jump
                 user_time_record record;
                 if (LoadTimeRecordFromFile(entry.path().generic_string(), record))
                 {
-                    all_maptimes_cache[mapname].push_back(record);
+                    all_local_times_cache[mapname].push_back(record);
                 }
             }
-
             std::sort(
-                all_maptimes_cache[mapname].begin(),
-                all_maptimes_cache[mapname].end(),
+                all_local_times_cache[mapname].begin(),
+                all_local_times_cache[mapname].end(),
                 SortTimeRecordByTime);
         }
+        Logger::Info("Loaded all local maptimes");
     }
 
     bool LoadTimeRecordFromFile(const std::string& filepath, user_time_record& record)
@@ -158,7 +180,7 @@ namespace Jump
         std::ifstream file(filepath);
         if (!file.is_open())
         {
-            Logger::Warning("Could no open file " + filepath);
+            Logger::Warning("Could not open file " + filepath);
             return false;
         }
         else
@@ -190,8 +212,8 @@ namespace Jump
         highscores.clear();
         completions = 0;
 
-        auto it = all_maptimes_cache.find(mapname);
-        if (it == all_maptimes_cache.end())
+        auto it = all_local_times_cache.find(mapname);
+        if (it == all_local_times_cache.end())
         {
             return false;
         }
@@ -209,8 +231,8 @@ namespace Jump
 
     bool HasUserCompletedMap(const std::string& mapname, const std::string& username)
     {
-        auto it = all_maptimes_cache.find(mapname);
-        if (it == all_maptimes_cache.end())
+        auto it = all_local_times_cache.find(mapname);
+        if (it == all_local_times_cache.end())
         {
             return false;
         }

@@ -84,3 +84,5 @@ You can also use STAT_ value configstring lookup to display icons in the HUD.
 For example, set `ent->client->ps.stats[25] = gi.imageindex("somepcx")`.  In the HUD layout string, use `pic 25` to do the pcx lookup for the value in `ps.stats[25]`.
 
 An easy way to toggle the visibility of HUD layout tokens is to use the if syntax.  `if 18 stat_string 18` will only display the lookup value of `ps.stats[18]` if it is nonzero.
+
+The Q2 client source code for all HUD layout string tokens is here: `cl_scrn.c, SCR_ExecuteLayoutString()`

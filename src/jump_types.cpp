@@ -46,20 +46,4 @@ namespace Jump
     {
         return numStores > 0;
     }
-
-    // Constructor
-    client_data_t::client_data_t()
-    {
-        replay_recording.reserve(10000);
-        replay_spectating_framenum = 0;
-        update_replay_spectating = false;
-        fps = 0;
-        team = TEAM_SPECTATOR;
-        timer_begin = 0;
-        timer_end = 0;
-        timer_paused = true;
-        timer_finished = false;
-        store_ent = NULL;
-        key_states = 0;
-    }
 }

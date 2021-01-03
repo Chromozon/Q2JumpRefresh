@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "m_player.h"
 #include "jump.h"
 #include "jump_utils.h"
+#include "jump_hud.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -852,7 +853,7 @@ Changing levels will NOT cause this to be called again, but
 loadgames will.
 ============
 */
-qboolean ClientConnect (edict_t *ent, char *userinfo)
+qboolean ClientConnect(edict_t* ent, char* userinfo)
 {
 	char	*value;
 
@@ -871,7 +872,13 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 		return false;
 	}
 
-	// TODO: check username
+	// check for invalid username
+	value = Info_ValueForKey(userinfo, "name");
+	if (!Jump::IsUsernameValid(value))
+	{
+		Info_SetValueForKey(userinfo, "rejmsg", "Invalid username.");
+		return false;
+	}
 
 	// they can connect
 	ent->client = game.clients + (ent - g_edicts - 1);

@@ -7,16 +7,15 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
-
-// Forward declarations
-//struct edict_t;
-
-const int REPLAY_FRAMES_PER_SECOND = 10;
-const int MAX_REPLAY_LENGTH_SECONDS = 24 * 60 * 60; // 24 hours
-const int MAX_REPLAY_FRAMES2 = MAX_REPLAY_LENGTH_SECONDS * REPLAY_FRAMES_PER_SECOND;
+#include <unordered_map>
 
 #define MAX_STORES 5
-#define MAX_REPLAY_FRAMES 10000 // 10 frames/sec are recorded for replays
+#define MAX_HIGHSCORES 15
+
+#define SCORES_DIR "scores"
+#define TIME_FILE_EXTENSION ".time"
+#define DEMO_FILE_EXTENSION ".demo"
+#define MAPLIST_FILENAME "maplist.txt"
 
 namespace Jump
 {
@@ -99,6 +98,8 @@ namespace Jump
         // todo weapons
     } store_data_t;
 
+    typedef std::string username_key; // The username key is the username in lowercase
+
     class store_buffer_t
     {
     public:
@@ -113,10 +114,45 @@ namespace Jump
         store_data_t stores[MAX_STORES];
     };
 
+    class user_time_record {
+    public:
+        user_time_record()
+        {
+            time_ms = 0;
+            completions = 0;
+        }
+
+        std::string filepath;
+        username_key username_key;
+        int64_t time_ms;
+        std::string date;
+        int32_t completions;
+    };
+
+    typedef struct {
+        std::string username;
+        int32_t total_maps;
+        std::vector<std::string> highscore_maps[MAX_HIGHSCORES]; // [0] is a list of all first places, [1] is all second places, etc.
+    } user_overall_record;
+
+    // Data unique to each client
     class client_data_t
     {
     public:
-        client_data_t();
+        client_data_t()
+        {
+            replay_recording.reserve(10000);
+            replay_spectating_framenum = 0;
+            update_replay_spectating = false;
+            fps = 0;
+            team = TEAM_SPECTATOR;
+            timer_begin = 0;
+            timer_end = 0;
+            timer_paused = true;
+            timer_finished = false;
+            store_ent = NULL;
+            key_states = 0;
+        }
 
         std::vector<replay_frame_t> replay_recording;
         std::vector<replay_frame_t> replay_spectating;
@@ -137,6 +173,7 @@ namespace Jump
         int key_states; // input actions that are currently active
     };
 
+    // 
     class server_data_t
     {
     public:
@@ -154,10 +191,16 @@ namespace Jump
         std::string last_map2;
         std::string last_map3;
 
-        std::unordered_set<std::string> fresh_times;   // username keys (lowercase)
+        std::unordered_set<username_key> fresh_times;
 
-        std::vector<replay_frame_t> replay_now_frames;
+        std::vector<replay_frame_t> replay_now_recording;
         std::string replay_now_username;
         int64_t replay_now_time_ms;
+
+        // List of all maps on the server.  Times will ony be recorded for these maps.
+        std::unordered_set<std::string> maplist;
+
+        // Table of all maps with the times sorted best to worst
+        std::unordered_map<std::string /*mapname*/, std::vector<user_time_record>> all_local_maptimes;
     };
 }

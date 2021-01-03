@@ -51,6 +51,7 @@ namespace Jump
         { "boot", Cmd_Jump_Void },
         { "silence", Cmd_Jump_Void },
         { "+hook", Cmd_Jump_Void },
+        { "race", Cmd_Jump_Void }, // race n, race now, race delay n, race off
 
         // TODO: all of the admin commands- remtime, addmap, etc.
     };
@@ -71,9 +72,12 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        auto x = ent->client->pers.weapon;
+        auto y = level.time;
+
         BestTimesScoreboardMessage(ent);
 
-        //LoadAllStatistics();
+        //LoadAllLocalMaptimes();
         //LoadTimesForMap(level.mapname);
 
         //if (ent->client->menu)

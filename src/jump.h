@@ -45,4 +45,6 @@ namespace Jump
     void JumpInitGame();
 
     void AdvanceSpectatingReplayFrame(edict_t* ent);
+
+    void HandleMapCompletion(edict_t* ent);
 }

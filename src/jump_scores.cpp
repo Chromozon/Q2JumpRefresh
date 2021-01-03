@@ -4,74 +4,33 @@
 #include <fstream>
 #include "jump_logger.h"
 #include "jump_utils.h"
+#include "jump.h"
 
 namespace Jump
 {
-    static std::unordered_map<user_key, user_time_record> current_map_time_records;
-
-    void LoadTimesForMap(const std::string& mapname)
-    {
-        current_map_time_records.clear();
-
-        std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
-        std::filesystem::create_directories(path);
-
-        for (const auto& entry : std::filesystem::directory_iterator(path))
-        {
-            if (entry.is_regular_file())
-            {
-                std::string filepath = entry.path().generic_string();
-
-                // TODO: skip if this is a .demo file
-
-                std::string username = RemoveFileExtension(RemovePathFromFilename(filepath));
-                std::string username_lower = AsciiToLower(username);
-                if (username == "")
-                {
-                    Jump::Logger::Warning("Invalid filename");
-                }
-                else
-                {
-                    std::ifstream file(filepath);
-                    if (!file.is_open())
-                    {
-                        Jump::Logger::Warning("Could not open time file");
-                    }
-                    else
-                    {
-                        double time = 0.0;
-                        file >> time;
-                        int64_t time_ms = static_cast<int64_t>(time * 1000);
-                        std::string date;
-                        file >> date;
-                        int32_t completions = 0;
-                        file >> completions;
-                        user_time_record record;
-                        record.filepath = filepath;
-                        record.time_ms = time_ms;
-                        record.date = date;
-                        record.completions = completions;
-                        current_map_time_records.insert({ username_lower, record });
-                    }
-                }
-            }
-        }
-    }
-
     void SaveMapCompletion(
         const std::string& mapname,
         const std::string& username,
         int64_t time_ms,
         const std::vector<replay_frame_t>& replay_buffer)
     {
+        std::vector<user_time_record>& maptimes = jump_server.all_local_maptimes[mapname];
         std::string username_lower = AsciiToLower(username);
 
         std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
         std::filesystem::create_directories(path);
         path += '/' + username + TIME_FILE_EXTENSION;
 
-        auto cached_record = current_map_time_records.find(username_lower);
-        if (cached_record == current_map_time_records.end())
+        auto cached_record = maptimes.begin();
+        for (; cached_record != maptimes.end(); ++cached_record)
+        {
+            if (username_lower == cached_record->username_key)
+            {
+                break;
+            }
+        }
+
+        if (cached_record == maptimes.end())
         {
             // New user time for this map, need to create a new record in table
             user_time_record record;
@@ -79,21 +38,49 @@ namespace Jump
             record.time_ms = time_ms;
             record.date = GetCurrentTimeUTC();
             record.completions = 1;
-            current_map_time_records.insert({ username_lower, record });
+            record.username_key = username_lower;
+
+            auto iter = std::upper_bound(maptimes.begin(), maptimes.end(), record, SortTimeRecordByTime);
+            auto pos = std::distance(maptimes.begin(), iter);
+            maptimes.insert(iter, record);
+            // TODO: recalculate number of 1-15 places if someone is bumped down
+
             SaveTimeRecordToFile(record);
             SaveReplayToFile(mapname, username, time_ms, replay_buffer);
         }
         else
         {
             // User already has set a time for this map.  Update the cache.
-            cached_record->second.completions++;
-            if (time_ms < cached_record->second.time_ms)
+            if (time_ms < cached_record->time_ms)
             {
-                cached_record->second.time_ms = time_ms;
-                cached_record->second.date = GetCurrentTimeUTC();
+                // Since we have a pointer to the record, update the time after figuring out the new position
+                // so it doesn't mess up the algorithms.
+                auto new_pos_iter = maptimes.begin();
+                for (; new_pos_iter != maptimes.end(); ++new_pos_iter)
+                {
+                    if (time_ms < new_pos_iter->time_ms)
+                    {
+                        break;
+                    }
+                }
+
+                std::rotate(new_pos_iter, cached_record, cached_record + 1);
+
+                new_pos_iter->time_ms = time_ms;
+                new_pos_iter->date = GetCurrentTimeUTC();
+                new_pos_iter->completions++;
                 SaveReplayToFile(mapname, username, time_ms, replay_buffer);
+                SaveTimeRecordToFile(*new_pos_iter);
+
+                // TODO: recalculate number of 1-15 places if someone is bumped down
             }
-            SaveTimeRecordToFile(cached_record->second);
+            else
+            {
+                // No better time, just increase the number of completions
+                cached_record->completions++;
+                SaveTimeRecordToFile(*cached_record);
+            }
+            
         }
     }
 
@@ -111,9 +98,8 @@ namespace Jump
         file.flush();
     }
 
-    std::unordered_set<std::string> maplist;
-
-    void LoadLocalMapList()
+    // Reads the maplist.txt file and creates a list of all maps
+    void LoadLocalMapList(std::unordered_set<std::string>& maplist)
     {
         maplist.clear();
         std::string path = GetModDir() + '/' + MAPLIST_FILENAME;
@@ -134,12 +120,10 @@ namespace Jump
         Logger::Info(va("Loaded %d maps from maplist \"%s\"", static_cast<int>(maplist.size()), path.c_str()));
     }
 
-    // Table of all maps with the times sorted best to worst
-    std::unordered_map<mapname_key, std::vector<user_time_record>> all_local_times_cache;
-
-    void LoadAllLocalTimes()
+    void LoadAllLocalMaptimes(const std::unordered_set<std::string>& maplist,
+        std::unordered_map<std::string, std::vector<user_time_record>>& all_local_maptimes)
     {
-        all_local_times_cache.clear();
+        all_local_maptimes.clear();
 
         std::string scores_dir = GetModDir() + '/' + SCORES_DIR;
         std::filesystem::create_directories(scores_dir);
@@ -149,7 +133,7 @@ namespace Jump
             std::string map_dir = scores_dir + '/' + mapname;
             std::filesystem::create_directories(map_dir);
 
-            all_local_times_cache.insert({ mapname, std::vector<user_time_record>() });
+            all_local_maptimes.insert({ mapname, std::vector<user_time_record>() });
 
             for (const auto& entry : std::filesystem::directory_iterator(map_dir))
             {
@@ -164,12 +148,12 @@ namespace Jump
                 user_time_record record;
                 if (LoadTimeRecordFromFile(entry.path().generic_string(), record))
                 {
-                    all_local_times_cache[mapname].push_back(record);
+                    all_local_maptimes[mapname].push_back(record);
                 }
             }
             std::sort(
-                all_local_times_cache[mapname].begin(),
-                all_local_times_cache[mapname].end(),
+                all_local_maptimes[mapname].begin(),
+                all_local_maptimes[mapname].end(),
                 SortTimeRecordByTime);
         }
         Logger::Info("Loaded all local maptimes");
@@ -198,6 +182,8 @@ namespace Jump
             record.completions = std::stoi(line);
 
             record.filepath = filepath;
+
+            record.username_key = AsciiToLower(RemoveFileExtension(RemovePathFromFilename(filepath)));
             return true;
         }
     }
@@ -212,8 +198,8 @@ namespace Jump
         highscores.clear();
         completions = 0;
 
-        auto it = all_local_times_cache.find(mapname);
-        if (it == all_local_times_cache.end())
+        auto it = jump_server.all_local_maptimes.find(mapname);
+        if (it == jump_server.all_local_maptimes.end())
         {
             return false;
         }
@@ -231,8 +217,8 @@ namespace Jump
 
     bool HasUserCompletedMap(const std::string& mapname, const std::string& username)
     {
-        auto it = all_local_times_cache.find(mapname);
-        if (it == all_local_times_cache.end())
+        auto it = jump_server.all_local_maptimes.find(mapname);
+        if (it == jump_server.all_local_maptimes.end())
         {
             return false;
         }
@@ -242,8 +228,7 @@ namespace Jump
             for (const auto& record : it->second)
             {
                 std::string username_lower = AsciiToLower(username);
-                std::string test_lower = AsciiToLower(RemoveFileExtension(RemovePathFromFilename(record.filepath)));
-                if (username_lower == test_lower)
+                if (username_lower == record.username_key)
                 {
                     return true;
                 }
@@ -347,11 +332,6 @@ namespace Jump
             file.read(reinterpret_cast<char*>(&frame.reserved2), sizeof(frame.reserved2));
         }
         return true;
-    }
-
-    bool GetHighscoresForCurrentMap()
-    {
-        return false;
     }
 
 } // namespace Jump

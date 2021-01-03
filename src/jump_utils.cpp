@@ -155,4 +155,21 @@ namespace Jump
         }
     }
 
+    // Returns the difference display string between a time and the record time.
+    // If the time is better, returns a string "-2.586" as green text.
+    // If the time is worse, returns a string "+5.230" as white text.
+    std::string GetTimeDiffDisplayString(int64_t time_ms, int64_t record_ms)
+    {
+        if (time_ms < record_ms)
+        {
+            std::string s = std::string("-") + GetCompletionTimeDisplayString(record_ms - time_ms);
+            return GetGreenConsoleText(s);
+        }
+        else
+        {
+            std::string s = std::string("+") + GetCompletionTimeDisplayString(time_ms - record_ms);
+            return s;
+        }
+    }
+
 } // namespace Jump

@@ -394,19 +394,23 @@ namespace Jump
                 // User has set a first place!
                 if (pb_time_ms == -1)
                 {
-                    gi.bprintf(PRINT_HIGH, "%s has set a 1st place with a time of %s seconds! (1st %s)\n",
+                    gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (1st %s)\n",
                         ent->client->pers.netname,
                         GetCompletionTimeDisplayString(time_ms).c_str(),
                         GetTimeDiffDisplayString(time_ms, first_time_ms).c_str());
+                    std::string first_msg = std::string(ent->client->pers.netname) + " has set a 1st place!";
+                    gi.bprintf(PRINT_HIGH, "%s\n", GetGreenConsoleText(first_msg).c_str());
                     jump_server.fresh_times.insert(username_lower);
                 }
                 else
                 {
-                    gi.bprintf(PRINT_HIGH, "%s has set a 1st place with a time of %s seconds! (PB %s | 1st %s)\n",
+                    gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (PB %s | 1st %s)\n",
                         ent->client->pers.netname,
                         GetCompletionTimeDisplayString(time_ms).c_str(),
                         GetTimeDiffDisplayString(time_ms, pb_time_ms).c_str(),
                         GetTimeDiffDisplayString(time_ms, first_time_ms).c_str());
+                    std::string first_msg = std::string(ent->client->pers.netname) + " has set a 1st place!";
+                    gi.bprintf(PRINT_HIGH, "%s\n", GetGreenConsoleText(first_msg).c_str());
                     jump_server.fresh_times.insert(username_lower);
                 }
             }
@@ -435,6 +439,8 @@ namespace Jump
                 }
             }
         }
+
+        // TODO: we might need to push another replay frame here, could be cutting out the last one
 
         Logger::Completion(ent->client->pers.netname, ent->client->jumpdata->ip, level.mapname, time_ms);
         SaveMapCompletion(level.mapname, ent->client->pers.netname, time_ms, ent->client->jumpdata->replay_recording);

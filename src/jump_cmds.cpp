@@ -295,7 +295,7 @@ namespace Jump
             if (time_diff > 0)
             {
                 time_diff_str = GetCompletionTimeDisplayString(time_diff);
-                time_diff_str.insert(0, "-");
+                time_diff_str.insert(0, "-");   // This should be +, but it looks ugly
             }
 
             gi.cprintf(player, PRINT_HIGH, "%-3d %-16s %s %12s %11s\n",
@@ -324,15 +324,28 @@ namespace Jump
             PMenu_Close(ent);
         }
 
-        if (ent->client->jumpdata->scores_menu == SCORES_MENU_ACTIVEPLAYERS)
+        if (ent->client->jumpdata->scores_menu == SCORES_MENU_NONE)
+        {
+            ActiveClientsScoreboardMessage(ent);
+            ent->client->jumpdata->scores_menu = SCORES_MENU_ACTIVEPLAYERS;
+        }
+        else if (ent->client->jumpdata->scores_menu == SCORES_MENU_ACTIVEPLAYERS)
         {
             BestTimesScoreboardMessage(ent);
             ent->client->jumpdata->scores_menu = SCORES_MENU_HIGHSCORES;
         }
         else
         {
-            ActiveClientsScoreboardMessage(ent);
-            ent->client->jumpdata->scores_menu = SCORES_MENU_ACTIVEPLAYERS;
+            // Same as g_cmds.c, Cmd_PutAway_f()
+            ent->client->showscores = false;
+            ent->client->showhelp = false;
+            ent->client->showinventory = false;
+            if (ent->client->menu)
+            {
+                PMenu_Close(ent);
+            }
+            ent->client->update_chase = true;
+            ent->client->jumpdata->scores_menu = SCORES_MENU_NONE;
         }
     }
 

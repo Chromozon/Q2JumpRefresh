@@ -90,7 +90,7 @@ void PMenu_Close(edict_t *ent)
 	ent->client->menu = NULL;
 	ent->client->showscores = false;
     ent->client->menudirty = false;
-    ent->client->inmenu = false; // TODO look into
+    ent->client->inmenu = false;
 }
 
 // only use on pmenu's that have been called with PMenu_Open

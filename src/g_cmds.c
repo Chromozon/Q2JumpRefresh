@@ -733,6 +733,9 @@ void Cmd_PutAway_f (edict_t *ent)
 		PMenu_Close(ent);
 	ent->client->update_chase = true;
 //ZOID
+	// Jump
+	ent->client->jumpdata->scores_menu = Jump::SCORES_MENU_NONE;
+	// Jump
 }
 
 

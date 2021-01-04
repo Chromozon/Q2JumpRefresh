@@ -23,6 +23,8 @@ namespace Jump
         { "reset", Cmd_Jump_Reset },
         { "replay", Cmd_Jump_Replay },
         { "maptimes", Cmd_Jump_Maptimes },
+        { "score", Cmd_Jump_Score },
+        { "help", Cmd_Jump_Score },
 
         // TODO
         { "showtimes", Cmd_Jump_Void },
@@ -72,6 +74,8 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        auto z = timelimit;
+
         auto x = ent->client->pers.weapon;
         auto y = level.time;
 
@@ -308,6 +312,28 @@ namespace Jump
             gi.cprintf(player, PRINT_HIGH, "You have NOT completed this map\n");
         }
         gi.cprintf(player, PRINT_HIGH, "--------------------------------------------------------\n");
+    }
+
+    void Cmd_Jump_Score(edict_t* ent)
+    {
+        ent->client->showinventory = false;
+        ent->client->showhelp = false;
+        ent->client->showscores = true;
+        if (ent->client->menu)
+        {
+            PMenu_Close(ent);
+        }
+
+        if (ent->client->jumpdata->scores_menu == SCORES_MENU_ACTIVEPLAYERS)
+        {
+            BestTimesScoreboardMessage(ent);
+            ent->client->jumpdata->scores_menu = SCORES_MENU_HIGHSCORES;
+        }
+        else
+        {
+            ActiveClientsScoreboardMessage(ent);
+            ent->client->jumpdata->scores_menu = SCORES_MENU_ACTIVEPLAYERS;
+        }
     }
 
 } // namespace Jump

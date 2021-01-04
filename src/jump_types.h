@@ -68,6 +68,13 @@ namespace Jump
         REPLAY_SPEED_100 = 10000,
     } replay_speed_t;
 
+    typedef enum
+    {
+        SCORES_MENU_NONE = 0,
+        SCORES_MENU_HIGHSCORES = 1,
+        SCORES_MENU_ACTIVEPLAYERS = 2,
+    } scores_menu_t;
+
     // How much disk space is required to store a replay:
     // 40 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 400 bytes/s
     // 15 seconds = 6 kB
@@ -152,6 +159,7 @@ namespace Jump
             timer_finished = false;
             store_ent = NULL;
             key_states = 0;
+            scores_menu = SCORES_MENU_NONE;
         }
 
         std::vector<replay_frame_t> replay_recording;
@@ -171,6 +179,8 @@ namespace Jump
         edict_t* store_ent;
 
         int key_states; // input actions that are currently active
+
+        scores_menu_t scores_menu;
     };
 
     // 

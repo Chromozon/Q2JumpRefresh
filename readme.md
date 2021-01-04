@@ -24,6 +24,10 @@ A reimplementation of Quake 2 jump mod.  The code currently compiles with C++17.
 - The function "SelectSpawnPoint" can be cleaned up.  Currently it looks for the red/blue team spawn points, then deathmatch, then info_play_start.
 - The "apply_time" function has a funky way of determining first place; could use cleanup overall.
 - The kill and recall functions share some logic and have CTF overtime logic cluttering them up.
+- Weapons:
+    - Mset for weapon maps
+    - Disable being able to drop a weapon
+    - Fix being able to pick up a weapon and being able to switch between them
 
 - There are a bunch of variables that have to deal with map completion time, but many seem unused:
 	float			item_timer; // map completion time
@@ -66,6 +70,7 @@ See `g_main.c GetGameAPI()` for the main logic entry points.
 - `ClientConnect` is called when the client first joins the server, and `ClientDisconnect` is called when leaving.
 - When a client first joins a map and on map changes, `ClientBegin` will be called.
 - `gi.cprintf(client, PRINT_HIGH, ...)` sends messages to the client's console.
+- `g_main.c, G_RunFrame()` is the main game loop function.  The logic to change maps is done here.
 
 ### How to update the HUD
 The layout of the HUD is sent to all clients with `gi.configstring(CS_STATUSBAR, "<HUD layout string>"`.  The HUD layout string is the same for all clients.

@@ -222,10 +222,12 @@ namespace Jump
 
         ent->client->ps.stats[STAT_JUMP_FPS] = static_cast<short>(ent->client->jumpdata->fps);
         
-        // TODO: time left
-        // time left = mset_var(timelimit) * 60 + timeadded * 60 - level.time
-        // level.time is how many seconds elapsed since map change (starts at 0 and counts up)
-        ent->client->ps.stats[STAT_JUMP_TIME_LEFT] = 523;
+        int timeleft = 999;
+        if (timelimit != NULL && timelimit->value > 0)
+        {
+            timeleft = ((timelimit->value * 60) + (jump_server.time_added_mins * 60) - level.time) / 60;
+        }
+        ent->client->ps.stats[STAT_JUMP_TIME_LEFT] = timeleft;            
 
         UpdateTimer(ent);
 
@@ -273,11 +275,13 @@ namespace Jump
     const char* GetLayoutString()
     {
         std::string current_map = level.mapname;
-        std::string last_map1 = "slipmap10";
-        std::string last_map2 = "ddrace";
-        std::string last_map3 = "012345678912345";
-        int total_maps = 3045;
-        std::string time_added = "+750";
+        std::string last_map1 = jump_server.last_map1;
+        std::string last_map2 = jump_server.last_map2;
+        std::string last_map3 = jump_server.last_map3;
+        int total_maps = jump_server.maplist.size();
+        std::string time_added = std::string("+") + std::to_string(jump_server.time_added_mins);
+
+        assert(strlen(hud_layout) < 1024);
         static char buffer[1024];
         snprintf(buffer, sizeof(buffer), hud_layout,
             current_map.c_str(), last_map1.c_str(), last_map2.c_str(), last_map3.c_str(),

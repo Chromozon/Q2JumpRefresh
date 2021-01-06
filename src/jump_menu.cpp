@@ -64,7 +64,7 @@ namespace Jump
 			}
 		}
 		ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << highscores.size();
-		ss << " players completed map " << total_completions << " times\" ";
+		ss << " players completed map " << total_completions << " times\" "; // TODO: "player" if only one player has completed
 		gi.WriteByte(svc_layout);
 		assert(ss.str().size() < 1024);
 		gi.WriteString(const_cast<char*>(ss.str().c_str()));
@@ -73,7 +73,8 @@ namespace Jump
 
 	void ActiveClientsScoreboardMessage(edict_t* ent)
 	{
-		// There is a hard limit of 1024 bytes for the scoreboard message
+		// There is a hard limit of 1024 bytes for the scoreboard message, so we can only show so many players.
+		// TODO: split into multiple menus or implement a separate shorter one
 		const int MAX_PLAYERS_DISPLAYED = 14;
 
 		std::vector<edict_t*> clients_hard;
@@ -224,6 +225,136 @@ namespace Jump
 			ss << std::left << std::setw(15) << "SomeName" << " ";
 			// TODO: idle, who you are speccing, what replay you are watching
 			ss << "\" ";
+		}
+
+		assert(ss.str().size() < 1024);
+		std::string str = ss.str(); // TODO remove
+		gi.WriteByte(svc_layout);
+		gi.WriteString(const_cast<char*>(ss.str().c_str()));
+		gi.unicast(ent, true);
+	}
+
+	void ExtendedActiveClientsScoreboardMessage(edict_t* ent)
+	{
+		// There is a hard limit of 1024 bytes for the scoreboard message, so we can only show so many players.
+		const int MAX_PLAYERS_DISPLAYED = 23;
+
+		std::vector<edict_t*> clients_hard;
+		std::vector<edict_t*> clients_easy;
+		std::vector<edict_t*> clients_spec;
+
+		for (int i = 0; i < game.maxclients; ++i)
+		{
+			edict_t* ent = g_edicts + 1 + i;
+			if (!ent->inuse)
+			{
+				continue;
+			}
+			if (ent->client->jumpdata->team == TEAM_HARD)
+			{
+				clients_hard.push_back(ent);
+			}
+			else if (ent->client->jumpdata->team == TEAM_EASY)
+			{
+				clients_easy.push_back(ent);
+			}
+			else
+			{
+				clients_spec.push_back(ent);
+			}
+		}
+
+		std::stringstream ss;
+		ss << "xv 0 ";							// 5
+		ss << "yv 0 string2 \"Team: Hard\" ";	// 26
+
+		int yv_offset = 10;
+		int players_added = 0;
+		//for (size_t i = 0; i < clients_hard.size(); ++i)
+		for (size_t i = 0; i < 10; ++i)
+		{
+			players_added++;
+			if (players_added >= MAX_PLAYERS_DISPLAYED)
+			{
+				break;
+			}
+			//edict_t* player = clients_hard[i];
+
+			//std::string ping = std::to_string(player->client->ping);
+			//std::string username = player->client->pers.netname;
+			//if (player == ent)
+			//{
+			//	ping = GetGreenConsoleText(ping);
+			//	username = GetGreenConsoleText(username);
+			//}
+
+			int yv = yv_offset + (i * 8);
+			ss << "yv " << yv << " string \"";	// 15
+			//ss << std::right << std::setw(4) << ping << " ";
+			//ss << std::left << std::setw(15) << username << " ";
+			ss << std::right << std::setw(4) << i * 20 << " ";	// 5
+			ss << std::left << std::setw(15) << "SomeName" << " ";	// 16
+			ss << std::right << std::setw(10) << "56.023" << "\" "; // 12, TODO completion time
+		}
+
+		yv_offset = 10 + (players_added * 8) + 8;
+		ss << "yv " << yv_offset << " string2 \"Team: Easy\" ";	// 28
+		yv_offset += 10;
+
+		//for (size_t i = 0; i < clients_easy.size(); ++i)
+		for (size_t i = 0; i < 10; ++i)
+		{
+			players_added++;
+			if (players_added >= MAX_PLAYERS_DISPLAYED)
+			{
+				break;
+			}
+			//edict_t* player = clients_easy[i];
+
+			//std::string ping = std::to_string(player->client->ping);
+			//std::string username = player->client->pers.netname;
+			//if (player == ent)
+			//{
+			//	ping = GetGreenConsoleText(ping);
+			//	username = GetGreenConsoleText(username);
+			//}
+
+			int yv = yv_offset + (i * 8);
+			ss << "yv " << yv << " string \"";	// 15
+			//ss << std::right << std::setw(4) << ping << " ";
+			//ss << std::left << std::setw(15) << username << " ";
+			ss << std::right << std::setw(4) << i * 20 << " ";	// 5
+			ss << std::left << std::setw(15) << "SomeName" << "\" "; // 17
+		}
+
+		yv_offset = 10 + (players_added * 8) + 8 + 8 + 8;
+		ss << "yv " << yv_offset << " string2 \"Spectators\" ";	// 28
+		yv_offset += 10;
+
+		//for (size_t i = 0; i < clients_spec.size(); ++i)
+		for (size_t i = 0; i < 10; ++i)
+		{
+			players_added++;
+			if (players_added >= MAX_PLAYERS_DISPLAYED)
+			{
+				break;
+			}
+			//edict_t* player = clients_spec[i];
+
+			//std::string ping = std::to_string(player->client->ping);
+			//std::string username = player->client->pers.netname;
+			//if (player == ent)
+			//{
+			//	ping = GetGreenConsoleText(ping);
+			//	username = GetGreenConsoleText(username);
+			//}
+
+			int yv = yv_offset + (i * 8);
+			ss << "yv " << yv << " string \"";	// 15
+			//ss << std::right << std::setw(4) << ping << " ";
+			//ss << std::left << std::setw(15) << username << " ";
+			ss << std::right << std::setw(4) << i * 20 << " ";	// 5
+			ss << std::left << std::setw(15) << "SomeName" << "\" "; // 17
 		}
 
 		assert(ss.str().size() < 1024);

@@ -17,4 +17,5 @@ namespace Jump
     void Cmd_Jump_Void(edict_t* ent);
     void Cmd_Jump_Maptimes(edict_t* ent);
     void Cmd_Jump_Score(edict_t* ent);
+    void Cmd_Jump_Score2(edict_t* ent);
 }

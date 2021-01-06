@@ -25,6 +25,8 @@ namespace Jump
         { "maptimes", Cmd_Jump_Maptimes },
         { "score", Cmd_Jump_Score },
         { "help", Cmd_Jump_Score },
+        { "score2", Cmd_Jump_Score2 },
+        { "help2", Cmd_Jump_Score2 },
 
         // TODO
         { "showtimes", Cmd_Jump_Void },
@@ -333,6 +335,36 @@ namespace Jump
         {
             BestTimesScoreboardMessage(ent);
             ent->client->jumpdata->scores_menu = SCORES_MENU_HIGHSCORES;
+        }
+        else
+        {
+            // Same as g_cmds.c, Cmd_PutAway_f()
+            ent->client->showscores = false;
+            ent->client->showhelp = false;
+            ent->client->showinventory = false;
+            if (ent->client->menu)
+            {
+                PMenu_Close(ent);
+            }
+            ent->client->update_chase = true;
+            ent->client->jumpdata->scores_menu = SCORES_MENU_NONE;
+        }
+    }
+
+    void Cmd_Jump_Score2(edict_t* ent)
+    {
+        ent->client->showinventory = false;
+        ent->client->showhelp = false;
+        ent->client->showscores = true;
+        if (ent->client->menu)
+        {
+            PMenu_Close(ent);
+        }
+
+        if (ent->client->jumpdata->scores_menu == SCORES_MENU_NONE)
+        {
+            ExtendedActiveClientsScoreboardMessage(ent);
+            ent->client->jumpdata->scores_menu = SCORES_MENU_ACTIVEPLAYERS;
         }
         else
         {

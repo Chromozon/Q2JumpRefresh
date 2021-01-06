@@ -142,6 +142,19 @@ namespace Jump
         std::vector<std::string> highscore_maps[MAX_HIGHSCORES]; // [0] is a list of all first places, [1] is all second places, etc.
     } user_overall_record;
 
+    class user_highscores_t
+    {
+    public:
+        user_highscores_t()
+        {
+            highscore_counts.resize(MAX_HIGHSCORES, 0);
+            map_count = 0;
+        }
+
+        std::vector<int> highscore_counts;  // count of first places, second places, etc. by index (0-based)
+        int map_count;
+    };
+
     // Data unique to each client
     class client_data_t
     {
@@ -183,7 +196,6 @@ namespace Jump
         scores_menu_t scores_menu;
     };
 
-    // 
     class server_data_t
     {
     public:
@@ -212,5 +224,17 @@ namespace Jump
 
         // Table of all maps with the times sorted best to worst
         std::unordered_map<std::string /*mapname*/, std::vector<user_time_record>> all_local_maptimes;
+
+        // List of all user highscores sorted by score best to worst
+        std::vector<std::pair<username_key, user_highscores_t>> all_local_highscores;
+
+        // List of all user map count sorted best to worst
+        std::vector<std::pair<username_key, int>> all_local_mapcounts;
+
+        // List of all user mapscores (%) sorted best to worst
+        std::vector<std::pair<username_key, float>> all_local_mapscores;
+
+        // Links the username_key (all lowercase) to the display username
+        std::unordered_map<username_key, std::string> all_local_usernames; // TODO!! calc when doing maptimes
     };
 }

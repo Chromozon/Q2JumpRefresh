@@ -334,4 +334,98 @@ namespace Jump
         return true;
     }
 
+    void CalculateAllLocalStatistics()
+    {
+        std::unordered_map<username_key, user_highscores_t> scores;
+
+        // Calculate all the highscores for all maps
+        for (const auto& map_record : jump_server.all_local_maptimes)
+        {
+            for (size_t pos = 0; pos < map_record.second.size(); ++pos)
+            {
+                auto it = scores.insert({ map_record.second[pos].username_key, {} });
+                if (pos < MAX_HIGHSCORES)
+                {
+                    it.first->second.highscore_counts[pos]++;
+                }
+                it.first->second.map_count++;
+            }
+        }
+
+        // Create a list of highscores sorted best to worst
+        jump_server.all_local_highscores.clear();
+        std::copy(scores.begin(), scores.end(), std::back_inserter(jump_server.all_local_highscores));
+        std::sort(
+            jump_server.all_local_highscores.begin(),
+            jump_server.all_local_highscores.end(),
+            SortUserHighscoresByScore);
+
+        // Create a list of map counts sorted best to worst
+        jump_server.all_local_mapcounts.clear();
+        for (const auto& record : scores)
+        {
+            jump_server.all_local_mapcounts.push_back({ record.first, record.second.map_count });
+        }
+        std::sort(
+            jump_server.all_local_mapcounts.begin(),
+            jump_server.all_local_mapcounts.end(),
+            SortUserHighscoresByMapCount);
+
+        // Create a list of all playerscores sorted best to worst
+        jump_server.all_local_mapscores.clear();
+        for (const auto& record : scores)
+        {
+            jump_server.all_local_mapscores.push_back({ record.first, CalculatePercentScore(record.second) });
+        }
+        std::sort(
+            jump_server.all_local_mapscores.begin(),
+            jump_server.all_local_mapscores.end(),
+            SortUserHighscoresByPercentScore);
+    }
+
+    bool SortUserHighscoresByScore(
+        const std::pair<username_key, user_highscores_t>& left,
+        const std::pair<username_key, user_highscores_t>& right)
+    {
+        return CalculateScore(left.second) < CalculateScore(right.second);
+    }
+
+    bool SortUserHighscoresByMapCount(
+        const std::pair<username_key, int>& left,
+        const std::pair<username_key, int>& right)
+    {
+        return left.second < right.second;
+    }
+
+    bool SortUserHighscoresByPercentScore(
+        const std::pair<username_key, float>& left,
+        const std::pair<username_key, float>& right)
+    {
+        return left.second < right.second;
+    }
+
+    int CalculateScore(const user_highscores_t& scores)
+    {
+        return scores.highscore_counts[0] * 25 +
+            scores.highscore_counts[1] * 20 +
+            scores.highscore_counts[2] * 16 +
+            scores.highscore_counts[3] * 13 +
+            scores.highscore_counts[4] * 11 +
+            scores.highscore_counts[5] * 10 +
+            scores.highscore_counts[6] * 9 +
+            scores.highscore_counts[7] * 8 +
+            scores.highscore_counts[8] * 7 +
+            scores.highscore_counts[9] * 6 +
+            scores.highscore_counts[10] * 5 +
+            scores.highscore_counts[11] * 4 +
+            scores.highscore_counts[12] * 3 +
+            scores.highscore_counts[13] * 2 +
+            scores.highscore_counts[14] * 1;
+    }
+
+    float CalculatePercentScore(const user_highscores_t& scores)
+    {
+        return (CalculateScore(scores) / (scores.map_count * 25)) * 100;
+    }
+
 } // namespace Jump

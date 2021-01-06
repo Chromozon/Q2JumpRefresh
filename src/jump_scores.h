@@ -31,5 +31,22 @@ namespace Jump
         const std::string& username,
         std::vector<replay_frame_t>& replay_buffer);
 
+    void CalculateAllLocalStatistics();
+
+    bool SortUserHighscoresByScore(
+        const std::pair<username_key, user_highscores_t>& left,
+        const std::pair<username_key, user_highscores_t>& right);
+
+    bool SortUserHighscoresByMapCount(
+        const std::pair<username_key, int>& left,
+        const std::pair<username_key, int>& right);
+
+    bool SortUserHighscoresByPercentScore(
+        const std::pair<username_key, float>& left,
+        const std::pair<username_key, float>& right);
+
+    int CalculateScore(const user_highscores_t& scores);
+    float CalculatePercentScore(const user_highscores_t& scores);
+
 } // namespace Jump
 

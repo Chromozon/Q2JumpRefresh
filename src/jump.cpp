@@ -370,6 +370,8 @@ namespace Jump
             return;
         }
 
+        gi.bprintf(PRINT_HIGH, "Pmove finish %s\n", GetCompletionTimeDisplayString(ent->client->jumpdata->timer_pmove_msec).c_str());
+
         if (it->second.empty())
         {
             // No current times set on this map
@@ -483,6 +485,7 @@ namespace Jump
     {
         LoadLocalMapList(jump_server.maplist);
         LoadAllLocalMaptimes(jump_server.maplist, jump_server.all_local_maptimes);
+        CalculateAllLocalStatistics();
     }
 
     void AdvanceSpectatingReplayFrame(edict_t* ent)

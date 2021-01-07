@@ -1009,10 +1009,17 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
     {
         if (abs(ucmd->forwardmove) > 0 || abs(ucmd->upmove) > 0 || abs(ucmd->sidemove) > 0)
         {
+			ent->client->jumpdata->timer_pmove_msec = 0;
             ent->client->jumpdata->timer_begin = Sys_Milliseconds();
             ent->client->jumpdata->timer_paused = false;
         }
     }
+
+	if (ucmd->msec > 0)
+	{
+		ent->client->jumpdata->fps = 1000 / ucmd->msec;
+	}
+	ent->client->jumpdata->timer_pmove_msec += ucmd->msec;
 
 	if (level.intermissiontime)
 	{
@@ -1178,17 +1185,6 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 		client->menudirty = false;
 	}
 //ZOID
-
-    // Jump: client side timer
-    // Jump TODO: this updates the health, timer, etc. that you see in the HUD
-    int64_t time = Sys_Milliseconds() - ent->client->jumpdata->timer_begin;
-    if (time < 0 || ent->client->jumpdata->timer_paused)
-    {
-        time = 0;
-    }
-    char buffer[512] = { 0 };
-    Com_sprintf(buffer, sizeof(buffer), "xv 112 yb -58 string \" %d.%03d \"", time / 1000, time % 1000);
-    //gi.configstring(CS_STATUSBAR, buffer);
 
     // Key states are not actually sent to the server frames.  They are used to compute a move state,
     // and that value is sent to the server.  So we need to figure out key states here.

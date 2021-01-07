@@ -28,6 +28,7 @@ namespace Jump
         { "score2", Cmd_Jump_Score2 },
         { "help2", Cmd_Jump_Score2 },
         { "playertimes", Cmd_Jump_Playertimes },
+        { "playerscores", Cmd_Jump_Playerscores },
 
         // TODO
         { "showtimes", Cmd_Jump_Void },
@@ -39,7 +40,7 @@ namespace Jump
         { "no", Cmd_Jump_Void },
         { "maplist", Cmd_Jump_Void },
         { "playermaps", Cmd_Jump_Void },
-        { "playerscores", Cmd_Jump_Void },
+
         { "globaltimes", Cmd_Jump_Void },
         { "globalmaps", Cmd_Jump_Void },
         { "globalscores", Cmd_Jump_Void },
@@ -447,6 +448,78 @@ namespace Jump
         // Footer
         int total_pages = (jump_server.all_local_highscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
         gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). User playertimes <page>\n",
+            page, total_pages, static_cast<int>(jump_server.all_local_highscores.size()));
+        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+    }
+
+    void Cmd_Jump_Playerscores(edict_t* ent)
+    {
+        assert(MAX_HIGHSCORES == 15); // a reminder to change this function if we change this value
+
+        int page = 1;
+        if (gi.argc() > 1)
+        {
+            StringToIntMaybe(gi.argv(1), page);
+        }
+        if (page < 1)
+        {
+            page = 1;
+        }
+        size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
+        if (index_start >= jump_server.all_local_highscores.size())
+        {
+            gi.cprintf(ent, PRINT_HIGH, "There are no playerscores for this page.\n");
+            return;
+        }
+
+        // Point info
+        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+        gi.cprintf(ent, PRINT_HIGH, "Point Values: 1-15: 25,20,16,13,11,10,9,8,7,6,5,4,3,2,1\n");
+        gi.cprintf(ent, PRINT_HIGH, "Score = (Your score) / (Potential score if 1st on all your completed maps\n");
+        gi.cprintf(ent, PRINT_HIGH, "Ex: 5 maps completed || 3 1st's, 2 3rd's = 107 pts || 5 1st's = 125 pts || 107/125 = 85.6%%\n");
+        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+
+        // Header row
+        std::string header = GetGreenConsoleText(
+            "No. Name            1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th Score");
+        gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
+
+        // TODO: players that are currently in the server should show up as green
+
+        // TODO: go from username key to actual username
+
+        size_t index_end = std::min<size_t>(
+            jump_server.all_local_highscores.size() - 1,
+            (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
+
+        for (size_t i = index_start; i <= index_end; ++i)
+        {
+            float percent_score = CalculatePercentScore(jump_server.all_local_highscores[i].second);
+            gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %.1f%%\n",
+                static_cast<int>(i + 1),
+                jump_server.all_local_highscores[i].first.c_str(),
+                jump_server.all_local_highscores[i].second.highscore_counts[0],
+                jump_server.all_local_highscores[i].second.highscore_counts[1],
+                jump_server.all_local_highscores[i].second.highscore_counts[2],
+                jump_server.all_local_highscores[i].second.highscore_counts[3],
+                jump_server.all_local_highscores[i].second.highscore_counts[4],
+                jump_server.all_local_highscores[i].second.highscore_counts[5],
+                jump_server.all_local_highscores[i].second.highscore_counts[6],
+                jump_server.all_local_highscores[i].second.highscore_counts[7],
+                jump_server.all_local_highscores[i].second.highscore_counts[8],
+                jump_server.all_local_highscores[i].second.highscore_counts[9],
+                jump_server.all_local_highscores[i].second.highscore_counts[10],
+                jump_server.all_local_highscores[i].second.highscore_counts[11],
+                jump_server.all_local_highscores[i].second.highscore_counts[12],
+                jump_server.all_local_highscores[i].second.highscore_counts[13],
+                jump_server.all_local_highscores[i].second.highscore_counts[14],
+                percent_score
+            );
+        }
+
+        // Footer
+        int total_pages = (jump_server.all_local_highscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
+        gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). User playerscores <page>\n",
             page, total_pages, static_cast<int>(jump_server.all_local_highscores.size()));
         gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
     }

@@ -425,7 +425,7 @@ namespace Jump
 
     float CalculatePercentScore(const user_highscores_t& scores)
     {
-        return (CalculateScore(scores) / (scores.map_count * 25)) * 100;
+        return (static_cast<float>(CalculateScore(scores)) / (scores.map_count * 25)) * 100;
     }
 
 } // namespace Jump

@@ -387,21 +387,21 @@ namespace Jump
         const std::pair<username_key, user_highscores_t>& left,
         const std::pair<username_key, user_highscores_t>& right)
     {
-        return CalculateScore(left.second) < CalculateScore(right.second);
+        return CalculateScore(left.second) > CalculateScore(right.second);
     }
 
     bool SortUserHighscoresByMapCount(
         const std::pair<username_key, int>& left,
         const std::pair<username_key, int>& right)
     {
-        return left.second < right.second;
+        return left.second > right.second;
     }
 
     bool SortUserHighscoresByPercentScore(
         const std::pair<username_key, float>& left,
         const std::pair<username_key, float>& right)
     {
-        return left.second < right.second;
+        return left.second > right.second;
     }
 
     int CalculateScore(const user_highscores_t& scores)

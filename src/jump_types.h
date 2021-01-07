@@ -9,8 +9,9 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#define MAX_STORES 5
-#define MAX_HIGHSCORES 15
+#define MAX_STORES 5    // max number of stores for store/recall cmds
+#define MAX_HIGHSCORES 15   // how many users to list on the highscores HUD
+#define CONSOLE_HIGHSCORES_COUNT_PER_PAGE 20    // users per page of statistics in console (playertimes, playerscores, etc.)
 
 #define SCORES_DIR "scores"
 #define TIME_FILE_EXTENSION ".time"
@@ -166,6 +167,7 @@ namespace Jump
             update_replay_spectating = false;
             fps = 0;
             team = TEAM_SPECTATOR;
+            timer_pmove_msec = 0;
             timer_begin = 0;
             timer_end = 0;
             timer_paused = true;
@@ -183,6 +185,7 @@ namespace Jump
         int fps;
         std::string ip;
         team_t team;
+        int64_t timer_pmove_msec;
         int64_t timer_begin;
         int64_t timer_end;
         bool timer_paused;

@@ -520,7 +520,7 @@ namespace Jump
 
                         record.completions = completions;
                         record.date = buffer;
-                        record.filepath = GetModDir() + '/' + "scores" + '/' + mapname + '/' + username + ".time";
+                        record.filepath = GetModDir() + '/' + SCORES_DIR + '/' + mapname + '/' + username + TIME_FILE_EXTENSION;
                         record.time_ms = time * 1000;
                         record.username_key = username_key;
 
@@ -535,6 +535,9 @@ namespace Jump
         int j = 0;
         for (auto it = old_maptimes.begin(); it != old_maptimes.end(); ++it)
         {
+            std::string path = GetModDir() + '/' + SCORES_DIR + '/' + it->first;
+            std::filesystem::create_directories(path);
+
             j++;
             for (size_t i = 0; i < it->second.size(); ++i)
             {
@@ -542,7 +545,7 @@ namespace Jump
             }
             if (j % 100 == 0)
             {
-                printf("Finished saving old maptimes %d/%d\n", j, static_cast<int>(old_maptimes.size()));
+                Logger::Info(va("Finished saving old maptimes %d/%d", j, static_cast<int>(old_maptimes.size())));
             }
         }
     }

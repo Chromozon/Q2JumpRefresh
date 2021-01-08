@@ -42,11 +42,13 @@ namespace Jump
         const std::pair<username_key, int>& right);
 
     bool SortUserHighscoresByPercentScore(
-        const std::pair<username_key, float>& left,
-        const std::pair<username_key, float>& right);
+        const std::pair<username_key, user_highscores_t>& left,
+        const std::pair<username_key, user_highscores_t>& right);
 
     int CalculateScore(const user_highscores_t& scores);
     float CalculatePercentScore(const user_highscores_t& scores);
+
+    void ConvertOldHighscores();
 
 } // namespace Jump
 

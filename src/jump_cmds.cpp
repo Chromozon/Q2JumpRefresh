@@ -77,12 +77,14 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        auto z = timelimit;
+        ConvertOldHighscores();
 
-        auto x = ent->client->pers.weapon;
-        auto y = level.time;
+        //auto z = timelimit;
 
-        BestTimesScoreboardMessage(ent);
+        //auto x = ent->client->pers.weapon;
+        //auto y = level.time;
+
+        //BestTimesScoreboardMessage(ent);
 
         //LoadAllLocalMaptimes();
         //LoadTimesForMap(level.mapname);
@@ -466,7 +468,7 @@ namespace Jump
             page = 1;
         }
         size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
-        if (index_start >= jump_server.all_local_highscores.size())
+        if (index_start >= jump_server.all_local_mapscores.size())
         {
             gi.cprintf(ent, PRINT_HIGH, "There are no playerscores for this page.\n");
             return;
@@ -489,38 +491,38 @@ namespace Jump
         // TODO: go from username key to actual username
 
         size_t index_end = std::min<size_t>(
-            jump_server.all_local_highscores.size() - 1,
+            jump_server.all_local_mapscores.size() - 1,
             (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
 
         for (size_t i = index_start; i <= index_end; ++i)
         {
-            float percent_score = CalculatePercentScore(jump_server.all_local_highscores[i].second);
+            float percent_score = CalculatePercentScore(jump_server.all_local_mapscores[i].second);
             gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %.1f%%\n",
                 static_cast<int>(i + 1),
-                jump_server.all_local_highscores[i].first.c_str(),
-                jump_server.all_local_highscores[i].second.highscore_counts[0],
-                jump_server.all_local_highscores[i].second.highscore_counts[1],
-                jump_server.all_local_highscores[i].second.highscore_counts[2],
-                jump_server.all_local_highscores[i].second.highscore_counts[3],
-                jump_server.all_local_highscores[i].second.highscore_counts[4],
-                jump_server.all_local_highscores[i].second.highscore_counts[5],
-                jump_server.all_local_highscores[i].second.highscore_counts[6],
-                jump_server.all_local_highscores[i].second.highscore_counts[7],
-                jump_server.all_local_highscores[i].second.highscore_counts[8],
-                jump_server.all_local_highscores[i].second.highscore_counts[9],
-                jump_server.all_local_highscores[i].second.highscore_counts[10],
-                jump_server.all_local_highscores[i].second.highscore_counts[11],
-                jump_server.all_local_highscores[i].second.highscore_counts[12],
-                jump_server.all_local_highscores[i].second.highscore_counts[13],
-                jump_server.all_local_highscores[i].second.highscore_counts[14],
+                jump_server.all_local_mapscores[i].first.c_str(),
+                jump_server.all_local_mapscores[i].second.highscore_counts[0],
+                jump_server.all_local_mapscores[i].second.highscore_counts[1],
+                jump_server.all_local_mapscores[i].second.highscore_counts[2],
+                jump_server.all_local_mapscores[i].second.highscore_counts[3],
+                jump_server.all_local_mapscores[i].second.highscore_counts[4],
+                jump_server.all_local_mapscores[i].second.highscore_counts[5],
+                jump_server.all_local_mapscores[i].second.highscore_counts[6],
+                jump_server.all_local_mapscores[i].second.highscore_counts[7],
+                jump_server.all_local_mapscores[i].second.highscore_counts[8],
+                jump_server.all_local_mapscores[i].second.highscore_counts[9],
+                jump_server.all_local_mapscores[i].second.highscore_counts[10],
+                jump_server.all_local_mapscores[i].second.highscore_counts[11],
+                jump_server.all_local_mapscores[i].second.highscore_counts[12],
+                jump_server.all_local_mapscores[i].second.highscore_counts[13],
+                jump_server.all_local_mapscores[i].second.highscore_counts[14],
                 percent_score
             );
         }
 
         // Footer
-        int total_pages = (jump_server.all_local_highscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
+        int total_pages = (jump_server.all_local_mapscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
         gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). User playerscores <page>\n",
-            page, total_pages, static_cast<int>(jump_server.all_local_highscores.size()));
+            page, total_pages, static_cast<int>(jump_server.all_local_mapscores.size()));
         gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
     }
 

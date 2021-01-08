@@ -235,7 +235,7 @@ namespace Jump
         std::vector<std::pair<username_key, int>> all_local_mapcounts;
 
         // List of all user mapscores (%) sorted best to worst
-        std::vector<std::pair<username_key, float>> all_local_mapscores;
+        std::vector<std::pair<username_key, user_highscores_t>> all_local_mapscores;
 
         // Links the username_key (all lowercase) to the display username
         std::unordered_map<username_key, std::string> all_local_usernames; // TODO!! calc when doing maptimes

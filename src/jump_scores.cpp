@@ -5,6 +5,8 @@
 #include "jump_logger.h"
 #include "jump_utils.h"
 #include "jump.h"
+#include <time.h>
+#include <sstream>
 
 namespace Jump
 {
@@ -372,11 +374,7 @@ namespace Jump
             SortUserHighscoresByMapCount);
 
         // Create a list of all playerscores sorted best to worst
-        jump_server.all_local_mapscores.clear();
-        for (const auto& record : scores)
-        {
-            jump_server.all_local_mapscores.push_back({ record.first, CalculatePercentScore(record.second) });
-        }
+        jump_server.all_local_mapscores = jump_server.all_local_highscores; // copy
         std::sort(
             jump_server.all_local_mapscores.begin(),
             jump_server.all_local_mapscores.end(),
@@ -398,10 +396,10 @@ namespace Jump
     }
 
     bool SortUserHighscoresByPercentScore(
-        const std::pair<username_key, float>& left,
-        const std::pair<username_key, float>& right)
+        const std::pair<username_key, user_highscores_t>& left,
+        const std::pair<username_key, user_highscores_t>& right)
     {
-        return left.second > right.second;
+        return CalculatePercentScore(left.second) > CalculatePercentScore(right.second);
     }
 
     int CalculateScore(const user_highscores_t& scores)
@@ -425,7 +423,128 @@ namespace Jump
 
     float CalculatePercentScore(const user_highscores_t& scores)
     {
+        // A user has to complete n number of maps before the percent score is calculated.
+        // This avoids the situation where a user completes only 1 map with a first place and is first on the list forever.
+        if (scores.map_count < 50)
+        {
+            return 0.0f;
+        }
         return (static_cast<float>(CalculateScore(scores)) / (scores.map_count * 25)) * 100;
+    }
+
+    // Put all of the old time files (maplist.ini, users.t, and <mapname>.t) in "/jump/27910/old/"
+    // This function will read those files and save them into the new format
+    // It takes ~10 seconds to load the old times into memory
+    // It takes ~5 minutes to save them into the new format
+    void ConvertOldHighscores()
+    {
+        std::string path = GetModDir() + '/' + "old";
+
+        // Load the old maplist
+        std::vector<std::string> old_maplist;
+        std::string maplist_path = path + '/' + "maplist.ini";
+        std::ifstream maplist_file(maplist_path);
+        std::string line;
+        while (std::getline(maplist_file, line))
+        {
+            if (line.empty() || line[0] == '[' || line[0] == '#')
+            {
+                continue;
+            }
+            else
+            {
+                old_maplist.push_back(line);
+            }
+        }
+        maplist_file.close();
+
+        // Load the list of users
+        std::unordered_map<int, std::string> old_users;
+        std::string userlist_path = path + '/' + "users.t";
+        std::ifstream userlist_file(userlist_path);
+        while (!userlist_file.eof())
+        {
+            int userid = 0;
+            userlist_file >> userid;
+            int ignore;
+            userlist_file >> ignore;
+            userlist_file >> ignore;
+            std::string username;
+            userlist_file >> username;
+            old_users.insert({ userid, username });
+        }
+        userlist_file.close();
+
+        // Load the maptimes
+        std::unordered_map<std::string /*mapname*/, std::vector<user_time_record>> old_maptimes;
+        for (size_t i = 0; i < old_maplist.size(); ++i)
+        {
+            std::string mapname = old_maplist[i];
+            old_maptimes.insert({ mapname, {} });
+            std::string map_path = path + '/' + mapname + ".t";
+            std::ifstream maptime_file(map_path);
+            while (std::getline(maptime_file, line))
+            {
+                std::vector<std::string> tokens = SplitString(line, ' ');
+                if (tokens.size() == 4)
+                {
+                    std::string date = tokens[0];
+                    double time = std::stod(tokens[1]);
+                    int userid = std::stoi(tokens[2]);
+                    int completions = std::stoi(tokens[3]);
+                    
+                    auto it = old_users.find(userid);
+                    if (it != old_users.end())
+                    {
+                        std::string username = it->second;
+                        if (!IsUsernameValid(username))
+                        {
+                            // TODO: right now we just ignore these times
+                            // They aren't really anything notable
+                            Logger::Warning("Invalid username found when converting old scores: " + username);
+                            continue;
+                        }
+
+                        std::string username_key = AsciiToLower(username);
+                        user_time_record record;
+
+                        struct tm tm = { 0 };
+                        std::istringstream ss(date);
+                        ss >> std::get_time(&tm, "%d/%m/%y");
+                        if (tm.tm_year < 22)
+                        {
+                            tm.tm_year += 100;
+                        }
+                        char buffer[128];
+                        strftime(buffer, sizeof(buffer), "%F %T", &tm);
+
+                        record.completions = completions;
+                        record.date = buffer;
+                        record.filepath = GetModDir() + '/' + "scores" + '/' + mapname + '/' + username + ".time";
+                        record.time_ms = time * 1000;
+                        record.username_key = username_key;
+
+                        old_maptimes[mapname].push_back(record);
+                    }
+                }
+            }
+        }
+
+        // Save the times to the file system
+        // NOTE!! This will completely clobber any old times if the usernames are the same
+        int j = 0;
+        for (auto it = old_maptimes.begin(); it != old_maptimes.end(); ++it)
+        {
+            j++;
+            for (size_t i = 0; i < it->second.size(); ++i)
+            {
+                SaveTimeRecordToFile(it->second[i]);
+            }
+            if (j % 100 == 0)
+            {
+                printf("Finished saving old maptimes %d/%d\n", j, static_cast<int>(old_maptimes.size()));
+            }
+        }
     }
 
 } // namespace Jump

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace Jump
 {
@@ -42,4 +43,7 @@ namespace Jump
     // If the time is better, returns a string "-2.586" as green text.
     // If the time is worse, returns a string "+5.230" as white text.
     std::string GetTimeDiffDisplayString(int64_t time_ms, int64_t record_ms);
+
+    // Splits a string into pieces using the given delimiter.
+    std::vector<std::string> SplitString(const std::string& str, char delim);
 }

@@ -172,6 +172,20 @@ namespace Jump
         }
     }
 
+    // Splits a string into pieces using the given delimiter.
+    std::vector<std::string> SplitString(const std::string& str, char delim)
+    {
+        std::vector<std::string> tokens;
+        size_t start;
+        size_t end = 0;
+        while ((start = str.find_first_not_of(delim, end)) != std::string::npos)
+        {
+            end = str.find(delim, start);
+            tokens.push_back(str.substr(start, end - start));
+        }
+        return tokens;
+    }
+
     // Returns a string of the team enum value.
     //std::string GetTeamDisplayString(team_t team)
     //{

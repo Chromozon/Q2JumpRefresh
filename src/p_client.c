@@ -1014,12 +1014,15 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
             ent->client->jumpdata->timer_paused = false;
         }
     }
+	else
+	{
+		ent->client->jumpdata->timer_pmove_msec += ucmd->msec;
+	}
 
 	if (ucmd->msec > 0)
 	{
 		ent->client->jumpdata->fps = 1000 / ucmd->msec;
 	}
-	ent->client->jumpdata->timer_pmove_msec += ucmd->msec;
 
 	if (level.intermissiontime)
 	{

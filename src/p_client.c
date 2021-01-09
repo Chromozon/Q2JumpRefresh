@@ -1077,8 +1077,16 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	pm.trace = PM_trace;	// adds default parms
 	pm.pointcontents = gi.pointcontents;
 
-	// perform a pmove
-	gi.Pmove (&pm);
+	{
+		// Jump
+		// Don't let this player touch missiles, etc. when moving.
+		Jump::playertracetouch_guard_t guard(ent);
+		// Jump
+
+		// perform a pmove
+		gi.Pmove (&pm);
+	}
+
 
 	// save results of pmove
 	client->ps.pmove = pm.s;

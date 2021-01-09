@@ -240,4 +240,31 @@ namespace Jump
         // Links the username_key (all lowercase) to the display username
         std::unordered_map<username_key, std::string> all_local_usernames; // TODO!! calc when doing maptimes
     };
+
+    // A convenient way of stopping missiles from interacting
+    // with this player entity through traces.
+    class playertracetouch_guard_t
+    {
+    public:
+        playertracetouch_guard_t(const edict_t* ent);
+
+        ~playertracetouch_guard_t()
+        {
+            Free();
+        }
+
+    private:
+        void Free();
+
+
+        struct guard_data_t
+        {
+            edict_t* ent;
+            solid_t prev_solidtype;
+        };
+
+        // List of entities that were changed and will get reset back
+        // once this object is freed.
+        std::vector<guard_data_t> ents;
+    };
 }

@@ -195,9 +195,14 @@ namespace Jump
         return left.time_ms < right.time_ms;
     }
 
-    bool GetHighscoresForMap(const std::string& mapname, std::vector<user_time_record>& highscores, int& completions)
+    bool GetHighscoresForMap(
+        const std::string& mapname,
+        std::vector<user_time_record>& highscores,
+        int& players,
+        int& completions)
     {
         highscores.clear();
+        players = 0;
         completions = 0;
 
         auto it = jump_server.all_local_maptimes.find(mapname);
@@ -213,6 +218,7 @@ namespace Jump
             {
                 completions += record.completions;
             }
+            players = it->second.size();
             return true;
         }
     }

@@ -10,8 +10,9 @@ namespace Jump
     void BestTimesScoreboardMessage(edict_t* client)
 	{
 		std::vector<user_time_record> highscores;
+		int players = 0;
 		int total_completions = 0;
-		GetHighscoresForMap(level.mapname, highscores, total_completions);
+		GetHighscoresForMap(level.mapname, highscores, players, total_completions);
 
 		// Sideways arrow symbol
 		char symbol_arrow = 13;
@@ -63,7 +64,7 @@ namespace Jump
 				ss << "yv " << (i * 10) + 16 << " string \"" << std::setw(2) << i + 1 << " \" ";
 			}
 		}
-		ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << highscores.size();
+		ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << players;
 		ss << " players completed map " << total_completions << " times\" "; // TODO: "player" if only one player has completed
 		gi.WriteByte(svc_layout);
 		assert(ss.str().size() < 1024);

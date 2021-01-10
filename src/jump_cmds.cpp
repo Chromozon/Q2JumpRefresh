@@ -268,8 +268,9 @@ namespace Jump
         }
 
         std::vector<user_time_record> highscores;
+        int players = 0;
         int completions = 0;
-        if (!GetHighscoresForMap(mapname, highscores, completions))
+        if (!GetHighscoresForMap(mapname, highscores, players, completions))
         {
             gi.cprintf(player, PRINT_HIGH, "Invalid map.\n");
             return;

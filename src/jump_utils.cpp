@@ -186,6 +186,21 @@ namespace Jump
         return tokens;
     }
 
+    // Returns true if two strings are case-insensitive equal.
+    bool StringCompareInsensitive(const std::string& left, const std::string& right)
+    {
+        if (left.size() != right.size())
+        {
+            return false;
+        }
+        return std::equal(left.begin(), left.end(), right.begin(),
+            [](char a, char b)
+            {
+                return tolower(a) == tolower(b);
+            }
+        );
+    }
+
     // Returns a string of the team enum value.
     //std::string GetTeamDisplayString(team_t team)
     //{

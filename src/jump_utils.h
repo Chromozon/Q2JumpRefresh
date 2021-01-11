@@ -46,4 +46,7 @@ namespace Jump
 
     // Splits a string into pieces using the given delimiter.
     std::vector<std::string> SplitString(const std::string& str, char delim);
+
+    // Returns true if two strings are case-insensitive equal.
+    bool StringCompareInsensitive(const std::string& left, const std::string& right);
 }

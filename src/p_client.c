@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump.h"
 #include "jump_utils.h"
 #include "jump_hud.h"
+#include "jump_scores.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -781,6 +782,8 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 
 	std::string ip = Info_ValueForKey(userinfo, "ip");
 	ent->client->jumpdata->ip = ip.substr(0, ip.find_first_of(':')); // remove port from ip address
+
+	Jump::UpdateLastSeenTime(ent->client->pers.netname);
     // Jump
 
 //	// set skin

@@ -558,4 +558,75 @@ namespace Jump
         }
     }
 
+    void LoadLastSeenTimes()
+    {
+        std::string path = GetModDir() + '/' + SEEN_DIR;
+        std::filesystem::create_directories(path);
+        for (const auto& entry : std::filesystem::directory_iterator(path))
+        {
+            if (!entry.is_regular_file())
+            {
+                continue;
+            }
+            if (entry.path().extension().generic_string() != SEEN_FILE_EXTENSION)
+            {
+                continue;
+            }
+            std::ifstream seen_file(entry);
+            std::string line;
+            std::getline(seen_file, line);
+            auto tokens = SplitString(line, '\t');
+            if (tokens.size() != 2)
+            {
+                Logger::Warning("Invalid contents for seen file " + entry.path().generic_string());
+                continue;
+            }
+            std::string username = tokens[0];
+            int64_t seen_time = std::stoll(tokens[1]);
+            jump_server.last_seen.push_back({ username, seen_time });
+        }
+        std::sort(jump_server.last_seen.begin(), jump_server.last_seen.end(),
+            [](const std::pair<std::string, int64_t>& left, const std::pair<std::string, int64_t>& right)
+            {
+                return left.second > right.second;
+            }
+        );
+    }
+
+    void UpdateLastSeenTime(std::string username)
+    {
+        std::string path = GetModDir() + '/' + SEEN_DIR;
+        std::filesystem::create_directories(path);
+        path += '/' + username + SEEN_FILE_EXTENSION;
+        std::ofstream seen_file(path, std::ios::trunc);
+        if (!seen_file.is_open())
+        {
+            Logger::Warning("Could not update last seen file " + path);
+            return;
+        }
+        int64_t seen_time = Sys_Milliseconds();
+        seen_file << username << '\t' << seen_time;
+        seen_file.close();
+
+        auto it = jump_server.last_seen.begin();
+        for (; it != jump_server.last_seen.end(); ++it)
+        {
+            if (StringCompareInsensitive(username, it->first))
+            {
+                it->second = seen_time;
+                break;
+            }
+        }
+        if (it == jump_server.last_seen.end())
+        {
+            jump_server.last_seen.push_back({ username, seen_time });
+        }
+        std::sort(jump_server.last_seen.begin(), jump_server.last_seen.end(),
+            [](const std::pair<std::string, int64_t>& left, const std::pair<std::string, int64_t>& right)
+            {
+                return left.second > right.second;
+            }
+        );
+    }
+
 } // namespace Jump

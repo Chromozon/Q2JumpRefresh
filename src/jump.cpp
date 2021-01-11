@@ -486,6 +486,7 @@ namespace Jump
         LoadLocalMapList(jump_server.maplist);
         LoadAllLocalMaptimes(jump_server.maplist, jump_server.all_local_maptimes);
         CalculateAllLocalStatistics();
+        LoadLastSeenTimes();
     }
 
     void AdvanceSpectatingReplayFrame(edict_t* ent)

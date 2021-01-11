@@ -16,6 +16,8 @@
 #define SCORES_DIR "scores"
 #define TIME_FILE_EXTENSION ".time"
 #define DEMO_FILE_EXTENSION ".demo"
+#define SEEN_DIR "seen"
+#define SEEN_FILE_EXTENSION ".seen"
 #define MAPLIST_FILENAME "maplist.txt"
 
 namespace Jump
@@ -243,5 +245,8 @@ namespace Jump
 
         // Links the username_key (all lowercase) to the display username
         std::unordered_map<username_key, std::string> all_local_usernames; // TODO!! calc when doing maptimes
+
+        // List of last seen times sorted newest to oldest
+        std::vector<std::pair<std::string /*username*/, int64_t>> last_seen;
     };
 }

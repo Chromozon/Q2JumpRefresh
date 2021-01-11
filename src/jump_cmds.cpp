@@ -8,6 +8,7 @@
 #include "jump_menu.h"
 #include "jump_utils.h"
 #include "jump_logger.h"
+#include <algorithm>
 
 namespace Jump
 {
@@ -29,6 +30,7 @@ namespace Jump
         { "help2", Cmd_Jump_Score2 },
         { "playertimes", Cmd_Jump_Playertimes },
         { "playerscores", Cmd_Jump_Playerscores },
+        { "!seen", Cmd_Jump_Seen },
 
         // TODO
         { "showtimes", Cmd_Jump_Void },
@@ -40,7 +42,6 @@ namespace Jump
         { "no", Cmd_Jump_Void },
         { "maplist", Cmd_Jump_Void },
         { "playermaps", Cmd_Jump_Void },
-
         { "globaltimes", Cmd_Jump_Void },
         { "globalmaps", Cmd_Jump_Void },
         { "globalscores", Cmd_Jump_Void },
@@ -51,7 +52,6 @@ namespace Jump
         { "!stats", Cmd_Jump_Void },
         { "compare", Cmd_Jump_Void },
         { "1st", Cmd_Jump_Void },
-        { "!seen", Cmd_Jump_Void },
         { "!help", Cmd_Jump_Void },
         { "boot", Cmd_Jump_Void },
         { "silence", Cmd_Jump_Void },
@@ -77,7 +77,11 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        ConvertOldHighscores();
+        //ConvertOldHighscores();
+
+        CalculateAllLocalStatistics();
+
+        int x = 5;
 
         //auto z = timelimit;
 
@@ -522,8 +526,78 @@ namespace Jump
 
         // Footer
         int total_pages = (jump_server.all_local_mapscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
-        gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). User playerscores <page>\n",
+        gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use playerscores <page>\n",
             page, total_pages, static_cast<int>(jump_server.all_local_mapscores.size()));
+        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+    }
+
+    void Cmd_Jump_Seen(edict_t* ent)
+    {
+        const int ms_per_second = 1000;
+        const int ms_per_minute = ms_per_second * 60;
+        const int ms_per_hour = ms_per_minute * 60;
+        const int ms_per_day = ms_per_hour * 24;
+
+        int page = 1;
+        if (gi.argc() > 1)
+        {
+            StringToIntMaybe(gi.argv(1), page);
+        }
+        if (page < 1)
+        {
+            page = 1;
+        }
+        size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
+        if (index_start >= jump_server.last_seen.size())
+        {
+            gi.cprintf(ent, PRINT_HIGH, "There are no last seen times for this page.\n");
+            return;
+        }
+        size_t index_end = std::min<size_t>(
+            jump_server.last_seen.size() - 1,
+            (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
+
+        int64_t current_time = Sys_Milliseconds();
+
+        // Header row
+        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+        std::string header = GetGreenConsoleText("No. Name            Days Hrs Mins Secs");
+        gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
+
+        for (size_t i = index_start; i <= index_end; ++i)
+        {
+            const std::string& username = jump_server.last_seen[i].first;
+            int64_t seen_time = jump_server.last_seen[i].second;
+
+            int64_t diff = current_time - seen_time;
+            if (diff < 0)
+            {
+                Logger::Warning("Invalid last seen time for user " + username);
+                continue;
+            }
+
+            int days = diff / ms_per_day;
+            diff -= days * ms_per_day;
+            int hours = diff / ms_per_hour;
+            diff -= hours * ms_per_hour;
+            int minutes = diff / ms_per_minute;
+            diff -= minutes * ms_per_minute;
+            int seconds = diff / ms_per_second;
+
+            gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %4d %3d %4d %4d\n",
+                static_cast<int>(i + 1),
+                username.c_str(),
+                days,
+                hours,
+                minutes,
+                seconds
+            );
+        }
+
+        // Footer
+        int total_pages = (jump_server.last_seen.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
+        gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use !seen <page>\n",
+            page, total_pages, static_cast<int>(jump_server.last_seen.size()));
         gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
     }
 

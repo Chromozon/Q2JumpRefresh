@@ -55,5 +55,8 @@ namespace Jump
 
     void ConvertOldHighscores();
 
+    void LoadLastSeenTimes();
+    void UpdateLastSeenTime(std::string username);
+
 } // namespace Jump
 

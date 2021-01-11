@@ -225,16 +225,20 @@ namespace Jump
         // List of all maps on the server.  Times will ony be recorded for these maps.
         std::unordered_set<std::string> maplist;
 
-        // Table of all maps with the times sorted best to worst
+        // Table of all maps with the times sorted best to worst.  This list is kept up-to-date as
+        // players set new times while playing maps.
         std::unordered_map<std::string /*mapname*/, std::vector<user_time_record>> all_local_maptimes;
 
-        // List of all user highscores sorted by score best to worst
+        // List of all user highscores sorted by score best to worst.
+        // Only updated on map change.
         std::vector<std::pair<username_key, user_highscores_t>> all_local_highscores;
 
         // List of all user map count sorted best to worst
+        // Only updated on map change.
         std::vector<std::pair<username_key, int>> all_local_mapcounts;
 
         // List of all user mapscores (%) sorted best to worst
+        // Only updated on map change.
         std::vector<std::pair<username_key, user_highscores_t>> all_local_mapscores;
 
         // Links the username_key (all lowercase) to the display username

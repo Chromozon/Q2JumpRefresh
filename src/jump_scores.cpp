@@ -16,7 +16,14 @@ namespace Jump
         int64_t time_ms,
         const std::vector<replay_frame_t>& replay_buffer)
     {
-        std::vector<user_time_record>& maptimes = jump_server.all_local_maptimes[mapname];
+        auto it = jump_server.all_local_maptimes.find(mapname);
+        if (it == jump_server.all_local_maptimes.end())
+        {
+            Logger::Error(va("Cannot save maptime for map %s that is not in the maplist", mapname.c_str()));
+            return;
+        }
+
+        std::vector<user_time_record>& maptimes = it->second;
         std::string username_lower = AsciiToLower(username);
 
         std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
@@ -41,14 +48,12 @@ namespace Jump
             record.date = GetCurrentTimeUTC();
             record.completions = 1;
             record.username_key = username_lower;
-
-            auto iter = std::upper_bound(maptimes.begin(), maptimes.end(), record, SortTimeRecordByTime);
-            auto pos = std::distance(maptimes.begin(), iter);
-            maptimes.insert(iter, record);
-            // TODO: recalculate number of 1-15 places if someone is bumped down
-
             SaveTimeRecordToFile(record);
             SaveReplayToFile(mapname, username, time_ms, replay_buffer);
+
+            auto iter = std::upper_bound(maptimes.begin(), maptimes.end(), record, SortTimeRecordByTime);
+            //auto pos = std::distance(maptimes.begin(), iter);
+            maptimes.insert(iter, record);
         }
         else
         {
@@ -57,6 +62,7 @@ namespace Jump
             {
                 // Since we have a pointer to the record, update the time after figuring out the new position
                 // so it doesn't mess up the algorithms.
+                // Can replace with binary search (upper bound)
                 auto new_pos_iter = maptimes.begin();
                 for (; new_pos_iter != maptimes.end(); ++new_pos_iter)
                 {
@@ -65,16 +71,12 @@ namespace Jump
                         break;
                     }
                 }
-
                 std::rotate(new_pos_iter, cached_record, cached_record + 1);
-
                 new_pos_iter->time_ms = time_ms;
                 new_pos_iter->date = GetCurrentTimeUTC();
                 new_pos_iter->completions++;
                 SaveReplayToFile(mapname, username, time_ms, replay_buffer);
                 SaveTimeRecordToFile(*new_pos_iter);
-
-                // TODO: recalculate number of 1-15 places if someone is bumped down
             }
             else
             {
@@ -82,7 +84,6 @@ namespace Jump
                 cached_record->completions++;
                 SaveTimeRecordToFile(*cached_record);
             }
-            
         }
     }
 
@@ -442,6 +443,7 @@ namespace Jump
     // This function will read those files and save them into the new format
     // It takes ~10 seconds to load the old times into memory
     // It takes ~5 minutes to save them into the new format
+    // NOTE: this function will completely overwrite all current maptimes
     void ConvertOldHighscores()
     {
         std::string path = GetModDir() + '/' + "old";

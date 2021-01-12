@@ -502,7 +502,7 @@ namespace Jump
         for (size_t i = index_start; i <= index_end; ++i)
         {
             float percent_score = CalculatePercentScore(jump_server.all_local_mapscores[i].second);
-            gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %.1f%%\n",
+            gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %2.1f%%\n",
                 static_cast<int>(i + 1),
                 jump_server.all_local_mapscores[i].first.c_str(),
                 jump_server.all_local_mapscores[i].second.highscore_counts[0],

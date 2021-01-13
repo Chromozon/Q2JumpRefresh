@@ -166,7 +166,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="jump.def">
+    <None Include="jumpserver.def">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

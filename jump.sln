@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jump", "jump.vcxproj", "{5C807E0D-9CA3-4E0C-91EB-B40CAD1AA184}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jumpserver", "jumpserver\jumpserver.vcxproj", "{5C807E0D-9CA3-4E0C-91EB-B40CAD1AA184}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "jumpdatabase", "..\jumpdatabase\jumpdatabase.csproj", "{770FD42F-44F6-446F-87E0-AA22032E91A0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "jumpdatabase", "jumpdatabase\jumpdatabase.csproj", "{770FD42F-44F6-446F-87E0-AA22032E91A0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

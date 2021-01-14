@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -81,7 +82,7 @@ namespace jumpdatabase
                         continue;
                     }
                     int serverId = -1;
-                    if (!_servers.TryGetValue(loginToken, out serverId))
+                    if (!_serverLogins.TryGetValue(loginToken, out serverId))
                     {
                         response.StatusCode = (int)HttpStatusCode.BadRequest;
                         response.Close();
@@ -108,10 +109,10 @@ namespace jumpdatabase
                     switch (command)
                     {
                         case "addtime":
-                            HandleCommandAddTime(serverId, commandArgs, out responseStatus, out responseData);
+                            HandleCommandAddTime(dbConnection, serverId, commandArgs, out responseStatus, out responseData);
                             break;
                         case "gettimes":
-                            HandleCommandGetTimes(serverId, commandArgs, out responseStatus, out responseData);
+                            HandleCommandGetTimes(dbConnection, serverId, commandArgs, out responseStatus, out responseData);
                             break;
                         case "userlogin":
                             break;
@@ -137,6 +138,7 @@ namespace jumpdatabase
         /// Adds a new best time for the given user and map.
         /// We ensure that the new time is faster than whatever is currently in the database.
         /// </summary>
+        /// <param name="connection"></param>
         /// <param name="serverId"></param>
         /// <param name="args">
         /// {
@@ -147,7 +149,8 @@ namespace jumpdatabase
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
-        static private void HandleCommandAddTime(int serverId, dynamic args, out int status, out string data)
+        static private void HandleCommandAddTime(IDbConnection connection, int serverId, dynamic args,
+            out int status, out string data)
         {
             status = (int)HttpStatusCode.BadRequest;
             data = string.Empty;
@@ -176,6 +179,7 @@ namespace jumpdatabase
         /// <summary>
         /// Retrieves a set of times for the given map.
         /// </summary>
+        /// <param name="connection"></param>
         /// <param name="serverId"></param>
         /// <param name="args">
         /// {
@@ -185,14 +189,17 @@ namespace jumpdatabase
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
-        static private void HandleCommandGetTimes(int serverId, dynamic args, out int status, out string data)
+        static private void HandleCommandGetTimes(IDbConnection connection, int serverId, dynamic args,
+            out int status, out string data)
         {
+            const int ResultsPerQuery = 15;
+
             status = (int)HttpStatusCode.BadRequest;
             data = string.Empty;
 
-            string mapname = args.mapname;
+            string mapName = args.mapname;
             int? page = args.page;
-            if (mapname == null || page == null)
+            if (mapName == null || page == null)
             {
                 return;
             }
@@ -200,22 +207,100 @@ namespace jumpdatabase
             {
                 page = 1;
             }
+            int offset = (page.Value - 1) * ResultsPerQuery;
+            int mapId = -1;
+            if (!_maps.TryGetValue(mapName, out mapId))
+            {
+                return;
+            }
             List<TimeRecord> times = new List<TimeRecord>();
-            // query database for maptimes at page n
+
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+                SELECT Users.UserName, Servers.ServerName, MapTimes.TimeMs, MapTimes.Date FROM MapTimes
+                INNER JOIN Users ON MapTimes.UserId = Users.UserId
+                INNER JOIN Servers ON MapTimes.ServerId = Servers.ServerId
+                WHERE MapId = {mapId}
+                ORDER BY TimeMs
+                LIMIT {ResultsPerQuery} OFFSET {offset}
+            ";
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                // TODO
+                // Read times into list
+                // Serialize into json
+            }
         }
 
-        // Cache the server login tokens -> serverid
-        static private Dictionary<string, int> _servers = new Dictionary<string, int>()
+        /// <summary>
+        /// Load all map ids from the database so we don't have to do multiple database queries
+        /// for each command.
+        /// </summary>
+        /// <param name="connection"></param>
+        static private void LoadMapsCache(IDbConnection connection)
         {
-            { "UyzyfBHakVoJM2sy", 0 }, // German
-            { "N5WgTrdyd6TDmQby", 1 }, // German 2
-            { "DdBsAfhmpwEKHgnO", 2 }, // US
-        };
+            _maps.Clear();
+            var command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT MapId, MapName FROM Maps
+            ";
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                int mapId = (int)reader[0];
+                string mapName = (string)reader[1];
+                _maps.Add(mapName, mapId);
+            }
+        }
 
-        // Cache all of the usernames -> userid
+        /// <summary>
+        /// Load the server login tokens so we don't have to check this for each query.
+        /// </summary>
+        /// <param name="connection"></param>
+        static private void LoadServerLoginsCache(IDbConnection connection)
+        {
+            _serverLogins.Clear();
+            var command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT ServerId, LoginToken FROM Servers
+            ";
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                int serverId = (int)reader[0];
+                string loginToken = (string)reader[1];
+                _serverLogins.Add(loginToken, serverId);
+            }
+        }
+
+        /// <summary>
+        /// Load the list of users so we don't have to check this for each query.
+        /// </summary>
+        /// <param name="connection"></param>
+        static private void LoadUsersCache(IDbConnection connection)
+        {
+            _users.Clear();
+            var command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT UserId, UserName FROM Users
+            ";
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                int userId = (int)reader[0];
+                string userName = (string)reader[1];
+                _users.Add(userName, userId);
+            }
+        }
+
+        // Cache the server LoginToken -> ServerId
+        static private Dictionary<string, int> _serverLogins = new Dictionary<string, int>();
+
+        // Cache all of the UserName -> UserId
         static private Dictionary<string, int> _users = new Dictionary<string, int>();
 
-        // Cache of all mapnames -> mapid
+        // Cache of all MapName -> MapId
         static private Dictionary<string, int> _maps = new Dictionary<string, int>();
     }
 }

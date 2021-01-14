@@ -10,7 +10,7 @@ namespace jumpdatabase
     {
         // https://www.sqlitetutorial.net/sqlite-create-table/
 
-        static void CreateAllTables(IDbConnection connection)
+        static public void CreateAllTables(IDbConnection connection)
         {
             CreateTableUsers(connection);
             CreateTableServers(connection);
@@ -18,14 +18,14 @@ namespace jumpdatabase
             CreateTableMapTimes(connection);
         }
 
-        static void CreateTableUsers(IDbConnection connection)
+        static private void CreateTableUsers(IDbConnection connection)
         {
             var command = connection.CreateCommand();
             command.CommandText = @"
-                CREATE TABLE Users
+                CREATE TABLE IF NOT EXISTS Users
                 (
                     UserId INTEGER NOT NULL,
-	                UserName TEXT NOT NULL,
+	                UserName TEXT NOT NULL UNIQUE,
 	                Password TEXT NOT NULL,
 	                PRIMARY KEY (UserId AUTOINCREMENT)
                 )
@@ -33,14 +33,14 @@ namespace jumpdatabase
             command.ExecuteNonQuery();
         }
 
-        static void CreateTableMaps(IDbConnection connection)
+        static private void CreateTableMaps(IDbConnection connection)
         {
             var command = connection.CreateCommand();
             command.CommandText = @"
-                CREATE TABLE Maps
+                CREATE TABLE IF NOT EXISTS Maps
                 (
                     MapId INTEGER NOT NULL,
-	                MapName TEXT NOT NULL,
+	                MapName TEXT NOT NULL UNIQUE,
                     DateAdded TEXT NOT NULL,
 	                PRIMARY KEY (MapId AUTOINCREMENT)
                 )
@@ -48,11 +48,11 @@ namespace jumpdatabase
             command.ExecuteNonQuery();
         }
 
-        static void CreateTableServers(IDbConnection connection)
+        static private void CreateTableServers(IDbConnection connection)
         {
             var command = connection.CreateCommand();
             command.CommandText = @"
-                CREATE TABLE Servers
+                CREATE TABLE IF NOT EXISTS Servers
                 (
                     ServerId INTEGER NOT NULL,
 	                ServerName TEXT NOT NULL,
@@ -64,11 +64,11 @@ namespace jumpdatabase
             command.ExecuteNonQuery();
         }
 
-        static void CreateTableMapTimes(IDbConnection connection)
+        static private void CreateTableMapTimes(IDbConnection connection)
         {
             var command = connection.CreateCommand();
             command.CommandText = @"
-                CREATE TABLE MapTimes
+                CREATE TABLE IF NOT EXISTS MapTimes
                 (
                     MapId INTEGER NOT NULL,
 	                UserId INTEGER NOT NULL,

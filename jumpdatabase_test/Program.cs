@@ -52,6 +52,18 @@ namespace jumpdatabase_test
             public AddUserPrivateCommandArgs command_args;
         }
 
+        public class AddMapCommand
+        {
+            public string login_token { get; set; }
+            public string command => "addmap";
+
+            public class AddMapCommandArgs
+            {
+                public string mapname { get; set; }
+            }
+            public AddMapCommandArgs command_args;
+        }
+
         const string ServiceUrl = "http://localhost:57540/";
 
         static void Main(string[] args)
@@ -80,6 +92,28 @@ namespace jumpdatabase_test
             //    if (count % 100 == 0)
             //    {
             //        Console.WriteLine($"Wrote {count} users");
+            //    }
+            //}
+
+            //var maps = LoadMaplistFromOldServerFiles();
+            //int count = 0;
+            //foreach (var map in maps)
+            //{
+            //    AddMapCommand addMapCommand = new AddMapCommand();
+            //    addMapCommand.command_args = new AddMapCommand.AddMapCommandArgs();
+            //    addMapCommand.login_token = "123456";
+            //    addMapCommand.command_args.mapname = map;
+            //    string jsonStr = JsonConvert.SerializeObject(addMapCommand);
+            //    var data = new StringContent(jsonStr, Encoding.ASCII, "application/json");
+            //    var response = client.PostAsync(ServiceUrl, data).Result;
+            //    if (!response.IsSuccessStatusCode)
+            //    {
+            //        Console.WriteLine($"Could not write map {map}");
+            //    }
+            //    count++;
+            //    if (count % 100 == 0)
+            //    {
+            //        Console.WriteLine($"Wrote {count} maps");
             //    }
             //}
 
@@ -142,6 +176,24 @@ namespace jumpdatabase_test
                 users.Add(user);
             }
             return users;
+        }
+
+        private static List<string> LoadMaplistFromOldServerFiles()
+        {
+            List<string> mapnames = new List<string>();
+
+            string maplist = "E:/Quake2Dev/jumprefresh/27910/old/maplist.ini";
+            string text = File.ReadAllText(maplist);
+            var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < lines.Length; ++i)
+            {
+                if (lines[i].StartsWith('[') || lines[i].StartsWith('#') || string.IsNullOrEmpty(lines[i]))
+                {
+                    continue;
+                }
+                mapnames.Add(lines[i].Trim());
+            }
+            return mapnames;
         }
 
         private static Random random = new Random();

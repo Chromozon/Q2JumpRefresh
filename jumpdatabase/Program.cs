@@ -113,6 +113,9 @@ namespace jumpdatabase
                         case "adduserprivate":
                             HandleCommandAddUserPrivate(dbConnection, commandArgs, out responseStatus);
                             break;
+                        case "addmap":
+                            HandleCommandAddMap(dbConnection, commandArgs, out responseStatus);
+                            break;
                         default:
                             break;
                     }
@@ -147,7 +150,6 @@ namespace jumpdatabase
         /// }
         /// </param>
         /// <param name="status"></param>
-        /// <param name="data"></param>
         static private void HandleCommandAddTime(IDbConnection connection, long serverId, dynamic args,
             out int status)
         {
@@ -206,7 +208,6 @@ namespace jumpdatabase
         /// Retrieves a set of times for the given map.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="serverId"></param>
         /// <param name="args">
         /// {
         ///     "mapname": "mapname" (string)
@@ -267,7 +268,6 @@ namespace jumpdatabase
         /// Tries to validate the usename and password.  If the user does not exist, adds a new user.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="serverId"></param>
         /// <param name="args">
         /// {
         ///     "username": "username" (string)
@@ -316,7 +316,6 @@ namespace jumpdatabase
         /// Change a user password.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="serverId"></param>
         /// <param name="args">
         /// {
         ///     "username": "username" (string)
@@ -351,6 +350,45 @@ namespace jumpdatabase
             command.Parameters.Add(paramUserName);
             command.Parameters.Add(paramPasswordOld);
             command.Parameters.Add(paramPasswordNew);
+            int rows = command.ExecuteNonQuery();
+            if (rows == 1)
+            {
+                status = (int)HttpStatusCode.OK;
+            }
+        }
+
+        /// <summary>
+        /// Add a new map.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="args">
+        /// {
+        ///     "mapname": "mapname" (string, no extension)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        static private void HandleCommandAddMap(IDbConnection connection, dynamic args, out int status)
+        {
+            status = (int)HttpStatusCode.BadRequest;
+
+            string mapname = args.mapname;
+            if (string.IsNullOrEmpty(mapname))
+            {
+                return;
+            }
+            string dateAdded = DateTime.UtcNow.ToString(DateTimeFormat);
+
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+                INSERT INTO Maps (MapName, DateAdded)
+                VALUES (@mapname, @dateadded)
+            ";
+            SqliteParameter paramMapName = new SqliteParameter("@mapname", SqliteType.Text);
+            paramMapName.Value = mapname;
+            SqliteParameter paramDateAdded = new SqliteParameter("@dateadded", SqliteType.Text);
+            paramDateAdded.Value = dateAdded;
+            command.Parameters.Add(paramMapName);
+            command.Parameters.Add(paramDateAdded);
             int rows = command.ExecuteNonQuery();
             if (rows == 1)
             {

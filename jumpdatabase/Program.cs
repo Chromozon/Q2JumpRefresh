@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -142,9 +143,10 @@ namespace jumpdatabase
         /// <param name="serverId"></param>
         /// <param name="args">
         /// {
-        ///     "user": "username" (string)
+        ///     "username": "username" (string)
         ///     "date": 1610596223836 (int, Unix time ms)
         ///     "time_ms": 234934 (int, ms)
+        ///     "pmove_time_ms": 223320 (int, ms)
         /// }
         /// </param>
         /// <param name="status"></param>
@@ -155,25 +157,49 @@ namespace jumpdatabase
             status = (int)HttpStatusCode.BadRequest;
             data = string.Empty;
 
-            string user = args.user;
+            string mapname = args.mapname;
+            string username = args.username;
             long? date = args.date;
-            long? time_ms = args.time_ms;
-            if (user == null)
+            long? timeMs = args.time_ms;
+            long? pmoveTimeMs = args.pmove_time_ms;
+            if (mapname == null || username == null || date == null || timeMs == null || pmoveTimeMs == null)
             {
-                Console.WriteLine("Invalid addtime command: no user");
                 return;
             }
-            if (date == null)
-            {
-                Console.WriteLine("Invalid addtime command: no date");
-                return;
-            }
-            if (time_ms == null)
-            {
-                Console.WriteLine("Invalid addtime command: no time_ms");
-                return;
-            }
-            // TODO: update database, when adding, check if time is faster
+            DateTime dateTime = new DateTime(1970, 1, 1) + TimeSpan.FromMilliseconds(date.Value);
+            string dateStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+                INSERT OR IGNORE INTO MapTimes (MapId, UserId, ServerId, TimeMs, PMoveTimeMs, Date)
+                VALUES (
+                    (SELECT MapId FROM Maps WHERE MapName = @mapname),
+                    (SELECT UsesrId FROM Users WHERE UserName = @username),
+                    {serverId},
+                    {timeMs.Value},
+                    {pmoveTimeMs.Value},
+                    @date
+                );
+                UPDATE MapTimes
+                SET ServerId = {serverId}, TimeMs = {timeMs.Value}, PMoveTimeMs = {pmoveTimeMs.Value}, Date = @date
+                WHERE
+                    MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname)
+                    AND
+                    UserId = (SELECT UserId FROM Users WHERE UserName = @username)
+                    AND
+                    TimeMs > {timeMs.Value}
+            ";
+            SqliteParameter paramMapName = new SqliteParameter("@mapname", SqliteType.Text);
+            paramMapName.Value = mapname;
+            SqliteParameter paramUserName = new SqliteParameter("@username", SqliteType.Text);
+            paramUserName.Value = username;
+            SqliteParameter paramDate = new SqliteParameter("@date", SqliteType.Text);
+            paramDate.Value = dateStr;
+            command.Parameters.Add(paramMapName);
+            command.Parameters.Add(paramUserName);
+            command.Parameters.Add(paramDate);
+            command.Prepare();
+            command.ExecuteNonQuery();
         }
 
         /// <summary>

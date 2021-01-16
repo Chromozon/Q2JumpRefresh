@@ -7,6 +7,7 @@ using System.Data;
 using System.Data.Common;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -23,6 +24,16 @@ namespace jumpdatabase
             public long TimeMs { get; set; }
         }
 
+        class MapTimeModel
+        {
+            public long MapId { get; set; }
+            public long UserId { get; set; }
+            public long ServerId { get; set; }
+            public long TimeMs { get; set; }
+            public long PmoveTimeMs { get; set; }
+            public string Date { get; set; }
+        }
+
         const int ServicePort = 57540;
         const string DatabasePath = "./jumpdatabase.sqlite3";
         const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
@@ -35,6 +46,8 @@ namespace jumpdatabase
             Console.WriteLine($"Opened connection to database \"{DatabasePath}\"");
             Tables.CreateAllTables(dbConnection);
             LoadServerLoginsCache(dbConnection);
+            LoadAllStatistics(dbConnection);
+            return;
 
             // Start listening for requests from the various servers
             HttpListener httpListener = new HttpListener();
@@ -164,7 +177,7 @@ namespace jumpdatabase
             {
                 return;
             }
-            DateTime dateTime = new DateTime(1970, 1, 1) + TimeSpan.FromSeconds(date.Value);
+            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) + TimeSpan.FromSeconds(date.Value);
             string dateStr = dateTime.ToString(DateTimeFormat);
 
             var command = connection.CreateCommand();
@@ -436,6 +449,156 @@ namespace jumpdatabase
             {
                 status = (int)HttpStatusCode.OK;
             }
+        }
+
+        static private void LoadAllStatistics(IDbConnection connection)
+        {
+            // Get all maps
+            Dictionary<long, string> mapIdsNames = new Dictionary<long, string>(); // <mapId, mapName>
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+                SELECT MapId, MapName FROM Maps
+            ";
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                long mapId = (long)reader[0];
+                string mapName = (string)reader[1];
+                mapIdsNames.Add(mapId, mapName);
+            }
+
+            // Get all users
+            Dictionary<long, string> userIdsNames = new Dictionary<long, string>(); // <userId, userName>
+            command = connection.CreateCommand();
+            command.CommandText = $@"
+                SELECT UserId, UserName FROM Users
+            ";
+            reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                long userId = (long)reader[0];
+                string userName = (string)reader[1];
+                userIdsNames.Add(userId, userName);
+            }
+
+            // Get highscores list for each map
+            Dictionary<long, List<MapTimeModel>> maptimes = new Dictionary<long, List<MapTimeModel>>(); // <mapId, sorted times>
+            foreach (var mapIdName in mapIdsNames)
+            {
+                maptimes.Add(mapIdName.Key, new List<MapTimeModel>());
+                command = connection.CreateCommand();
+                command.CommandText = $@"
+                    SELECT UserId, ServerId, TimeMs, PMoveTimeMs, Date FROM MapTimes
+                    WHERE MapId = {mapIdName.Key}
+                    ORDER BY TimeMs
+                ";
+                reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    MapTimeModel time = new MapTimeModel();
+                    time.MapId = mapIdName.Key;
+                    time.UserId = (long)reader[0];
+                    time.ServerId = (long)reader[1];
+                    time.TimeMs = (long)reader[2];
+                    time.PmoveTimeMs = (long)reader[3];
+                    time.Date = (string)reader[4];
+                    maptimes[mapIdName.Key].Add(time);
+                }
+            }
+
+            // Calculate global playertimes (top 15)
+            const int MaxHighscores = 15;
+            Dictionary<long, int[]> userHighscores = new Dictionary<long, int[]>(); // <userId, highscores[15]>
+            foreach (var userIdName in userIdsNames)
+            {
+                long userId = userIdName.Key;
+                int[] highscores = new int[MaxHighscores];
+                userHighscores.Add(userId, highscores);
+            }
+            foreach (var maptime in maptimes)
+            {
+                int maxIndex = MaxHighscores;
+                if (maptime.Value.Count < maxIndex)
+                {
+                    maxIndex = maptime.Value.Count;
+                }
+                for (int i = 0; i < maxIndex; ++i)
+                {
+                    long userId = maptime.Value[i].UserId;
+                    userHighscores[userId][i]++;
+                }
+            }
+
+            // Calculate score for each user
+            Dictionary<long, int> totalScores = new Dictionary<long, int>(); // <userId, score>
+            foreach (var userHighscore in userHighscores)
+            {
+                long userId = userHighscore.Key;
+                int score = CalculateScore(userHighscore.Value);
+                totalScores.Add(userId, score);
+            }
+
+            var sortedScores = totalScores.OrderByDescending(x => x.Value);
+            //foreach (var sortedScore in sortedScores)
+            //{
+            //    long userId = sortedScore.Key;
+            //    int score = sortedScore.Value;
+            //    if (score == 0)
+            //    {
+            //        break;
+            //    }
+            //    string userName = userIdsNames[userId];
+            //    var highscores = userHighscores[userId];
+            //    Console.WriteLine(string.Format("{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15} {16}",
+            //        userName, highscores[0], highscores[1], highscores[2], highscores[3], highscores[4],
+            //        highscores[5], highscores[6], highscores[7], highscores[8], highscores[9], highscores[10],
+            //        highscores[11], highscores[12], highscores[13], highscores[14], score));
+            //}
+
+            // Calculate total map completions
+            Dictionary<long, int> mapCompletions = new Dictionary<long, int>(); // <userId, maps completed>
+            foreach (var userIdName in userIdsNames)
+            {
+                mapCompletions.Add(userIdName.Key, 0);
+            }
+            foreach (var maptime in maptimes)
+            {
+                foreach (var time in maptime.Value)
+                {
+                    mapCompletions[time.UserId]++;
+                }
+            }
+
+            var sortedMapCompletions = mapCompletions.OrderBy(x => x.Value);
+            //foreach (var record in sortedMapCompletions)
+            //{
+            //    string userName = userIdsNames[record.Key];
+            //    int count = record.Value;
+            //    double percent = (double)count / mapIdsNames.Count * 100;
+            //    Console.WriteLine($"{userName} {count} ({percent.ToString("0.00")})");
+            //}
+
+            Console.WriteLine("nothing");
+        }
+
+        static int CalculateScore(int[] highscores)
+        {
+            return 
+                highscores[0] * 25 +
+                highscores[1] * 20 +
+                highscores[2] * 16 +
+                highscores[3] * 13 +
+                highscores[4] * 11 +
+                highscores[5] * 10 +
+                highscores[6] * 9 +
+                highscores[7] * 8 +
+                highscores[8] * 7 +
+                highscores[9] * 6 +
+                highscores[10] * 5 +
+                highscores[11] * 4 +
+                highscores[12] * 3 +
+                highscores[13] * 2 +
+                highscores[14] * 1;
         }
 
         /// <summary>

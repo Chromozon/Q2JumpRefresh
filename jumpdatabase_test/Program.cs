@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -64,6 +65,15 @@ namespace jumpdatabase_test
             public AddMapCommandArgs command_args;
         }
 
+        public class TimeRecord
+        {
+            public string mapname { get; set; }
+            public string username { get; set; }
+            public int time_ms { get; set; }
+            public int pmove_time_ms { get; set; }
+            public long date { get; set; }
+        }
+
         const string ServiceUrl = "http://localhost:57540/";
 
         static void Main(string[] args)
@@ -71,7 +81,16 @@ namespace jumpdatabase_test
             Console.WriteLine("Starting tests...");
             HttpClient client = new HttpClient();
 
-            //var users = LoadUsersFromOldServerFiles();
+            //const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+            //string testStr = "27/02/12";
+            //DateTime date = DateTime.ParseExact(testStr, "dd/MM/yy", CultureInfo.InvariantCulture);
+            //DateTime date2 = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+            //long unixms = ((DateTimeOffset)date2).ToUnixTimeSeconds();
+            //DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) + TimeSpan.FromSeconds(unixms);
+            //string dateStr = dateTime.ToString(DateTimeFormat);
+
+
+            var users = LoadUsersFromOldServerFiles();
             //int count = 0;
             //foreach (var user in users)
             //{
@@ -95,7 +114,7 @@ namespace jumpdatabase_test
             //    }
             //}
 
-            //var maps = LoadMaplistFromOldServerFiles();
+            var maps = LoadMaplistFromOldServerFiles();
             //int count = 0;
             //foreach (var map in maps)
             //{
@@ -117,40 +136,69 @@ namespace jumpdatabase_test
             //    }
             //}
 
-            try
+            var maptimes = LoadMaptimesFromOldServerFiles(maps, users);
+            int count = 0;
+            foreach (var maptime in maptimes)
             {
-                UserLoginCommand userLoginCommand = new UserLoginCommand();
-                userLoginCommand.command_args = new UserLoginCommand.UserLoginCommandArgs();
-                userLoginCommand.login_token = "123456";
-                userLoginCommand.command_args.username = "Slip";
-                userLoginCommand.command_args.password = "123456";
-                string jsonStr = JsonConvert.SerializeObject(userLoginCommand);
-                var data = new StringContent(jsonStr, Encoding.ASCII, "application/json");
-                var response = client.PostAsync(ServiceUrl, data).Result;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
+                try
+                {
+                    AddTimeCommand addTimeCommand = new AddTimeCommand();
+                    addTimeCommand.command_args = new AddTimeCommand.AddTimeCommandArgs();
+                    addTimeCommand.login_token = "123456";
+                    addTimeCommand.command_args.username = maptime.username;
+                    addTimeCommand.command_args.mapname = maptime.mapname;
+                    addTimeCommand.command_args.date = maptime.date;
+                    addTimeCommand.command_args.time_ms = maptime.time_ms;
+                    addTimeCommand.command_args.pmove_time_ms = maptime.pmove_time_ms;
+                    string jsonStr = JsonConvert.SerializeObject(addTimeCommand);
+                    var data = new StringContent(jsonStr, Encoding.ASCII, "application/json");
+                    var response = client.PostAsync(ServiceUrl, data).Result;
+                    count++;
+                    if (count % 100 == 0)
+                    {
+                        Console.WriteLine($"Wrote maptimes {count}/{maptimes.Count}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
             }
 
-            try
-            {
-                AddTimeCommand addTimeCommand = new AddTimeCommand();
-                addTimeCommand.command_args = new AddTimeCommand.AddTimeCommandArgs();
-                addTimeCommand.login_token = "123456";
-                addTimeCommand.command_args.username = "Slip2";
-                addTimeCommand.command_args.mapname = "ddrace";
-                addTimeCommand.command_args.date = 1610767963;
-                addTimeCommand.command_args.time_ms = 8000;
-                addTimeCommand.command_args.pmove_time_ms = -1;
-                string jsonStr = JsonConvert.SerializeObject(addTimeCommand);
-                var data = new StringContent(jsonStr, Encoding.ASCII, "application/json");
-                var response = client.PostAsync(ServiceUrl, data).Result;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
+            //try
+            //{
+            //    UserLoginCommand userLoginCommand = new UserLoginCommand();
+            //    userLoginCommand.command_args = new UserLoginCommand.UserLoginCommandArgs();
+            //    userLoginCommand.login_token = "123456";
+            //    userLoginCommand.command_args.username = "Slip";
+            //    userLoginCommand.command_args.password = "123456";
+            //    string jsonStr = JsonConvert.SerializeObject(userLoginCommand);
+            //    var data = new StringContent(jsonStr, Encoding.ASCII, "application/json");
+            //    var response = client.PostAsync(ServiceUrl, data).Result;
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine(e);
+            //}
+
+            //try
+            //{
+            //    AddTimeCommand addTimeCommand = new AddTimeCommand();
+            //    addTimeCommand.command_args = new AddTimeCommand.AddTimeCommandArgs();
+            //    addTimeCommand.login_token = "123456";
+            //    addTimeCommand.command_args.username = "Slip2";
+            //    addTimeCommand.command_args.mapname = "ddrace";
+            //    addTimeCommand.command_args.date = 1610767963;
+            //    addTimeCommand.command_args.time_ms = 8000;
+            //    addTimeCommand.command_args.pmove_time_ms = -1;
+            //    string jsonStr = JsonConvert.SerializeObject(addTimeCommand);
+            //    var data = new StringContent(jsonStr, Encoding.ASCII, "application/json");
+            //    var response = client.PostAsync(ServiceUrl, data).Result;
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine(e);
+            //}
         }
 
         public class User
@@ -194,6 +242,60 @@ namespace jumpdatabase_test
                 mapnames.Add(lines[i].Trim());
             }
             return mapnames;
+        }
+
+        private static List<TimeRecord> LoadMaptimesFromOldServerFiles(List<string> mapnames, List<User> users)
+        {
+            List<TimeRecord> maptimes = new List<TimeRecord>();
+            string timedir = "E:/Quake2Dev/jumprefresh/27910/old/";
+            int count = 0;
+            foreach (var file in Directory.EnumerateFiles(timedir))
+            {
+                if (Path.GetExtension(file) != ".t")
+                {
+                    continue;
+                }
+                string mapname = Path.GetFileNameWithoutExtension(file);
+                if (!mapnames.Contains(mapname))
+                {
+                    Console.WriteLine($"Map not in maplist {mapname}");
+                    continue;
+                }
+                foreach (string line in File.ReadLines(file))
+                {
+                    var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (tokens.Length != 4)
+                    {
+                        Console.WriteLine($"Map not in correct format {mapname}");
+                        continue;
+                    }
+                    DateTime dateTime = DateTime.ParseExact(tokens[0], "dd/MM/yy", CultureInfo.InvariantCulture);
+                    dateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                    int time_ms = (int)(float.Parse(tokens[1]) * 1000);
+                    int pmove_time_ms = -1;
+                    int userid = int.Parse(tokens[2]);
+                    string username = users.FirstOrDefault(x => x.userid == userid)?.username;
+                    if (string.IsNullOrEmpty(username))
+                    {
+                        Console.WriteLine($"Unknown user {userid}");
+                        continue;
+                    }
+
+                    TimeRecord timeRecord = new TimeRecord();
+                    timeRecord.mapname = mapname;
+                    timeRecord.date = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
+                    timeRecord.time_ms = time_ms;
+                    timeRecord.pmove_time_ms = pmove_time_ms;
+                    timeRecord.username = username;
+                    maptimes.Add(timeRecord);
+                }
+                count++;
+                if (count % 100 == 0)
+                {
+                    Console.WriteLine($"Loaded {count} maps");
+                }
+            }
+            return maptimes;
         }
 
         private static Random random = new Random();

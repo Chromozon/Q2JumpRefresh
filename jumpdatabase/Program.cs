@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -16,29 +17,15 @@ namespace jumpdatabase
     {
         class TimeRecord
         {
-            public string User { get; set; }
-            public string Server { get; set; }
+            public string UserName { get; set; }
+            public string ServerNameShort { get; set; }
             public DateTime Date { get; set; }
             public long TimeMs { get; set; }
-        }
-
-        class AddTimeCommand
-        {
-            public string Map { get; set; }
-            public string User { get; set; }
-            public string Server { get; set; }
-            public DateTime Date { get; set; }
-            public long TimeMs { get; set; }
-        }
-
-        class GetTimesCommand
-        {
-            public string Map { get; set; }
-            public int Page { get; set; }
         }
 
         const int ServicePort = 57540;
         const string DatabasePath = "./jumpdatabase.sqlite3";
+        const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
 
         static void Main(string[] args)
         {
@@ -110,12 +97,16 @@ namespace jumpdatabase
                     switch (command)
                     {
                         case "addtime":
-                            HandleCommandAddTime(dbConnection, serverId, commandArgs, out responseStatus, out responseData);
+                            HandleCommandAddTime(dbConnection, serverId, commandArgs, out responseStatus);
                             break;
                         case "gettimes":
-                            HandleCommandGetTimes(dbConnection, serverId, commandArgs, out responseStatus, out responseData);
+                            HandleCommandGetTimes(dbConnection, commandArgs, out responseStatus, out responseData);
                             break;
                         case "userlogin":
+                            HandleCommandUserLogin(dbConnection, commandArgs, out responseStatus);
+                            break;
+                        case "changepassword":
+                            HandleCommandChangePassword(dbConnection, commandArgs, out responseStatus);
                             break;
                         default:
                             break;
@@ -143,19 +134,19 @@ namespace jumpdatabase
         /// <param name="serverId"></param>
         /// <param name="args">
         /// {
+        ///     "mapname": "mapname" (string, no file extension)
         ///     "username": "username" (string)
         ///     "date": 1610596223836 (int, Unix time ms)
         ///     "time_ms": 234934 (int, ms)
-        ///     "pmove_time_ms": 223320 (int, ms)
+        ///     "pmove_time_ms": 223320 (int, ms, -1 means no time)
         /// }
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
         static private void HandleCommandAddTime(IDbConnection connection, int serverId, dynamic args,
-            out int status, out string data)
+            out int status)
         {
             status = (int)HttpStatusCode.BadRequest;
-            data = string.Empty;
 
             string mapname = args.mapname;
             string username = args.username;
@@ -167,7 +158,7 @@ namespace jumpdatabase
                 return;
             }
             DateTime dateTime = new DateTime(1970, 1, 1) + TimeSpan.FromMilliseconds(date.Value);
-            string dateStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+            string dateStr = dateTime.ToString(DateTimeFormat);
 
             var command = connection.CreateCommand();
             command.CommandText = $@"
@@ -199,7 +190,11 @@ namespace jumpdatabase
             command.Parameters.Add(paramUserName);
             command.Parameters.Add(paramDate);
             command.Prepare();
-            command.ExecuteNonQuery();
+            int rows = command.ExecuteNonQuery();
+            if (rows == 1)
+            {
+                status = (int)HttpStatusCode.OK;
+            }
         }
 
         /// <summary>
@@ -210,12 +205,12 @@ namespace jumpdatabase
         /// <param name="args">
         /// {
         ///     "mapname": "mapname" (string)
-        ///     "page": 1 (int, 1-based)
+        ///     "page": 123 (int, 1-based, any value < 1 is coerced to 1)
         /// }
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
-        static private void HandleCommandGetTimes(IDbConnection connection, int serverId, dynamic args,
+        static private void HandleCommandGetTimes(IDbConnection connection, dynamic args,
             out int status, out string data)
         {
             const int ResultsPerQuery = 15;
@@ -234,49 +229,127 @@ namespace jumpdatabase
                 page = 1;
             }
             int offset = (page.Value - 1) * ResultsPerQuery;
-            int mapId = -1;
-            if (!_maps.TryGetValue(mapName, out mapId))
-            {
-                return;
-            }
             List<TimeRecord> times = new List<TimeRecord>();
 
             var command = connection.CreateCommand();
             command.CommandText = $@"
-                SELECT Users.UserName, Servers.ServerName, MapTimes.TimeMs, MapTimes.Date FROM MapTimes
+                SELECT Users.UserName, Servers.ServerNameShort, MapTimes.TimeMs, MapTimes.Date FROM MapTimes
                 INNER JOIN Users ON MapTimes.UserId = Users.UserId
                 INNER JOIN Servers ON MapTimes.ServerId = Servers.ServerId
-                WHERE MapId = {mapId}
+                WHERE MapId =
+                    (SELECT MapId FROM Maps WHERE MapName = @mapname)
                 ORDER BY TimeMs
                 LIMIT {ResultsPerQuery} OFFSET {offset}
             ";
+            SqliteParameter paramMapName = new SqliteParameter("@mapname", SqliteType.Text);
+            paramMapName.Value = mapName;
+            command.Parameters.Add(paramMapName);
             var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                // TODO
-                // Read times into list
-                // Serialize into json
+                TimeRecord timeRecord = new TimeRecord();
+                timeRecord.UserName = (string)reader[0];
+                timeRecord.ServerNameShort = (string)reader[1];
+                timeRecord.TimeMs = (long)reader[2];
+                timeRecord.Date = DateTime.ParseExact((string)reader[3], DateTimeFormat, CultureInfo.InvariantCulture);
+                times.Add(timeRecord);
+            }
+            data = JsonConvert.SerializeObject(times);
+            status = (int)HttpStatusCode.OK;
+        }
+
+        /// <summary>
+        /// Tries to validate the usename and password.  If the user does not exist, adds a new user.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="serverId"></param>
+        /// <param name="args">
+        /// {
+        ///     "username": "username" (string)
+        ///     "password": "password" (string)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        static private void HandleCommandUserLogin(IDbConnection connection, dynamic args, out int status)
+        {
+            status = (int)HttpStatusCode.BadRequest;
+
+            string userName = args.username;
+            string password = args.password;
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
+            {
+                return;
+            }
+
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+                INSERT OR IGNORE INTO Users (UserName, Password)
+                VALUES (@username, @password)
+                ;
+                SELECT UserId FROM Users WHERE UserName = @username AND Password = @password
+            ";
+            SqliteParameter paramUserName = new SqliteParameter("@username", SqliteType.Text);
+            paramUserName.Value = userName;
+            SqliteParameter paramPassword = new SqliteParameter("@password", SqliteType.Text);
+            paramPassword.Value = password;
+            command.Parameters.Add(paramUserName);
+            command.Parameters.Add(paramPassword);
+            var reader = command.ExecuteReader();
+            bool correctPassword = false;
+            while (reader.Read())
+            {
+                correctPassword = true;
+                break;
+            }
+            if (correctPassword)
+            {
+                status = (int)HttpStatusCode.OK;
             }
         }
 
         /// <summary>
-        /// Load all map ids from the database so we don't have to do multiple database queries
-        /// for each command.
+        /// Change a user password.
         /// </summary>
         /// <param name="connection"></param>
-        static private void LoadMapsCache(IDbConnection connection)
+        /// <param name="serverId"></param>
+        /// <param name="args">
+        /// {
+        ///     "username": "username" (string)
+        ///     "password_old": "password" (string)
+        ///     "password_new": "password" (string)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        static private void HandleCommandChangePassword(IDbConnection connection, dynamic args, out int status)
         {
-            _maps.Clear();
-            var command = connection.CreateCommand();
-            command.CommandText = @"
-                SELECT MapId, MapName FROM Maps
-            ";
-            var reader = command.ExecuteReader();
-            while (reader.Read())
+            status = (int)HttpStatusCode.BadRequest;
+
+            string userName = args.username;
+            string passwordOld = args.password_old;
+            string passwordNew = args.password_new;
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(passwordOld) || string.IsNullOrEmpty(passwordNew))
             {
-                int mapId = (int)reader[0];
-                string mapName = (string)reader[1];
-                _maps.Add(mapName, mapId);
+                return;
+            }
+
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+                UPDATE Users SET Password = @password_new
+                WHERE UserName = @username AND Password = @password_old
+            ";
+            SqliteParameter paramUserName = new SqliteParameter("@username", SqliteType.Text);
+            paramUserName.Value = userName;
+            SqliteParameter paramPasswordOld = new SqliteParameter("@password_old", SqliteType.Text);
+            paramPasswordOld.Value = passwordOld;
+            SqliteParameter paramPasswordNew = new SqliteParameter("@password_new", SqliteType.Text);
+            paramPasswordNew.Value = passwordNew;
+            command.Parameters.Add(paramUserName);
+            command.Parameters.Add(paramPasswordOld);
+            command.Parameters.Add(paramPasswordNew);
+            int rows = command.ExecuteNonQuery();
+            if (rows == 1)
+            {
+                status = (int)HttpStatusCode.OK;
             }
         }
 
@@ -300,33 +373,7 @@ namespace jumpdatabase
             }
         }
 
-        /// <summary>
-        /// Load the list of users so we don't have to check this for each query.
-        /// </summary>
-        /// <param name="connection"></param>
-        static private void LoadUsersCache(IDbConnection connection)
-        {
-            _users.Clear();
-            var command = connection.CreateCommand();
-            command.CommandText = @"
-                SELECT UserId, UserName FROM Users
-            ";
-            var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                int userId = (int)reader[0];
-                string userName = (string)reader[1];
-                _users.Add(userName, userId);
-            }
-        }
-
         // Cache the server LoginToken -> ServerId
         static private Dictionary<string, int> _serverLogins = new Dictionary<string, int>();
-
-        // Cache all of the UserName -> UserId
-        static private Dictionary<string, int> _users = new Dictionary<string, int>();
-
-        // Cache of all MapName -> MapId
-        static private Dictionary<string, int> _maps = new Dictionary<string, int>();
     }
 }

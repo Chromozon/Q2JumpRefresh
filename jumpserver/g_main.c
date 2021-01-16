@@ -393,6 +393,10 @@ void G_RunFrame (void)
 	// choose a client for monsters to target this frame
 	AI_SetSightClient ();
 
+	// Jump
+	Jump::JumpRunFrame();
+	// Jump
+
 	// exit intermissions
 
 	if (level.exitintermission)

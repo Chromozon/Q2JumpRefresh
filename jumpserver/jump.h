@@ -43,6 +43,7 @@ namespace Jump
     void JumpClientConnect(edict_t* ent);
     void JumpClientDisconnect(edict_t* ent);
     void JumpInitGame();
+    void JumpRunFrame();
 
     void AdvanceSpectatingReplayFrame(edict_t* ent);
 

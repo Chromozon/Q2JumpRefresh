@@ -58,4 +58,11 @@ namespace Jump
 
     // Generates a random alphanumeric string of length len.
     std::string GenerateRandomString(int len);
+    
+    // Returns the number of elements in an array.
+    template <typename T, size_t N>
+    constexpr size_t ArraySize(const T (&arr)[N])
+    {
+        return N;
+    }
 }

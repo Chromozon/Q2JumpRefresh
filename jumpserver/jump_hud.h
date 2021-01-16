@@ -31,8 +31,13 @@ namespace Jump
     //#define   STAT_CHASE				16
     //#define   STAT_SPECTATOR			17
 
+    #define STAT_JUMP_HUD_VOTE_CAST 9   // configstring for "Votes: X of X" 
     #define STAT_JUMP_ASYNC_0 10        // (int) 0 or 1
     #define STAT_JUMP_ASYNC_1 14        // (int) 0 or 1
+    #define STAT_JUMP_HUD_VOTE_REMAINING 11 // configstring for "X remaining"
+    #define STAT_JUMP_HUD_VOTE_TYPE 12  // configstring for short vote description (eg. "Map: ddrace")
+    // IMPORTANT: DO NOT USE 13, STAT_LAYOUTS IS HARDCODED IN CLIENTS.
+    #define STAT_JUMP_HUD_VOTE_INITIATED 14 // configstring for "Vote by X"
     #define STAT_JUMP_HUD_FOOTER_1 15   // set client-specific configstring for "Team: <team>"
     #define STAT_JUMP_HUD_FOOTER_2 16   // set client-specific configstring for "Race: n/NOW" or "Replay: n/NOW"
     #define STAT_JUMP_HUD_FOOTER_3 17   // set client-specific configstring for "Chkpts: n/n"
@@ -58,6 +63,10 @@ namespace Jump
     #define CS_JUMP_KEY_HUD_FOOTER_1 1001
     #define CS_JUMP_KEY_HUD_FOOTER_2 1002
     #define CS_JUMP_KEY_HUD_FOOTER_3 1003
+    #define CS_JUMP_KEY_HUD_VOTE_INITIATED 1004
+    #define CS_JUMP_KEY_HUD_VOTE_TYPE 1005
+    #define CS_JUMP_KEY_HUD_VOTE_CAST 1006
+    #define CS_JUMP_KEY_HUD_VOTE_REMAINING 1007
 
     // Config string strings
     #define CS_JUMP_VAL_EMPTY ""

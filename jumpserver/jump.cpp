@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "jump_utils.h"
 #include "jump_global.h"
+#include "jump_voting.h"
 
 namespace Jump
 {
@@ -481,6 +482,8 @@ namespace Jump
     {
         delete ent->client->jumpdata;
         ent->client->jumpdata = NULL;
+
+        VoteSystem::RemoveParticipant(ent);
     }
 
     void JumpInitGame()
@@ -491,6 +494,12 @@ namespace Jump
         LoadLastSeenTimes();
 
         jump_server.global_database_thread = std::thread(ThreadMainGlobal);
+        VoteSystem::Init();
+    }
+
+    void JumpRunFrame()
+    {
+        VoteSystem::OnFrame();
     }
 
     void AdvanceSpectatingReplayFrame(edict_t* ent)

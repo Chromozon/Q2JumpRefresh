@@ -2,6 +2,7 @@
 #include "g_local.h"
 #include "jump_hud.h"
 #include "jump_utils.h"
+#include "jump_voting.h"
 
 namespace Jump
 {
@@ -154,6 +155,19 @@ namespace Jump
         "string2 \"Speed\" "
         "endif "
         ""
+        // Voting
+        "if " XSTRINGIFY(STAT_JUMP_HUD_VOTE_INITIATED) " "
+        "xl 2 "
+        "yb -136 "
+        "stat_string " XSTRINGIFY(STAT_JUMP_HUD_VOTE_INITIATED) " "
+        "yb -128 "
+        "stat_string " XSTRINGIFY(STAT_JUMP_HUD_VOTE_TYPE) " "
+        "yb -112 "
+        "stat_string " XSTRINGIFY(STAT_JUMP_HUD_VOTE_CAST) " "
+        "yb -104 "
+        "stat_string " XSTRINGIFY(STAT_JUMP_HUD_VOTE_REMAINING) " "
+        "endif "
+        ""
         // TODO footer strings (team, replay, race, chkpts)
         // Current replay as observer
         // TODO Replay: n and Race: n show up in the same spot depending on if you are observer or hard team
@@ -250,7 +264,20 @@ namespace Jump
         {
             timeleft = ((timelimit->value * 60) + (jump_server.time_added_mins * 60) - level.time) / 60;
         }
-        ent->client->ps.stats[STAT_JUMP_TIME_LEFT] = timeleft;            
+        ent->client->ps.stats[STAT_JUMP_TIME_LEFT] = timeleft;
+
+
+        if (VoteSystem::IsVoting() && VoteSystem::IsHudVote())
+        {
+            ent->client->ps.stats[STAT_JUMP_HUD_VOTE_INITIATED] = CS_JUMP_KEY_HUD_VOTE_INITIATED;
+            ent->client->ps.stats[STAT_JUMP_HUD_VOTE_TYPE] = CS_JUMP_KEY_HUD_VOTE_TYPE;
+            ent->client->ps.stats[STAT_JUMP_HUD_VOTE_CAST] = CS_JUMP_KEY_HUD_VOTE_CAST;
+            ent->client->ps.stats[STAT_JUMP_HUD_VOTE_REMAINING] = CS_JUMP_KEY_HUD_VOTE_REMAINING;
+        }
+        else
+        {
+            ent->client->ps.stats[STAT_JUMP_HUD_VOTE_INITIATED] = 0;
+        }
 
         UpdateTimer(ent);
 

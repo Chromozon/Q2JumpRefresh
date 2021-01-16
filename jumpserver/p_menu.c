@@ -161,15 +161,17 @@ void PMenu_Update(edict_t *ent)
 		return;
 	}
 
-	if (level.time - ent->client->menutime >= 1.0) {
+	if (level.time - ent->client->menutime >= 0.0f && ent->client->menudirty) {
 		// been a second or more since last update, update now
 		PMenu_Do_Update(ent);
 		gi.unicast (ent, true);
-		ent->client->menutime = level.time;
 		ent->client->menudirty = false;
+	} else {
+		if (ent->client->menutime <= level.time)
+			ent->client->menutime = level.time + 0.2;
+
+		ent->client->menudirty = true;
 	}
-	ent->client->menutime = level.time + 0.2;
-	ent->client->menudirty = true;
 }
 
 void PMenu_Next(edict_t *ent)

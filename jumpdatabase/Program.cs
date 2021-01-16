@@ -34,6 +34,7 @@ namespace jumpdatabase
             dbConnection.Open();
             Console.WriteLine($"Opened connection to database \"{DatabasePath}\"");
             Tables.CreateAllTables(dbConnection);
+            LoadServerLoginsCache(dbConnection);
 
             // Start listening for requests from the various servers
             HttpListener httpListener = new HttpListener();
@@ -51,7 +52,7 @@ namespace jumpdatabase
                     var response = context.Response;
 
                     // Parse the request
-                    if (request.ContentType != "application/json")
+                    if (!request.ContentType.Contains("application/json"))
                     {
                         response.StatusCode = (int)HttpStatusCode.BadRequest;
                         response.Close();
@@ -69,7 +70,7 @@ namespace jumpdatabase
                         response.Close();
                         continue;
                     }
-                    int serverId = -1;
+                    long serverId = -1;
                     if (!_serverLogins.TryGetValue(loginToken, out serverId))
                     {
                         response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -97,6 +98,7 @@ namespace jumpdatabase
                     switch (command)
                     {
                         case "addtime":
+                            // TODO add replay to file system
                             HandleCommandAddTime(dbConnection, serverId, commandArgs, out responseStatus);
                             break;
                         case "gettimes":
@@ -107,6 +109,9 @@ namespace jumpdatabase
                             break;
                         case "changepassword":
                             HandleCommandChangePassword(dbConnection, commandArgs, out responseStatus);
+                            break;
+                        case "adduserprivate":
+                            HandleCommandAddUserPrivate(dbConnection, commandArgs, out responseStatus);
                             break;
                         default:
                             break;
@@ -136,14 +141,14 @@ namespace jumpdatabase
         /// {
         ///     "mapname": "mapname" (string, no file extension)
         ///     "username": "username" (string)
-        ///     "date": 1610596223836 (int, Unix time ms)
+        ///     "date": 1610596223836 (int, Unix time s)
         ///     "time_ms": 234934 (int, ms)
         ///     "pmove_time_ms": 223320 (int, ms, -1 means no time)
         /// }
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
-        static private void HandleCommandAddTime(IDbConnection connection, int serverId, dynamic args,
+        static private void HandleCommandAddTime(IDbConnection connection, long serverId, dynamic args,
             out int status)
         {
             status = (int)HttpStatusCode.BadRequest;
@@ -157,7 +162,7 @@ namespace jumpdatabase
             {
                 return;
             }
-            DateTime dateTime = new DateTime(1970, 1, 1) + TimeSpan.FromMilliseconds(date.Value);
+            DateTime dateTime = new DateTime(1970, 1, 1) + TimeSpan.FromSeconds(date.Value);
             string dateStr = dateTime.ToString(DateTimeFormat);
 
             var command = connection.CreateCommand();
@@ -165,7 +170,7 @@ namespace jumpdatabase
                 INSERT OR IGNORE INTO MapTimes (MapId, UserId, ServerId, TimeMs, PMoveTimeMs, Date)
                 VALUES (
                     (SELECT MapId FROM Maps WHERE MapName = @mapname),
-                    (SELECT UsesrId FROM Users WHERE UserName = @username),
+                    (SELECT UserId FROM Users WHERE UserName = @username),
                     {serverId},
                     {timeMs.Value},
                     {pmoveTimeMs.Value},
@@ -354,6 +359,48 @@ namespace jumpdatabase
         }
 
         /// <summary>
+        /// Add an existing user from the old jump server files.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="args">
+        /// {
+        ///     "userid": 123 (int)
+        ///     "username": "username" (string)
+        ///     "password": "password" (string)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        static private void HandleCommandAddUserPrivate(IDbConnection connection, dynamic args, out int status)
+        {
+            status = (int)HttpStatusCode.BadRequest;
+
+            int? userId = args.userid;
+            string userName = args.username;
+            string password = args.password;
+            if (userId == null || string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
+            {
+                return;
+            }
+
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+                INSERT INTO Users (UserId, UserName, Password)
+                VALUES ({userId.Value}, @username, @password)
+            ";
+            SqliteParameter paramUserName = new SqliteParameter("@username", SqliteType.Text);
+            paramUserName.Value = userName;
+            SqliteParameter paramPassword = new SqliteParameter("@password", SqliteType.Text);
+            paramPassword.Value = password;
+            command.Parameters.Add(paramUserName);
+            command.Parameters.Add(paramPassword);
+            int rows = command.ExecuteNonQuery();
+            if (rows == 1)
+            {
+                status = (int)HttpStatusCode.OK;
+            }
+        }
+
+        /// <summary>
         /// Load the server login tokens so we don't have to check this for each query.
         /// </summary>
         /// <param name="connection"></param>
@@ -367,13 +414,13 @@ namespace jumpdatabase
             var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                int serverId = (int)reader[0];
+                long serverId = (long)reader[0];
                 string loginToken = (string)reader[1];
                 _serverLogins.Add(loginToken, serverId);
             }
         }
 
         // Cache the server LoginToken -> ServerId
-        static private Dictionary<string, int> _serverLogins = new Dictionary<string, int>();
+        static private Dictionary<string, long> _serverLogins = new Dictionary<string, long>();
     }
 }

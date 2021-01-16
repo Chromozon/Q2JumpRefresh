@@ -57,7 +57,7 @@ namespace jumpdatabase
                     ServerId INTEGER NOT NULL,
 	                ServerName TEXT NOT NULL,
                     ServerNameShort TEXT NOT NULL,
-                    LoginToken TEXT NOT NULL,
+                    LoginToken TEXT NOT NULL UNIQUE,
                     DateAdded TEXT NOT NULL,
 	                PRIMARY KEY (ServerId AUTOINCREMENT)
                 )

@@ -26,6 +26,54 @@ namespace jumpdatabase
             public string Date { get; set; }
         }
 
+        private class PlayerTimesJsonObj
+        {
+            public int page { get; set; }
+            public int max_pages { get; set; }
+            public int count_per_page { get; set; }
+            public int user_count { get; set; }
+            public class PlayerTimesUserRecord
+            {
+                public int rank { get; set; } // overall rank, 1-based
+                public string username { get; set; }
+                public string highscore_counts { get; set; } // comma separated string of top15 counts
+                public int total_score { get; set; }
+            }
+            public List<PlayerTimesUserRecord> user_records { get; set; }
+        }
+
+        private class PlayerScoresJsonObj
+        {
+            public int page { get; set; }
+            public int max_pages { get; set; }
+            public int count_per_page { get; set; }
+            public int user_count { get; set; }
+            public class PlayerScoresUserRecord
+            {
+                public int rank { get; set; } // overall rank, 1-based
+                public string username { get; set; }
+                public string highscore_counts { get; set; } // comma separated string of top15 counts
+                public double percent_score { get; set; }
+            }
+            public List<PlayerScoresUserRecord> user_records { get; set; }
+        }
+
+        private class PlayerMapsJsonObj
+        {
+            public int page { get; set; }
+            public int max_pages { get; set; }
+            public int count_per_page { get; set; }
+            public int user_count { get; set; }
+            public class PlayerMapsUserRecord
+            {
+                public int rank { get; set; } // overall rank, 1-based
+                public string username { get; set; }
+                public int completions { get; set; }
+                public double percent_complete { get; set; }
+            }
+            public List<PlayerMapsUserRecord> user_records { get; set; }
+        }
+
         public static void LoadAllStatistics(IDbConnection connection)
         {
             // Get all maps
@@ -160,6 +208,151 @@ namespace jumpdatabase
             _cachePercentScores = sortedPlayerScores;
         }
 
+        /// <summary>
+        /// Get the playertimes json string.
+        /// </summary>
+        /// <param name="page">1-based</param>
+        /// <param name="limit">How many results per page</param>
+        /// <returns></returns>
+        public static string GetPlayerTimesJson(int page, int limit = 20)
+        {
+            if (page < 1)
+            {
+                page = 1;
+            }
+            PlayerTimesJsonObj playerTimes = new PlayerTimesJsonObj();
+            playerTimes.page = page;
+            playerTimes.max_pages = (int)Math.Ceiling(_cacheTotalScores.Count / (double)limit);
+            playerTimes.count_per_page = limit;
+            playerTimes.user_count = _cacheTotalScores.Count;
+            playerTimes.user_records = new List<PlayerTimesJsonObj.PlayerTimesUserRecord>();
+
+            int startIndex = (page - 1) * limit;
+            int endIndex = startIndex + limit;
+            for (int i = startIndex; i < endIndex; ++i)
+            {
+                if (i >= _cacheTotalScores.Count)
+                {
+                    break;
+                }
+                long userId = _cacheTotalScores[i].Key;
+                int totalScore = _cacheTotalScores[i].Value;
+                string userName = _cacheUserIdsNames[userId];
+                string highscoreCounts = GetHighscoreCountString(_cacheUserHighscores[userId]);
+
+                PlayerTimesJsonObj.PlayerTimesUserRecord record = new PlayerTimesJsonObj.PlayerTimesUserRecord();
+                record.rank = i + 1;
+                record.username = userName;
+                record.highscore_counts = highscoreCounts;
+                record.total_score = totalScore;
+                playerTimes.user_records.Add(record);
+            }
+
+            string json = JsonConvert.SerializeObject(playerTimes);
+            return json;
+        }
+
+        /// <summary>
+        /// Get the playerscores json string.
+        /// </summary>
+        /// <param name="page">1-based</param>
+        /// <param name="limit">How many results per page</param>
+        /// <returns></returns>
+        public static string GetPlayerScoresJson(int page, int limit = 20)
+        {
+            if (page < 1)
+            {
+                page = 1;
+            }
+            PlayerScoresJsonObj playerScores = new PlayerScoresJsonObj();
+            playerScores.page = page;
+            playerScores.max_pages = (int)Math.Ceiling(_cachePercentScores.Count / (double)limit);
+            playerScores.count_per_page = limit;
+            playerScores.user_count = _cachePercentScores.Count;
+            playerScores.user_records = new List<PlayerScoresJsonObj.PlayerScoresUserRecord>();
+
+            int startIndex = (page - 1) * limit;
+            int endIndex = startIndex + limit;
+            for (int i = startIndex; i < endIndex; ++i)
+            {
+                if (i >= _cachePercentScores.Count)
+                {
+                    break;
+                }
+                long userId = _cachePercentScores[i].Key;
+                double percentScore = _cachePercentScores[i].Value;
+                string userName = _cacheUserIdsNames[userId];
+                string highscoreCounts = GetHighscoreCountString(_cacheUserHighscores[userId]);
+
+                PlayerScoresJsonObj.PlayerScoresUserRecord record = new PlayerScoresJsonObj.PlayerScoresUserRecord();
+                record.rank = i + 1;
+                record.username = userName;
+                record.highscore_counts = highscoreCounts;
+                record.percent_score = percentScore;
+                playerScores.user_records.Add(record);
+            }
+
+            string json = JsonConvert.SerializeObject(playerScores);
+            return json;
+        }
+
+        /// <summary>
+        /// Get the playermaps json string.
+        /// </summary>
+        /// <param name="page">1-based</param>
+        /// <param name="limit">How many results per page</param>
+        /// <returns></returns>
+        public static string GetPlayerMapsJson(int page, int limit = 20)
+        {
+            if (page < 1)
+            {
+                page = 1;
+            }
+            PlayerMapsJsonObj playerMaps = new PlayerMapsJsonObj();
+            playerMaps.page = page;
+            playerMaps.max_pages = (int)Math.Ceiling(_cacheCompletions.Count / (double)limit);
+            playerMaps.count_per_page = limit;
+            playerMaps.user_count = _cacheCompletions.Count;
+            playerMaps.user_records = new List<PlayerMapsJsonObj.PlayerMapsUserRecord>();
+
+            int startIndex = (page - 1) * limit;
+            int endIndex = startIndex + limit;
+            for (int i = startIndex; i < endIndex; ++i)
+            {
+                if (i >= _cacheCompletions.Count)
+                {
+                    break;
+                }
+                long userId = _cacheCompletions[i].Key;
+                string userName = _cacheUserIdsNames[userId];
+                int completions = _cacheCompletions[i].Value.Count;
+                double percentComplete = (double)completions / _cacheMapIdsNames.Count * 100;
+
+                PlayerMapsJsonObj.PlayerMapsUserRecord record = new PlayerMapsJsonObj.PlayerMapsUserRecord();
+                record.rank = i + 1;
+                record.username = userName;
+                record.completions = completions;
+                record.percent_complete = percentComplete;
+                playerMaps.user_records.Add(record);
+            }
+
+            string json = JsonConvert.SerializeObject(playerMaps);
+            return json;
+        }
+
+        /// <summary>
+        /// Get the maptimes json string.
+        /// </summary>
+        /// <param name="mapname"></param>
+        /// <param name="page">1-based</param>
+        /// <param name="limit">How many results per page</param>
+        /// <returns></returns>
+        public static string GetMapTimesJson(string mapname, int page, int limit = 15)
+        {
+            // TODO
+            return string.Empty;
+        }
+
         private static void DebugPrintPlayerTimes()
         {
             //foreach (var sortedScore in sortedScores)
@@ -224,6 +417,18 @@ namespace jumpdatabase
                 highscores[12] * 3 +
                 highscores[13] * 2 +
                 highscores[14] * 1;
+        }
+
+        /// <summary>
+        /// Returns a comma separated string of all highscore counts.
+        /// Ex: 12,10,8,4,5,0,0,0,2,0,0,0,1,0,0
+        /// </summary>
+        /// <param name="highscores"></param>
+        /// <returns></returns>
+        private static string GetHighscoreCountString(int[] highscores)
+        {
+            System.Diagnostics.Debug.Assert(highscores.Length == 15, "Highscores must be top15");
+            return string.Join(',', highscores);
         }
 
         /// <summary>

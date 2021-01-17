@@ -32,6 +32,7 @@ namespace jumpdatabase
             public int max_pages { get; set; }
             public int count_per_page { get; set; }
             public int user_count { get; set; }
+            public long last_updated { get; set; }
             public class PlayerTimesUserRecord
             {
                 public int rank { get; set; } // overall rank, 1-based
@@ -48,6 +49,7 @@ namespace jumpdatabase
             public int max_pages { get; set; }
             public int count_per_page { get; set; }
             public int user_count { get; set; }
+            public long last_updated { get; set; }
             public class PlayerScoresUserRecord
             {
                 public int rank { get; set; } // overall rank, 1-based
@@ -64,6 +66,7 @@ namespace jumpdatabase
             public int max_pages { get; set; }
             public int count_per_page { get; set; }
             public int user_count { get; set; }
+            public long last_updated { get; set; }
             public class PlayerMapsUserRecord
             {
                 public int rank { get; set; } // overall rank, 1-based
@@ -74,15 +77,49 @@ namespace jumpdatabase
             public List<PlayerMapsUserRecord> user_records { get; set; }
         }
 
+        private class MapTimesJsonObj
+        {
+            public string mapname { get; set; }
+            public int page { get; set; }
+            public int max_pages { get; set; }
+            public int count_per_page { get; set; }
+            public int user_count { get; set; }
+            public long last_updated { get; set; }
+            public class MapTimesUserRecord
+            {
+                public int rank { get; set; } // overall rank, 1-based
+                public string username { get; set; }
+                public string server_name_short { get; set; }
+                public long date { get; set; }
+                public long time_ms { get; set; }
+                public long pmove_time_ms { get; set; }
+            }
+            public List<MapTimesUserRecord> user_records { get; set; }
+        }
+
         public static void LoadAllStatistics(IDbConnection connection)
         {
+            // Get all servers
+            Dictionary<long, string> serverIdsShortNames = new Dictionary<long, string>(); // <serverId, shortName>
+            var command = connection.CreateCommand();
+            command.CommandText = $@"
+                SELECT ServerId, ServerNameShort FROM Servers
+            ";
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                long serverId = (long)reader[0];
+                string serverShortName = (string)reader[1];
+                serverIdsShortNames.Add(serverId, serverShortName);
+            }
+
             // Get all maps
             Dictionary<long, string> mapIdsNames = new Dictionary<long, string>(); // <mapId, mapName>
-            var command = connection.CreateCommand();
+            command = connection.CreateCommand();
             command.CommandText = $@"
                 SELECT MapId, MapName FROM Maps
             ";
-            var reader = command.ExecuteReader();
+            reader = command.ExecuteReader();
             while (reader.Read())
             {
                 long mapId = (long)reader[0];
@@ -198,6 +235,7 @@ namespace jumpdatabase
             var sortedPlayerScores = playerScores.OrderByDescending(x => x.Value).ToList();
 
             // Update the cached statistics
+            _cacheServerIdsShortNames = serverIdsShortNames;
             _cacheUserIdsNames = userIdsNames;
             _cacheMapIdsNames = mapIdsNames;
             _cacheMaptimes = maptimes;
@@ -206,6 +244,7 @@ namespace jumpdatabase
             _cacheUserMapCompletions = userMapCompletions;
             _cacheCompletions = sortedMapCompletions;
             _cachePercentScores = sortedPlayerScores;
+            _cacheLastUpdated = DateTime.UtcNow;
         }
 
         /// <summary>
@@ -225,6 +264,7 @@ namespace jumpdatabase
             playerTimes.max_pages = (int)Math.Ceiling(_cacheTotalScores.Count / (double)limit);
             playerTimes.count_per_page = limit;
             playerTimes.user_count = _cacheTotalScores.Count;
+            playerTimes.last_updated = GetUnixTimestamp(_cacheLastUpdated);
             playerTimes.user_records = new List<PlayerTimesJsonObj.PlayerTimesUserRecord>();
 
             int startIndex = (page - 1) * limit;
@@ -269,6 +309,7 @@ namespace jumpdatabase
             playerScores.max_pages = (int)Math.Ceiling(_cachePercentScores.Count / (double)limit);
             playerScores.count_per_page = limit;
             playerScores.user_count = _cachePercentScores.Count;
+            playerScores.last_updated = GetUnixTimestamp(_cacheLastUpdated);
             playerScores.user_records = new List<PlayerScoresJsonObj.PlayerScoresUserRecord>();
 
             int startIndex = (page - 1) * limit;
@@ -313,6 +354,7 @@ namespace jumpdatabase
             playerMaps.max_pages = (int)Math.Ceiling(_cacheCompletions.Count / (double)limit);
             playerMaps.count_per_page = limit;
             playerMaps.user_count = _cacheCompletions.Count;
+            playerMaps.last_updated = GetUnixTimestamp(_cacheLastUpdated);
             playerMaps.user_records = new List<PlayerMapsJsonObj.PlayerMapsUserRecord>();
 
             int startIndex = (page - 1) * limit;
@@ -346,11 +388,59 @@ namespace jumpdatabase
         /// <param name="mapname"></param>
         /// <param name="page">1-based</param>
         /// <param name="limit">How many results per page</param>
-        /// <returns></returns>
+        /// <returns>If mapname is not found, returns json with empty mapname</returns>
         public static string GetMapTimesJson(string mapname, int page, int limit = 15)
         {
-            // TODO
-            return string.Empty;
+            if (page < 1)
+            {
+                page = 1;
+            }
+            MapTimesJsonObj mapTimes = new MapTimesJsonObj();
+
+            // Default values in case the desired mapname does not exist
+            mapTimes.mapname = string.Empty;
+            mapTimes.user_records = new List<MapTimesJsonObj.MapTimesUserRecord>();
+
+            var foundKey = _cacheMapIdsNames.Where(x => x.Value == mapname).FirstOrDefault();
+            if (foundKey.Value == mapname)
+            {
+                long mapId = foundKey.Key;
+                mapTimes.mapname = mapname;
+                mapTimes.page = page;
+                mapTimes.max_pages = (int)Math.Ceiling(_cacheMaptimes[mapId].Count / (double)limit);
+                mapTimes.count_per_page = limit;
+                mapTimes.user_count = _cacheMaptimes[mapId].Count;
+                mapTimes.last_updated = GetUnixTimestamp(_cacheLastUpdated);
+
+                int startIndex = (page - 1) * limit;
+                int endIndex = startIndex + limit;
+                for (int i = startIndex; i < endIndex; ++i)
+                {
+                    if (i >= _cacheMaptimes[mapId].Count)
+                    {
+                        break;
+                    }
+                    long userId = _cacheMaptimes[mapId][i].UserId;
+                    string userName = _cacheUserIdsNames[userId];
+                    string serverNameShort = _cacheServerIdsShortNames[_cacheMaptimes[mapId][i].ServerId];
+                    DateTime dateTime = DateTime.ParseExact(
+                        _cacheMaptimes[mapId][i].Date, DateTimeFormat, CultureInfo.InvariantCulture);
+                    long date = GetUnixTimestamp(dateTime);
+                    long timeMs = _cacheMaptimes[mapId][i].TimeMs;
+                    long pmoveTimeMs = _cacheMaptimes[mapId][i].PmoveTimeMs;
+
+                    MapTimesJsonObj.MapTimesUserRecord record = new MapTimesJsonObj.MapTimesUserRecord();
+                    record.rank = i + 1;
+                    record.server_name_short = serverNameShort;
+                    record.username = userName;
+                    record.date = date;
+                    record.time_ms = timeMs;
+                    record.pmove_time_ms = pmoveTimeMs;
+                    mapTimes.user_records.Add(record);
+                }
+            }
+            string json = JsonConvert.SerializeObject(mapTimes);
+            return json;
         }
 
         private static void DebugPrintPlayerTimes()
@@ -432,6 +522,25 @@ namespace jumpdatabase
         }
 
         /// <summary>
+        /// Given a DateTime, return the Unix timestamp (seconds since 1970)
+        /// </summary>
+        /// <param name="dateTime"></param>
+        /// <returns></returns>
+        private static long GetUnixTimestamp(DateTime dateTime)
+        {
+            DateTime utcTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+            return ((DateTimeOffset)utcTime).ToUnixTimeSeconds();
+        }
+
+        private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
+
+        /// <summary>
+        /// Table of [serverId, server short name]
+        /// </summary>
+        private static Dictionary<long, string> _cacheServerIdsShortNames =
+            new Dictionary<long, string>();
+
+        /// <summary>
         /// Table of [userId, userName]
         /// </summary>
         private static Dictionary<long, string> _cacheUserIdsNames =
@@ -478,5 +587,10 @@ namespace jumpdatabase
         /// </summary>
         private static List<KeyValuePair<long, double>> _cachePercentScores =
             new List<KeyValuePair<long, double>>();
+
+        /// <summary>
+        /// UTC time when the cache was last updated
+        /// </summary>
+        private static DateTime _cacheLastUpdated = DateTime.MinValue;
     }
 }

@@ -16,24 +16,6 @@ namespace jumpdatabase
 {
     class Program
     {
-        class TimeRecord
-        {
-            public string UserName { get; set; }
-            public string ServerNameShort { get; set; }
-            public DateTime Date { get; set; }
-            public long TimeMs { get; set; }
-        }
-
-        class MapTimeModel
-        {
-            public long MapId { get; set; }
-            public long UserId { get; set; }
-            public long ServerId { get; set; }
-            public long TimeMs { get; set; }
-            public long PmoveTimeMs { get; set; }
-            public string Date { get; set; }
-        }
-
         const int ServicePort = 57540;
         const string DatabasePath = "./jumpdatabase.sqlite3";
         const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
@@ -58,8 +40,16 @@ namespace jumpdatabase
             {
                 try
                 {
+                    var requestTask = httpListener.GetContextAsync();
+                    bool success = requestTask.Wait(60 * 1000);
+                    if (!success)
+                    {
+                        // Do things on timer here
+                        continue;
+                    }
+                    var context = requestTask.Result;
+
                     // Receive a request from a server
-                    var context = httpListener.GetContext();
                     var request = context.Request;
                     var response = context.Response;
 
@@ -113,9 +103,6 @@ namespace jumpdatabase
                             // TODO add replay to file system
                             HandleCommandAddTime(dbConnection, serverId, commandArgs, out responseStatus);
                             break;
-                        case "gettimes":
-                            HandleCommandGetTimes(dbConnection, commandArgs, out responseStatus, out responseData);
-                            break;
                         case "userlogin":
                             HandleCommandUserLogin(dbConnection, commandArgs, out responseStatus);
                             break;
@@ -127,6 +114,18 @@ namespace jumpdatabase
                             break;
                         case "addmap":
                             HandleCommandAddMap(dbConnection, commandArgs, out responseStatus);
+                            break;
+                        case "playertimes":
+                            HandleCommandPlayertimes(dbConnection, commandArgs, out responseStatus, out responseData);
+                            break;
+                        case "playerscores":
+                            HandleCommandPlayerscores(dbConnection, commandArgs, out responseStatus, out responseData);
+                            break;
+                        case "playermaps":
+                            HandleCommandPlayermaps(dbConnection, commandArgs, out responseStatus, out responseData);
+                            break;
+                        case "maptimes":
+                            HandleCommandMaptimes(dbConnection, commandArgs, out responseStatus, out responseData);
                             break;
                         default:
                             break;
@@ -144,6 +143,12 @@ namespace jumpdatabase
                     Console.WriteLine($"Exception: {e}");
                 }
             }
+        }
+
+        private static void ListenerCallback(IAsyncResult result)
+        {
+            HttpListener httpListener = (HttpListener)result.AsyncState;
+            httpListener?.EndGetContext(result);
         }
 
         /// <summary>
@@ -214,66 +219,6 @@ namespace jumpdatabase
             {
                 status = (int)HttpStatusCode.OK;
             }
-        }
-
-        /// <summary>
-        /// Retrieves a set of times for the given map.
-        /// </summary>
-        /// <param name="connection"></param>
-        /// <param name="args">
-        /// {
-        ///     "mapname": "mapname" (string)
-        ///     "page": 123 (int, 1-based, any value < 1 is coerced to 1)
-        /// }
-        /// </param>
-        /// <param name="status"></param>
-        /// <param name="data"></param>
-        static private void HandleCommandGetTimes(IDbConnection connection, dynamic args,
-            out int status, out string data)
-        {
-            const int ResultsPerQuery = 15;
-
-            status = (int)HttpStatusCode.BadRequest;
-            data = string.Empty;
-
-            string mapName = args.mapname;
-            int? page = args.page;
-            if (mapName == null || page == null)
-            {
-                return;
-            }
-            if (page.Value < 1)
-            {
-                page = 1;
-            }
-            int offset = (page.Value - 1) * ResultsPerQuery;
-            List<TimeRecord> times = new List<TimeRecord>();
-
-            var command = connection.CreateCommand();
-            command.CommandText = $@"
-                SELECT Users.UserName, Servers.ServerNameShort, MapTimes.TimeMs, MapTimes.Date FROM MapTimes
-                INNER JOIN Users ON MapTimes.UserId = Users.UserId
-                INNER JOIN Servers ON MapTimes.ServerId = Servers.ServerId
-                WHERE MapId =
-                    (SELECT MapId FROM Maps WHERE MapName = @mapname)
-                ORDER BY TimeMs
-                LIMIT {ResultsPerQuery} OFFSET {offset}
-            ";
-            SqliteParameter paramMapName = new SqliteParameter("@mapname", SqliteType.Text);
-            paramMapName.Value = mapName;
-            command.Parameters.Add(paramMapName);
-            var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                TimeRecord timeRecord = new TimeRecord();
-                timeRecord.UserName = (string)reader[0];
-                timeRecord.ServerNameShort = (string)reader[1];
-                timeRecord.TimeMs = (long)reader[2];
-                timeRecord.Date = DateTime.ParseExact((string)reader[3], DateTimeFormat, CultureInfo.InvariantCulture);
-                times.Add(timeRecord);
-            }
-            data = JsonConvert.SerializeObject(times);
-            status = (int)HttpStatusCode.OK;
         }
 
         /// <summary>
@@ -448,6 +393,120 @@ namespace jumpdatabase
             {
                 status = (int)HttpStatusCode.OK;
             }
+        }
+
+        /// <summary>
+        /// Get maptimes for a particular map.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="args">
+        /// {
+        ///     "mapname": "mapname" (string, no file extension)
+        ///     "page": 123 (int, 1-based)
+        ///     "count_per_page": 15 (int)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        /// <param name="data"></param>
+        static private void HandleCommandMaptimes(IDbConnection connection, dynamic args, out int status,
+            out string data)
+        {
+            status = (int)HttpStatusCode.BadRequest;
+            data = string.Empty;
+
+            string mapname = args.mapname;
+            int? page = args.page;
+            int? limit = args.count_per_page;
+            if (string.IsNullOrEmpty(mapname) || page == null || limit == null)
+            {
+                return;
+            }
+            data = Statistics.GetMapTimesJson(mapname, page.Value, limit.Value);
+            status = (int)HttpStatusCode.OK;
+        }
+
+        /// <summary>
+        /// Get playertimes.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="args">
+        /// {
+        ///     "page": 123 (int, 1-based)
+        ///     "count_per_page": 20 (int)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        /// <param name="data"></param>
+        static private void HandleCommandPlayertimes(IDbConnection connection, dynamic args, out int status,
+            out string data)
+        {
+            status = (int)HttpStatusCode.BadRequest;
+            data = string.Empty;
+
+            int? page = args.page;
+            int? limit = args.count_per_page;
+            if (page == null || limit == null)
+            {
+                return;
+            }
+            data = Statistics.GetPlayerTimesJson(page.Value, limit.Value);
+            status = (int)HttpStatusCode.OK;
+        }
+
+        /// <summary>
+        /// Get playerscores.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="args">
+        /// {
+        ///     "page": 123 (int, 1-based)
+        ///     "count_per_page": 20 (int)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        /// <param name="data"></param>
+        static private void HandleCommandPlayerscores(IDbConnection connection, dynamic args, out int status,
+            out string data)
+        {
+            status = (int)HttpStatusCode.BadRequest;
+            data = string.Empty;
+
+            int? page = args.page;
+            int? limit = args.count_per_page;
+            if (page == null || limit == null)
+            {
+                return;
+            }
+            data = Statistics.GetPlayerScoresJson(page.Value, limit.Value);
+            status = (int)HttpStatusCode.OK;
+        }
+
+        /// <summary>
+        /// Get playermaps.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="args">
+        /// {
+        ///     "page": 123 (int, 1-based)
+        ///     "count_per_page": 20 (int)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        /// <param name="data"></param>
+        static private void HandleCommandPlayermaps(IDbConnection connection, dynamic args, out int status,
+            out string data)
+        {
+            status = (int)HttpStatusCode.BadRequest;
+            data = string.Empty;
+
+            int? page = args.page;
+            int? limit = args.count_per_page;
+            if (page == null || limit == null)
+            {
+                return;
+            }
+            data = Statistics.GetPlayerMapsJson(page.Value, limit.Value);
+            status = (int)HttpStatusCode.OK;
         }
 
         /// <summary>

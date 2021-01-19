@@ -13,7 +13,8 @@ A reimplementation of Quake 2 jump mod.  The code currently compiles with C++17.
   - Log file `server.txt` stores errors, warnings, info, and debug messages.
   - Log file `activity.txt` stores general server activity (players joining and leaving, players talking, etc.).
   - Log file `completions.txt` stores a record of every time a client completes a map.
-- Map completion times and demos are stored in `C:/Quake2/jump/<port>/scores`.
+  - *TODO* I want to change storing completion times locally back to using userid
+  - Map completion times and demos are stored in `C:/Quake2/jump/<port>/scores`.
   - There is a subfolder for each map, ex: `/scores/slipmap33/`, `/scores/ddrace/`, etc.
   - Inside each map subfolder are `<username>.time` files which store completion time, date, and number of completions.
   - Each map subfolder also contains a `<username>.demo` file.  This is an arbitrary length replay.
@@ -91,3 +92,13 @@ For example, set `ent->client->ps.stats[25] = gi.imageindex("somepcx")`.  In the
 An easy way to toggle the visibility of HUD layout tokens is to use the if syntax.  `if 18 stat_string 18` will only display the lookup value of `ps.stats[18]` if it is nonzero.
 
 The Q2 client source code for all HUD layout string tokens is here: `cl_scrn.c, SCR_ExecuteLayoutString()`
+
+### Architecture Thoughts
+We must keep the server running at 10 Hz.  We cannot have any command which violates this timing constraint.
+Client commands which retrieve info from the global database: queue these commands up, send them async; every server frame, poll to see if the results have returned; console print the results to the client.
+Try to keep threads to a minimum or not used at all.
+
+We should never lose any times or replays due to disruptions to the global database.  New times and their replay data should be saved locally,
+and we should queue up a command to send that data off to the global database async. Only once we receive a good reply from the global database do we remove the item from the queue.
+
+

@@ -19,6 +19,7 @@ namespace jumpdatabase
         const int ServicePort = 57540;
         const string DatabasePath = "./jumpdatabase.sqlite3";
         const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
+        const int StatisticsRefreshTimeMs = 1000 * 60 * 5; // 5 minutes
 
         static void Main(string[] args)
         {
@@ -29,6 +30,7 @@ namespace jumpdatabase
             Tables.CreateAllTables(dbConnection);
             LoadServerLoginsCache(dbConnection);
             Statistics.LoadAllStatistics(dbConnection);
+            _lastStatisticsRefresh = DateTime.UtcNow;
 
             // Start listening for requests from the various servers
             HttpListener httpListener = new HttpListener();
@@ -40,16 +42,17 @@ namespace jumpdatabase
             {
                 try
                 {
-                    var requestTask = httpListener.GetContextAsync();
-                    bool success = requestTask.Wait(60 * 1000);
-                    if (!success)
+                    // Update the statistics if the timeout has expired
+                    DateTime now = DateTime.UtcNow;
+                    TimeSpan timeSpan = _lastStatisticsRefresh.Subtract(now);
+                    if (timeSpan.TotalMilliseconds > StatisticsRefreshTimeMs)
                     {
-                        // Do things on timer here
-                        continue;
+                        Statistics.LoadAllStatistics(dbConnection);
+                        _lastStatisticsRefresh = now;
                     }
-                    var context = requestTask.Result;
 
                     // Receive a request from a server
+                    var context = httpListener.GetContext();
                     var request = context.Request;
                     var response = context.Response;
 
@@ -127,6 +130,7 @@ namespace jumpdatabase
                         case "maptimes":
                             HandleCommandMaptimes(dbConnection, commandArgs, out responseStatus, out responseData);
                             break;
+                            // TODO: get replay cmd
                         default:
                             break;
                     }
@@ -531,5 +535,8 @@ namespace jumpdatabase
 
         // Cache the server LoginToken -> ServerId
         static private Dictionary<string, long> _serverLogins = new Dictionary<string, long>();
+
+        // Last time the statistics were updated
+        static private DateTime _lastStatisticsRefresh = DateTime.MinValue;
     }
 }

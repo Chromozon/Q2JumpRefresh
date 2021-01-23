@@ -10,6 +10,25 @@ namespace jumpdatabase
     {
         // https://www.sqlitetutorial.net/sqlite-create-table/
 
+        static public void DeleteAllTables(IDbConnection connection)
+        {
+            List<string> tableNames = new List<string>()
+            {
+                "Users",
+                "Servers",
+                "Maps",
+                "MapTimes"
+            };
+            foreach (var tableName in tableNames)
+            {
+                var command = connection.CreateCommand();
+                command.CommandText = $@"
+                    DROP TABLE IF EXISTS {tableName}
+                ";
+                command.ExecuteNonQuery();
+            }
+        }
+
         static public void CreateAllTables(IDbConnection connection)
         {
             CreateTableUsers(connection);
@@ -50,6 +69,8 @@ namespace jumpdatabase
 
         static private void CreateTableServers(IDbConnection connection)
         {
+            // TODO: We could also have a server IP here to prevent fake times if someone happens
+            // to steal the logintoken.  The server IPs should be pretty stable.
             var command = connection.CreateCommand();
             command.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Servers

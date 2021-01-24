@@ -49,4 +49,7 @@ namespace Jump
 
     // Returns true if two strings are case-insensitive equal.
     bool StringCompareInsensitive(const std::string& left, const std::string& right);
+
+    // Reads the entire contents of a file into a buffer.  Returns true on success, false on failure.
+    bool ReadFileIntoBuffer(const std::string& filepath, std::vector<uint8_t>& buffer);
 }

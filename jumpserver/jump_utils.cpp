@@ -2,6 +2,7 @@
 #include "g_local.h"
 #include <filesystem>
 #include <unordered_set>
+#include <fstream>
 
 namespace Jump
 {
@@ -199,6 +200,21 @@ namespace Jump
                 return tolower(a) == tolower(b);
             }
         );
+    }
+
+    // Reads the entire contents of a file into a buffer.  Returns true on success, false on failure.
+    bool ReadFileIntoBuffer(const std::string& filepath, std::vector<uint8_t>& buffer)
+    {
+        std::ifstream file(filepath, std::ios::binary | std::ios::ate);
+        if (!file.is_open())
+        {
+            return false;
+        }
+        size_t num_bytes = static_cast<size_t>(file.tellg());
+        file.seekg(0, std::ios::beg);
+        buffer.resize(num_bytes);
+        file.read(reinterpret_cast<char*>(&buffer[0]), num_bytes);
+        return file.eof();
     }
 
     // Returns a string of the team enum value.

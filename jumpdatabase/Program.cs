@@ -20,6 +20,8 @@ namespace jumpdatabase
         const string DatabasePath = "./jumpdatabase.sqlite3";
         const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
         const int StatisticsRefreshTimeMs = 1000 * 60 * 5; // 5 minutes
+        const string ReplayDirectory = "./replays/";
+        const string ReplayExtension = ".demo";
 
         static void Main(string[] args)
         {
@@ -31,6 +33,7 @@ namespace jumpdatabase
             LoadServerLoginsCache(dbConnection);
             Statistics.LoadAllStatistics(dbConnection);
             _lastStatisticsRefresh = DateTime.UtcNow;
+            Directory.CreateDirectory(ReplayDirectory);
 
             // Start listening for requests from the various servers
             HttpListener httpListener = new HttpListener();
@@ -168,6 +171,7 @@ namespace jumpdatabase
         ///     "date": 1610596223836 (int, Unix time s)
         ///     "time_ms": 234934 (int, ms)
         ///     "pmove_time_ms": 223320 (int, ms, -1 means no time)
+        ///     "replay_data": "dGhpcyBpcyBhIHRlc3Q=" (string, base64 encoded)
         /// }
         /// </param>
         /// <param name="status"></param>
@@ -181,7 +185,9 @@ namespace jumpdatabase
             long? date = args.date;
             long? timeMs = args.time_ms;
             long? pmoveTimeMs = args.pmove_time_ms;
-            if (mapname == null || username == null || date == null || timeMs == null || pmoveTimeMs == null)
+            string replayDataB64 = args.replay_data;
+            if (string.IsNullOrEmpty(mapname) || string.IsNullOrEmpty(username) || date == null || timeMs == null ||
+                pmoveTimeMs == null || string.IsNullOrEmpty(replayDataB64))
             {
                 return;
             }
@@ -221,6 +227,11 @@ namespace jumpdatabase
             int rows = command.ExecuteNonQuery();
             if (rows == 1)
             {
+                // Save the replay
+                byte[] replayData = Convert.FromBase64String(replayDataB64);
+
+                // TODO
+
                 status = (int)HttpStatusCode.OK;
             }
         }
@@ -341,7 +352,7 @@ namespace jumpdatabase
 
             var command = connection.CreateCommand();
             command.CommandText = $@"
-                INSERT INTO Maps (MapName, DateAdded)
+                INSERT OR IGNORE INTO Maps (MapName, DateAdded)
                 VALUES (@mapname, @dateadded)
             ";
             SqliteParameter paramMapName = new SqliteParameter("@mapname", SqliteType.Text);
@@ -531,6 +542,66 @@ namespace jumpdatabase
                 string loginToken = (string)reader[1];
                 _serverLogins.Add(loginToken, serverId);
             }
+        }
+
+        /// <summary>
+        /// Saves a replay to the filesystem.
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="mapname"></param>
+        /// <param name="serverId"></param>
+        /// <param name="timeMs"></param>
+        /// <param name="pmoveTimeMs"></param>
+        /// <param name="date"></param>
+        /// <param name="data"></param>
+        /// <returns>True if replay saved successfully.</returns>
+        bool SaveReplayToFile(string username, string mapname, long serverId, int timeMs, int pmoveTimeMs,
+            long date, byte[] data)
+        {
+            long? userId = Statistics.GetUserIdFromUserName(username);
+            long? mapId = Statistics.GetMapIdFromMapName(mapname);
+            string serverShortName = Statistics.GetShortServerNameFromId(serverId);
+            if (userId == null || mapId == null || string.IsNullOrEmpty(serverShortName))
+            {
+                return false;
+            }
+            string mapDir = Path.Combine(ReplayDirectory, mapId.Value.ToString());
+            Directory.CreateDirectory(mapDir);
+            string replayFilename = userId.Value.ToString() + ReplayExtension;
+            string replayPath = Path.Combine(mapDir, replayFilename);
+            string backupPath = replayPath + "_backup";
+            if (File.Exists(replayPath))
+            {
+                File.Copy(replayPath, backupPath);
+            }
+            using (BinaryWriter outfile = new BinaryWriter(File.Open(replayPath, FileMode.Create)))
+            {
+                outfile.Write($"server\t{serverShortName}\n");
+                outfile.Write($"mapname\t{mapname}\n");
+                outfile.Write($"username\t{username}\n");
+                outfile.Write($"date\t{GetDateStrFromUnixTimestamp(date)}\n");
+                outfile.Write($"time_ms\t{timeMs}\n");
+                outfile.Write($"pmove_time_ms\t{pmoveTimeMs}\n");
+                outfile.Write(data);
+            }
+            if (File.Exists(backupPath))
+            {
+                File.Delete(backupPath);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Gets a readable datetime string from a Unix timestamp (seconds).
+        /// </summary>
+        /// <param name="unixTimestampSeconds"></param>
+        /// <returns>Formatted date string</returns>
+        private static string GetDateStrFromUnixTimestamp(long unixTimestampSeconds)
+        {
+            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                + TimeSpan.FromSeconds(unixTimestampSeconds);
+            string dateStr = dateTime.ToString(DateTimeFormat);
+            return dateStr;
         }
 
         // Cache the server LoginToken -> ServerId

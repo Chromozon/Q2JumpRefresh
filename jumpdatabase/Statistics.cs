@@ -443,6 +443,49 @@ namespace jumpdatabase
             return json;
         }
 
+        /// <summary>
+        /// Gets the map id from the mapname.
+        /// </summary>
+        /// <param name="mapname"></param>
+        /// <returns>Map id or null if does not exist</returns>
+        public static long? GetMapIdFromMapName(string mapname)
+        {
+            long? mapId = null;
+            var found = _cacheMapIdsNames.Where(x => x.Value == mapname);
+            if (found.Any())
+            {
+                mapId = found.First().Key;
+            }
+            return mapId;
+        }
+
+        /// <summary>
+        /// Gets the user id from the username.
+        /// </summary>
+        /// <param name="mapname"></param>
+        /// <returns>User id or null if does not exist</returns>
+        public static long? GetUserIdFromUserName(string username)
+        {
+            long? userId = null;
+            var found = _cacheMapIdsNames.Where(x => x.Value == username);
+            if (found.Any())
+            {
+                userId = found.First().Key;
+            }
+            return userId;
+        }
+
+        /// <summary>
+        /// Gets the short server name from the server id.
+        /// </summary>
+        /// <param name="mapname"></param>
+        /// <returns>User id or null if does not exist</returns>
+        public static string GetShortServerNameFromId(long serverId)
+        {
+            _cacheServerIdsShortNames.TryGetValue(serverId, out string serverShortName);
+            return serverShortName;
+        }
+
         private static void DebugPrintPlayerTimes()
         {
             //foreach (var sortedScore in sortedScores)

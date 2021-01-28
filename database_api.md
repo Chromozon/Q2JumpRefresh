@@ -54,7 +54,7 @@
                 "count_per_page": 15 (int, how many results to return)
             }
         }
-# Returns:
+### Returns:
         {
             "mapname": "ddrace" (string),
             "page": 1 (int, 1-based),
@@ -85,7 +85,7 @@
                 "count_per_page": 20 (int, how many results to return)
             }
         }
-# Returns:
+### Returns:
         {
             "page": 1 (int, 1-based),
             "max_pages": 70 (int, total number of pages available),
@@ -113,7 +113,7 @@
                 "count_per_page": 20 (int, how many results to return)
             }
         }
-# Returns:
+### Returns:
         {
             "page": 1 (int, 1-based),
             "max_pages": 70 (int, total number of pages available),
@@ -141,7 +141,7 @@
                 "count_per_page": 20 (int, how many results to return)
             }
         }
-# Returns:
+### Returns:
         {
             "page": 1 (int, 1-based),
             "max_pages": 70 (int, total number of pages available),

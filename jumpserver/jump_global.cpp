@@ -1,4 +1,5 @@
 #include "jump_global.h"
+#include "jump_logger.h"
 #include <string>
 #include <fstream>
 #include <vector>
@@ -37,6 +38,77 @@ namespace Jump
 
         }
     }
+
+    // Format the json string for "maptimes" command
+    std::string GetMaptimesCmdJson(const std::string& login_token, const std::string& mapname, int page, int count_per_page)
+    {
+        std::string command = "maptimes";
+
+        rapidjson::StringBuffer ss;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(ss);
+
+        writer.StartObject();
+        writer.Key("login_token");
+        writer.String(login_token.c_str());
+        writer.Key("command");
+        writer.String(command.c_str());
+        writer.Key("command_args");
+        writer.StartObject();
+        {
+            writer.Key("mapname");
+            writer.String(mapname.c_str());
+            writer.Key("page");
+            writer.Int(page);
+            writer.Key("count_per_page");
+            writer.Int(count_per_page);
+        }
+        writer.EndObject();
+        writer.EndObject(); // root object
+
+        std::string json = ss.GetString();
+        return json;
+    }
+
+    // Format the json string for the player queries
+    std::string GetPlayersQueryCmdJson(const std::string& login_token, player_query query, int page, int count_per_page)
+    {
+        std::string command;
+        if (query == player_query::playertimes)
+        {
+            command = "playertimes";
+        }
+        else if (query == player_query::playermaps)
+        {
+            command = "playermaps";
+        }
+        else if (query == player_query::playerscores)
+        {
+            command = "playerscores";
+        }
+
+        rapidjson::StringBuffer ss;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(ss);
+
+        writer.StartObject();
+        writer.Key("login_token");
+        writer.String(login_token.c_str());
+        writer.Key("command");
+        writer.String(command.c_str());
+        writer.Key("command_args");
+        writer.StartObject();
+        {
+            writer.Key("page");
+            writer.Int(page);
+            writer.Key("count_per_page");
+            writer.Int(count_per_page);
+        }
+        writer.EndObject();
+        writer.EndObject(); // root object
+
+        std::string json = ss.GetString();
+        return json;
+    }
+    
 
     void SendTime()
     {
@@ -82,12 +154,49 @@ namespace Jump
 
         std::string json = ss.GetString();
 
-        //CURL* curl = curl_easy_init();
-        //curl_easy_setopt(curl, CURLOPT_URL, "https://example.com");
-        //CURLcode result = curl_easy_perform(curl);
-        //curl_easy_cleanup(curl);
+        std::string url = "http://localhost:57540";
+        httplib::Client client(url.c_str());
+        int timeout_s = 5;
+        client.set_connection_timeout(timeout_s);
+        client.set_read_timeout(timeout_s);
+        client.set_write_timeout(timeout_s);
+
+        httplib::Result result = client.Post("", json.c_str(), "application/json");
 
         // TODO: format into HTTP message and send to global database service
+    }
+
+    // Send a POST request to the server and get the response.
+    // Returns true on success, false on failure.  
+    bool PostAndResponse(const std::string& json, std::string& response_data)
+    {
+        response_data.clear();
+
+        std::string url = "localhost";
+        httplib::Client client(url.c_str(), 57540);
+        int timeout_s = 60;
+        client.set_connection_timeout(timeout_s);
+        client.set_read_timeout(timeout_s);
+        client.set_write_timeout(timeout_s);
+
+        httplib::Result result = client.Post("/", json.c_str(), "application/json");
+        if (result.error() == httplib::Error::Success)
+        {
+            response_data = result.value().body;
+            return true;
+        }
+        else
+        {
+            Logger::Error("Bad response from database service: " + std::to_string(result.error()));
+            return false;
+        }
+    }
+
+    void TestHttp()
+    {
+        std::string json = GetPlayersQueryCmdJson("123456", player_query::playermaps, 1, 20);
+        std::string response_data;
+        bool success = PostAndResponse(json, response_data);
     }
 
     // How to handle sending a time to global database:

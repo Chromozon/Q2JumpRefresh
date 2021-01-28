@@ -8,6 +8,7 @@
 #include "jump_menu.h"
 #include "jump_utils.h"
 #include "jump_logger.h"
+#include "jump_global.h"
 #include <algorithm>
 
 namespace Jump
@@ -77,6 +78,8 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        TestHttp();
+
         //ConvertOldHighscores();
 
         CalculateAllLocalStatistics();

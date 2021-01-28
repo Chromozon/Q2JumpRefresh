@@ -9,6 +9,9 @@ using Newtonsoft.Json;
 
 namespace jumpdatabase_test
 {
+    // TODO: a way to send replay data without B64 encoding it into json:
+    // https://blog.marcinbudny.com/2014/02/sending-binary-data-along-with-rest-api.html
+
     class Program
     {
         public class UserLoginCommand

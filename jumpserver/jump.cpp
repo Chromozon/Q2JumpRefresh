@@ -366,6 +366,7 @@ namespace Jump
         auto it = jump_server.all_local_maptimes.find(level.mapname);
         if (it == jump_server.all_local_maptimes.end())
         {
+            // TODO: show the time in console here so ppl can use this mod locally when making maps
             Logger::Warning("Cannot set a time for a map that is not in the maplist");
             return;
         }

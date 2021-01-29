@@ -78,8 +78,6 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        TestHttp();
-
         //ConvertOldHighscores();
 
         CalculateAllLocalStatistics();

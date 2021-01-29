@@ -1,5 +1,6 @@
 
 #include "jump_types.h"
+#include <iterator>
 
 namespace Jump
 {
@@ -45,5 +46,91 @@ namespace Jump
     bool store_buffer_t::HasStore()
     {
         return numStores > 0;
+    }
+
+    // Converts a replay buffer into a byte array
+    std::vector<uint8_t> SerializeReplayBuffer(const std::vector<replay_frame_t>& replay_buffer)
+    {
+        std::vector<uint8_t> bytes;
+        if (replay_buffer.size() > 0)
+        {
+            replay_frame_t temp;
+            size_t framesize =
+                sizeof(temp.pos) +
+                sizeof(temp.angles) +
+                sizeof(temp.key_states) +
+                sizeof(temp.fps) +
+                sizeof(temp.reserved1) +
+                sizeof(temp.reserved2);
+            size_t num_bytes = replay_buffer.size() * framesize;
+            bytes.resize(num_bytes);
+            for (size_t i = 0; i < replay_buffer.size(); ++i)
+            {
+                int offset = 0;
+                uint8_t* start = &bytes[i * framesize];
+                const replay_frame_t& frame = replay_buffer[i];
+
+                memcpy(start + offset, &frame.pos, sizeof(frame.pos));
+                offset += sizeof(frame.pos);
+
+                memcpy(start + offset, &frame.angles, sizeof(frame.angles));
+                offset += sizeof(frame.angles);
+
+                memcpy(start + offset, &frame.key_states, sizeof(frame.key_states));
+                offset += sizeof(frame.key_states);
+
+                memcpy(start + offset, &frame.fps, sizeof(frame.fps));
+                offset += sizeof(frame.fps);
+
+                memcpy(start + offset, &frame.reserved1, sizeof(frame.reserved1));
+                offset += sizeof(frame.reserved1);
+
+                memcpy(start + offset, &frame.reserved2, sizeof(frame.reserved2));
+            }
+        }
+        return bytes;
+    }
+
+    // Converts a byte array into a replay buffer
+    std::vector<replay_frame_t> DeserializeReplayBuffer(const std::vector<uint8_t>& bytes)
+    {
+        std::vector<replay_frame_t> replay_buffer;
+        if (bytes.size() > 0)
+        {
+            replay_frame_t temp;
+            size_t framesize =
+                sizeof(temp.pos) +
+                sizeof(temp.angles) +
+                sizeof(temp.key_states) +
+                sizeof(temp.fps) +
+                sizeof(temp.reserved1) +
+                sizeof(temp.reserved2);
+            size_t num_frames = bytes.size() / framesize;
+            replay_buffer.resize(num_frames);
+            for (size_t i = 0; i < num_frames; ++i)
+            {
+                const uint8_t* start = &bytes[i * framesize];
+                replay_frame_t& frame = replay_buffer[i];
+                int offset = 0;
+
+                memcpy(&frame.pos, start + offset, sizeof(frame.pos));
+                offset += sizeof(frame.pos);
+
+                memcpy(&frame.angles, start + offset, sizeof(frame.angles));
+                offset += sizeof(frame.angles);
+
+                memcpy(&frame.key_states, start + offset, sizeof(frame.key_states));
+                offset += sizeof(frame.key_states);
+
+                memcpy(&frame.fps, start + offset, sizeof(frame.fps));
+                offset += sizeof(frame.fps);
+
+                memcpy(&frame.reserved1, start + offset, sizeof(frame.reserved1));
+                offset += sizeof(frame.reserved1);
+
+                memcpy(&frame.reserved2, start + offset, sizeof(frame.reserved2));
+            }
+        }
+        return replay_buffer;
     }
 }

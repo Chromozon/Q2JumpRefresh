@@ -89,7 +89,7 @@ namespace Jump
     //
     // Let's say on average 50 players complete each map, and the time is 2 minutes, and there are 3000 maps
     // 50 replays * 48 kB/replay * 3000 maps = 7.2 GB
-    // 
+    //
     typedef struct
     {
         vec3_t pos;         // (12 bytes) player position in the world
@@ -249,4 +249,10 @@ namespace Jump
         // List of last seen times sorted newest to oldest
         std::vector<std::pair<std::string /*username*/, int64_t>> last_seen;
     };
+
+    // Converts a replay buffer into a byte array
+    std::vector<uint8_t> SerializeReplayBuffer(const std::vector<replay_frame_t>& replay_buffer);
+
+    // Converts a byte array into a replay buffer
+    std::vector<replay_frame_t> DeserializeReplayBuffer(const std::vector<uint8_t>& bytes);
 }

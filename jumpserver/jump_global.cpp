@@ -14,28 +14,48 @@
 #include <Windows.h>
 #endif
 #include "httplib.h"
+#include "jump_types.h"
 
 namespace Jump
 {
-    // Globals
-    thread_queue<int> g_addtime_queue;
-    thread_queue<int> g_query_queue;
+    // Queue of all commands that need to be sent to the global database
+    static thread_queue<std::shared_ptr<global_cmd_base>> global_cmd_queue;
 
-    void ThreadMainAddTime()
+    // Queue of all command response data
+    // TODO: don't really need a thread_queue for this, just need a queue and a simple lock
+    static thread_queue<std::shared_ptr<global_cmd_response>> global_cmd_response_queue;
+
+    // Main thread that sends commands to the global database service and receives the responses
+    void ThreadMainGlobal()
     {
-        int item = 0;
-        while (g_addtime_queue.wait_and_front(item))
+        std::shared_ptr<global_cmd_base> cmd_base;
+        while (global_cmd_queue.wait_and_pop(cmd_base))
         {
+            std::string json;
+            global_cmd cmd_type = cmd_base->get_type();
+            if (cmd_type == global_cmd::playertimes)
+            {
+                global_cmd_playertimes* cmd = dynamic_cast<global_cmd_playertimes*>(cmd_base.get());
+                json = GetPlayersQueryCmdJson(LOGIN_TOKEN, cmd_type, cmd->page, cmd->count_per_page);
+            }
+            else if (cmd_type == global_cmd::playermaps)
+            {
+                global_cmd_playermaps* cmd = dynamic_cast<global_cmd_playermaps*>(cmd_base.get());
+                json = GetPlayersQueryCmdJson(LOGIN_TOKEN, cmd_type, cmd->page, cmd->count_per_page);
+            }
+            else if (cmd_type == global_cmd::playerscores)
+            {
+                global_cmd_playerscores* cmd = dynamic_cast<global_cmd_playerscores*>(cmd_base.get());
+                json = GetPlayersQueryCmdJson(LOGIN_TOKEN, cmd_type, cmd->page, cmd->count_per_page);
+            }
+            std::string response_data;
+            bool success = PostAndResponse(json, response_data);
 
-        }
-    }
-
-    void ThreadMainQuery()
-    {
-        int item = 0;
-        while (g_query_queue.wait_and_pop(item))
-        {
-
+            std::shared_ptr<global_cmd_response> cmd_response = std::make_shared<global_cmd_response>();
+            cmd_response->cmd_base = cmd_base;
+            cmd_response->data = response_data;
+            cmd_response->success = success;
+            global_cmd_response_queue.push(cmd_response);
         }
     }
 
@@ -70,20 +90,25 @@ namespace Jump
     }
 
     // Format the json string for the player queries
-    std::string GetPlayersQueryCmdJson(const std::string& login_token, player_query query, int page, int count_per_page)
+    std::string GetPlayersQueryCmdJson(const std::string& login_token, global_cmd query, int page, int count_per_page)
     {
         std::string command;
-        if (query == player_query::playertimes)
+        if (query == global_cmd::playertimes)
         {
             command = "playertimes";
         }
-        else if (query == player_query::playermaps)
+        else if (query == global_cmd::playermaps)
         {
             command = "playermaps";
         }
-        else if (query == player_query::playerscores)
+        else if (query == global_cmd::playerscores)
         {
             command = "playerscores";
+        }
+        else
+        {
+            assert(false);
+            return command;
         }
 
         rapidjson::StringBuffer ss;
@@ -109,20 +134,19 @@ namespace Jump
         return json;
     }
     
-
-    void SendTime()
+    // Format the json string for the addtime command
+    std::string GetAddTimeCmdJson(
+        const std::string& login_token,
+        const std::string& username,
+        const std::string& mapname,
+        int64_t time_ms,
+        int64_t pmove_time_ms,
+        int64_t date,
+        const std::vector<replay_frame_t>& replay_buffer)
     {
-        std::string replay_file = "testreplay.demo";
-        std::vector<uint8_t> replay_buffer;
-        bool res = ReadFileIntoBuffer(replay_file, replay_buffer);
-        std::string b64str = base64::encode(replay_buffer);
+        std::vector<uint8_t> replay_bytes = SerializeReplayBuffer(replay_buffer);
+        std::string replay_bytes_b64 = base64::encode(replay_bytes);
 
-        std::string server_token = "1234567890";
-        std::string username = "Slip";
-        std::string mapname = "ddrace";
-        int64_t time_ms = 10567;
-        int64_t pmove_time_ms = 10500;
-        int64_t date = 1611376216;
         std::string command = "addtime";
 
         rapidjson::StringBuffer ss;
@@ -130,7 +154,7 @@ namespace Jump
 
         writer.StartObject();
         writer.Key("login_token");
-        writer.String(server_token.c_str());
+        writer.String(login_token.c_str());
         writer.Key("command");
         writer.String(command.c_str());
         writer.Key("command_args");
@@ -147,23 +171,13 @@ namespace Jump
             writer.Key("pmove_time_ms");
             writer.Int64(pmove_time_ms);
             writer.Key("replay_data");
-            writer.String(b64str.c_str());
+            writer.String(replay_bytes_b64.c_str());
         }
         writer.EndObject();
         writer.EndObject(); // root object
 
         std::string json = ss.GetString();
-
-        std::string url = "http://localhost:57540";
-        httplib::Client client(url.c_str());
-        int timeout_s = 5;
-        client.set_connection_timeout(timeout_s);
-        client.set_read_timeout(timeout_s);
-        client.set_write_timeout(timeout_s);
-
-        httplib::Result result = client.Post("", json.c_str(), "application/json");
-
-        // TODO: format into HTTP message and send to global database service
+        return json;
     }
 
     // Send a POST request to the server and get the response.
@@ -172,9 +186,8 @@ namespace Jump
     {
         response_data.clear();
 
-        std::string url = "localhost";
-        httplib::Client client(url.c_str(), 57540);
-        int timeout_s = 60;
+        httplib::Client client(DATABASE_SERVICE_URL, DATABASE_SERVICE_PORT);
+        int timeout_s = 10;
         client.set_connection_timeout(timeout_s);
         client.set_read_timeout(timeout_s);
         client.set_write_timeout(timeout_s);
@@ -190,13 +203,6 @@ namespace Jump
             Logger::Error("Bad response from database service: " + std::to_string(result.error()));
             return false;
         }
-    }
-
-    void TestHttp()
-    {
-        std::string json = GetPlayersQueryCmdJson("123456", player_query::playermaps, 1, 20);
-        std::string response_data;
-        bool success = PostAndResponse(json, response_data);
     }
 
     // How to handle sending a time to global database:

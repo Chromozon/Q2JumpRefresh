@@ -32,6 +32,7 @@ namespace Jump
         { "playertimes", Cmd_Jump_Playertimes },
         { "playerscores", Cmd_Jump_Playerscores },
         { "!seen", Cmd_Jump_Seen },
+        { "playertimesglobal", Cmd_Jump_PlayertimesGlobal},
 
         // TODO
         { "showtimes", Cmd_Jump_Void },
@@ -600,6 +601,25 @@ namespace Jump
         gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use !seen <page>\n",
             page, total_pages, static_cast<int>(jump_server.last_seen.size()));
         gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+    }
+
+    void Cmd_Jump_PlayertimesGlobal(edict_t* ent)
+    {
+        int page = 1;
+        if (gi.argc() > 1)
+        {
+            StringToIntMaybe(gi.argv(1), page);
+        }
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        std::shared_ptr<global_cmd_playertimes> cmd = std::make_shared<global_cmd_playertimes>();
+        cmd->user = ent;
+        cmd->page = page;
+        cmd->count_per_page = 20;
+        QueueGlobalDatabaseCmd(cmd);
     }
 
 } // namespace Jump

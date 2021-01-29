@@ -59,6 +59,25 @@ namespace Jump
         }
     }
 
+    // Tell the main thread to stop
+    void StopThreadMainGlobal()
+    {
+        global_cmd_queue.stop_thread();
+    }
+
+    // Add a global command to the queue
+    void QueueGlobalDatabaseCmd(std::shared_ptr<global_cmd_base> cmd) // TODO simplify name (remove Database)
+    {
+        global_cmd_queue.push(cmd);
+    }
+
+    // Try to get a response from the response queue if there is one.
+    // Returns true if a response is returned, else false.
+    bool TryGetGlobalDatabaseCmdResponse(std::shared_ptr<global_cmd_response>& response)
+    {
+        return global_cmd_response_queue.try_pop(response);
+    }
+
     // Format the json string for "maptimes" command
     std::string GetMaptimesCmdJson(const std::string& login_token, const std::string& mapname, int page, int count_per_page)
     {

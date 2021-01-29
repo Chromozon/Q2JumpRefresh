@@ -48,7 +48,7 @@ namespace Jump
         bool wait_and_pop(T& popped_value)
         {
             std::unique_lock<std::mutex> lock(m_mutex);
-            while (m_queue.empty())
+            while (m_queue.empty() && !m_stop_thread)
             {
                 // Unlocks the mutex and waits until condition variable is signaled
                 m_condition_variable.wait(lock);
@@ -66,7 +66,7 @@ namespace Jump
         bool wait_and_front(T& front_value)
         {
             std::unique_lock<std::mutex> lock(m_mutex);
-            while (m_queue.empty())
+            while (m_queue.empty() && !m_stop_thread)
             {
                 // Unlocks the mutex and waits until condition variable is signaled
                 m_condition_variable.wait(lock);

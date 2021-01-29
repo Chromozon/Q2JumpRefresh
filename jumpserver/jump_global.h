@@ -87,6 +87,14 @@ namespace Jump
         int64_t date,
         const std::vector<replay_frame_t>& replay_buffer);
 
+    void ThreadMainGlobal();
+
+    void StopThreadMainGlobal();
+
+    bool TryGetGlobalDatabaseCmdResponse(std::shared_ptr<global_cmd_response>& response);
+
+    void QueueGlobalDatabaseCmd(std::shared_ptr<global_cmd_base> cmd);
+
     // Send a POST request to the server and get the response.
     // Returns true on success, false on failure.
     bool PostAndResponse(const std::string& json, std::string& response_data);

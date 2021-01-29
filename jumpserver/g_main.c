@@ -19,6 +19,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "g_local.h"
+#include "jump.h"
+#include "jump_global.h"
 
 game_locals_t	game;
 level_locals_t	level;
@@ -98,6 +100,11 @@ void ShutdownGame (void)
 
 	gi.FreeTags (TAG_LEVEL);
 	gi.FreeTags (TAG_GAME);
+
+	// Jump
+	Jump::StopThreadMainGlobal();
+	Jump::jump_server.global_database_thread.join();
+	// Jump
 }
 
 
@@ -425,5 +432,24 @@ void G_RunFrame (void)
 
 	// build the playerstate_t structures for all players
 	ClientEndServerFrames ();
+
+	// Jump
+	std::shared_ptr<Jump::global_cmd_response> response;
+	while (Jump::TryGetGlobalDatabaseCmdResponse(response))
+	{
+		// TODO: check bad status
+		if (response->cmd_base->get_type() == Jump::global_cmd::playertimes)
+		{
+			Jump::global_cmd_playertimes* cmd = dynamic_cast<Jump::global_cmd_playertimes*>(response->cmd_base.get());
+			if (!cmd->user->inuse)
+			{
+				continue;
+			}
+			// TODO print results to user!!
+			std::string test = response->data.substr(0, 50);
+			gi.cprintf(cmd->user, PRINT_HIGH, const_cast<char*>(test.c_str()));
+		}
+	}
+	// Jump
 }
 

@@ -3,6 +3,7 @@
 #include "jump_scores.h"
 #include <unordered_map>
 #include "jump_utils.h"
+#include "jump_global.h"
 
 namespace Jump
 {
@@ -488,6 +489,8 @@ namespace Jump
         LoadAllLocalMaptimes(jump_server.maplist, jump_server.all_local_maptimes);
         CalculateAllLocalStatistics();
         LoadLastSeenTimes();
+
+        jump_server.global_database_thread = std::thread(ThreadMainGlobal);
     }
 
     void AdvanceSpectatingReplayFrame(edict_t* ent)

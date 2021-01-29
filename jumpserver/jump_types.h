@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
+#include <thread>
 
 #define MAX_STORES 5    // max number of stores for store/recall cmds
 #define MAX_HIGHSCORES 15   // how many users to list on the highscores HUD
@@ -248,6 +249,9 @@ namespace Jump
 
         // List of last seen times sorted newest to oldest
         std::vector<std::pair<std::string /*username*/, int64_t>> last_seen;
+
+        // Thread that talks to the global database
+        std::thread global_database_thread;
     };
 
     // Converts a replay buffer into a byte array

@@ -217,21 +217,4 @@ namespace Jump
         return file.eof();
     }
 
-    // Returns a string of the team enum value.
-    //std::string GetTeamDisplayString(team_t team)
-    //{
-    //    if (team == TEAM_HARD)
-    //    {
-    //        return "Hard";
-    //    }
-    //    else if (team == TEAM_EASY)
-    //    {
-    //        return "Easy";
-    //    }
-    //    else
-    //    {
-    //        return "Spec";
-    //    }
-    //}
-
 } // namespace Jump

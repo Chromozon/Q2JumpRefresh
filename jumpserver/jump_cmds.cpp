@@ -34,6 +34,8 @@ namespace Jump
         { "playerscores", Cmd_Jump_Playerscores },
         { "!seen", Cmd_Jump_Seen },
         { "playertimesglobal", Cmd_Jump_PlayertimesGlobal},
+        { "playerscoresglobal", Cmd_Jump_PlayerscoresGlobal},
+        { "playermapsglobal", Cmd_Jump_PlayermapsGlobal},
 
         // TODO
         { "showtimes", Cmd_Jump_Void },
@@ -457,7 +459,7 @@ namespace Jump
 
         // Footer
         int total_pages = (jump_server.all_local_highscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
-        gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). User playertimes <page>\n",
+        gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use playertimes <page>\n",
             page, total_pages, static_cast<int>(jump_server.all_local_highscores.size()));
         gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
     }
@@ -624,6 +626,46 @@ namespace Jump
         QueueGlobalDatabaseCmd(cmd);
     }
 
+    void Cmd_Jump_PlayerscoresGlobal(edict_t* ent)
+    {
+        int page = 1;
+        if (gi.argc() > 1)
+        {
+            StringToIntMaybe(gi.argv(1), page);
+        }
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        gi.cprintf(ent, PRINT_HIGH, "Retrieving scores from global database. Please wait...\n");
+        std::shared_ptr<global_cmd_playerscores> cmd = std::make_shared<global_cmd_playerscores>();
+        cmd->user = ent;
+        cmd->page = page;
+        cmd->count_per_page = 20;
+        QueueGlobalDatabaseCmd(cmd);
+    }
+
+    void Cmd_Jump_PlayermapsGlobal(edict_t* ent)
+    {
+        int page = 1;
+        if (gi.argc() > 1)
+        {
+            StringToIntMaybe(gi.argv(1), page);
+        }
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        gi.cprintf(ent, PRINT_HIGH, "Retrieving scores from global database. Please wait...\n");
+        std::shared_ptr<global_cmd_playermaps> cmd = std::make_shared<global_cmd_playermaps>();
+        cmd->user = ent;
+        cmd->page = page;
+        cmd->count_per_page = 20;
+        QueueGlobalDatabaseCmd(cmd);
+    }
+
     void HandleGlobalCmdResponse(const global_cmd_response& response)
     {
         global_cmd cmd_type = response.cmd_base->get_type();
@@ -632,6 +674,12 @@ namespace Jump
         {
         case global_cmd::playertimes:
             HandleGlobalPlayertimesResponse(response);
+            break;
+        case global_cmd::playerscores:
+            HandleGlobalPlayerscoresResponse(response);
+            break;
+        case global_cmd::playermaps:
+            HandleGlobalPlayermapsResponse(response);
             break;
         default:
             break;
@@ -721,9 +769,167 @@ namespace Jump
         int page = json_obj["page"].GetInt();
         int total_pages = json_obj["max_pages"].GetInt();
         int total_users = json_obj["user_count"].GetInt();
-        gi.cprintf(cmd->user, PRINT_HIGH, "Page %d/%d (%d users). User playertimesglobal <page>\n",
+        gi.cprintf(cmd->user, PRINT_HIGH, "Page %d/%d (%d users). Use playertimesglobal <page>\n",
             page, total_pages, total_users);
         gi.cprintf(cmd->user, PRINT_HIGH, "-----------------------------------------\n");
+    }
+
+    void HandleGlobalPlayerscoresResponse(const global_cmd_response& response)
+    {
+        if (response.cmd_base->get_type() != global_cmd::playerscores)
+        {
+            assert(false);
+            Logger::Error("ASSERT FAILURE: invalid input args to HandleGlobalPlayerscoresResponse");
+            return;
+        }
+
+        const global_cmd_playerscores* cmd = dynamic_cast<global_cmd_playerscores*>(response.cmd_base.get());
+        if (!cmd->user->inuse)
+        {
+            return;
+        }
+        if (!response.success)
+        {
+            gi.cprintf(cmd->user, PRINT_HIGH, "Error contacting global database.\n");
+            return;
+        }
+        if (response.data.empty())
+        {
+            Logger::Error("Global playerscores command returned no data");
+            gi.cprintf(cmd->user, PRINT_HIGH, "Error contacting global database.\n");
+            return;
+        }
+        rapidjson::Document json_obj;
+        json_obj.Parse(response.data.c_str());
+
+        size_t user_count = json_obj["user_records"].GetArray().Size();
+        if (user_count == 0)
+        {
+            gi.cprintf(cmd->user, PRINT_HIGH, "There are no global playerscores for this page.\n");
+            return;
+        }
+
+        // Point info
+        gi.cprintf(cmd->user, PRINT_HIGH, "-----------------------------------------\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "Point Values: 1-15: 25,20,16,13,11,10,9,8,7,6,5,4,3,2,1\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "Score = (Your score) / (Potential score if 1st on all your completed maps\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "Ex: 5 maps completed || 3 1st's, 2 3rd's = 107 pts || 5 1st's = 125 pts || 107/125 = 85.6%%\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "You must complete 50 maps before your score is calculated.\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "-----------------------------------------\n");
+
+        // Header row
+        std::string header = GetGreenConsoleText(
+            "No. Name            1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th Score");
+        gi.cprintf(cmd->user, PRINT_HIGH, "%s\n", header.c_str());
+
+        // Highscores
+        for (size_t i = 0; i < user_count; ++i)
+        {
+            int rank = json_obj["user_records"][i]["rank"].GetInt();
+
+            const char* username = json_obj["user_records"][i]["username"].GetString();
+
+            const char* highscore_counts_str = json_obj["user_records"][i]["highscore_counts"].GetString();
+            std::vector<std::string> highscore_counts = SplitString(highscore_counts_str, ',');
+
+            float percent_score = json_obj["user_records"][i]["percent_score"].GetFloat();
+
+            gi.cprintf(cmd->user, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %2.1f%%\n",
+                rank,
+                username,
+                std::stoi(highscore_counts[0]),
+                std::stoi(highscore_counts[1]),
+                std::stoi(highscore_counts[2]),
+                std::stoi(highscore_counts[3]),
+                std::stoi(highscore_counts[4]),
+                std::stoi(highscore_counts[5]),
+                std::stoi(highscore_counts[6]),
+                std::stoi(highscore_counts[7]),
+                std::stoi(highscore_counts[8]),
+                std::stoi(highscore_counts[9]),
+                std::stoi(highscore_counts[10]),
+                std::stoi(highscore_counts[11]),
+                std::stoi(highscore_counts[12]),
+                std::stoi(highscore_counts[13]),
+                std::stoi(highscore_counts[14]),
+                percent_score
+            );
+        }
+
+        // Footer
+        int page = json_obj["page"].GetInt();
+        int total_pages = json_obj["max_pages"].GetInt();
+        int total_users = json_obj["user_count"].GetInt();
+        gi.cprintf(cmd->user, PRINT_HIGH, "Page %d/%d (%d users). Use playerscoresglobal <page>\n",
+            page, total_pages, total_users);
+        gi.cprintf(cmd->user, PRINT_HIGH, "-----------------------------------------\n");
+    }
+
+    void HandleGlobalPlayermapsResponse(const global_cmd_response& response)
+    {
+        if (response.cmd_base->get_type() != global_cmd::playermaps)
+        {
+            assert(false);
+            Logger::Error("ASSERT FAILURE: invalid input args to HandleGlobalPlayermapsResponse");
+            return;
+        }
+
+        const global_cmd_playermaps* cmd = dynamic_cast<global_cmd_playermaps*>(response.cmd_base.get());
+        if (!cmd->user->inuse)
+        {
+            return;
+        }
+        if (!response.success)
+        {
+            gi.cprintf(cmd->user, PRINT_HIGH, "Error contacting global database.\n");
+            return;
+        }
+        if (response.data.empty())
+        {
+            Logger::Error("Global playermaps command returned no data");
+            gi.cprintf(cmd->user, PRINT_HIGH, "Error contacting global database.\n");
+            return;
+        }
+        rapidjson::Document json_obj;
+        json_obj.Parse(response.data.c_str());
+
+        size_t user_count = json_obj["user_records"].GetArray().Size();
+        if (user_count == 0)
+        {
+            gi.cprintf(cmd->user, PRINT_HIGH, "There are no global playermaps for this page.\n");
+            return;
+        }
+
+        // Header
+        gi.cprintf(cmd->user, PRINT_HIGH, "--------------------------------------\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "No. Name            Maps     %%\n");
+
+        // Highscores
+        for (size_t i = 0; i < user_count; ++i)
+        {
+            int rank = json_obj["user_records"][i]["rank"].GetInt();
+
+            const char* username = json_obj["user_records"][i]["username"].GetString();
+
+            int completions = json_obj["user_records"][i]["completions"].GetInt();
+
+            float percent_complete = json_obj["user_records"][i]["percent_complete"].GetFloat();
+
+            gi.cprintf(cmd->user, PRINT_HIGH, "%-3d %-15s %4d  %2.1f\n",
+                rank,
+                username,
+                completions,
+                percent_complete
+            );
+        }
+
+        // Footer
+        int page = json_obj["page"].GetInt();
+        int total_pages = json_obj["max_pages"].GetInt();
+        int total_users = json_obj["user_count"].GetInt();
+        gi.cprintf(cmd->user, PRINT_HIGH, "Page %d/%d (%d users). Use playermapsglobal <page>\n",
+            page, total_pages, total_users);
+        gi.cprintf(cmd->user, PRINT_HIGH, "--------------------------------------\n");
     }
 
 } // namespace Jump

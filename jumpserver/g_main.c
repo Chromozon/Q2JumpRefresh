@@ -76,6 +76,12 @@ cvar_t	*flood_waitdelay;
 
 cvar_t	*sv_maplist;
 
+// Jump
+// TODO: I can move these to the jump specific files
+cvar_t* fps;
+cvar_t* async;
+// Jump
+
 void SpawnEntities (char *mapname, char *entities, char *spawnpoint);
 void ClientThink (edict_t *ent, usercmd_t *cmd);
 qboolean ClientConnect (edict_t *ent, char *userinfo);

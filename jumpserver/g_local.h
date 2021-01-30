@@ -566,6 +566,11 @@ extern	cvar_t	*flood_waitdelay;
 
 extern	cvar_t	*sv_maplist;
 
+//Jump
+extern cvar_t* fps;
+extern cvar_t* async;
+// Jump
+
 //ZOID
 extern	qboolean	is_quad;
 //ZOID

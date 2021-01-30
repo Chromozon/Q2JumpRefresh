@@ -141,6 +141,8 @@ void InitGame (void)
     bob_up = gi.cvar("bob_up", "0.000", 0);
     bob_pitch = gi.cvar("bob_pitch", "0.000", 0);
     bob_roll = gi.cvar("bob_roll", "0.000", 0);
+	fps = gi.cvar("cl_maxfps", "120", CVAR_USERINFO);
+	async = gi.cvar("cl_async", "0", CVAR_USERINFO);
 
     // Old values
 	//run_pitch = gi.cvar ("run_pitch", "0.002", 0);

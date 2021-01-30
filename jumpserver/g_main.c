@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "g_local.h"
 #include "jump.h"
 #include "jump_global.h"
+#include "jump_cmds.h"
 
 game_locals_t	game;
 level_locals_t	level;
@@ -437,18 +438,7 @@ void G_RunFrame (void)
 	std::shared_ptr<Jump::global_cmd_response> response;
 	while (Jump::TryGetGlobalDatabaseCmdResponse(response))
 	{
-		// TODO: check bad status
-		if (response->cmd_base->get_type() == Jump::global_cmd::playertimes)
-		{
-			Jump::global_cmd_playertimes* cmd = dynamic_cast<Jump::global_cmd_playertimes*>(response->cmd_base.get());
-			if (!cmd->user->inuse)
-			{
-				continue;
-			}
-			// TODO print results to user!!
-			std::string test = response->data.substr(0, 50);
-			gi.cprintf(cmd->user, PRINT_HIGH, const_cast<char*>(test.c_str()));
-		}
+		Jump::HandleGlobalCmdResponse(*response);
 	}
 	// Jump
 }

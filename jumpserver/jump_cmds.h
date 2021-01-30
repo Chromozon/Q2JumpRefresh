@@ -1,6 +1,7 @@
 #pragma once
 
 #include "g_local.h"
+#include "jump_global.h"
 
 namespace Jump
 {
@@ -22,4 +23,8 @@ namespace Jump
     void Cmd_Jump_Playerscores(edict_t* ent);
     void Cmd_Jump_Seen(edict_t* ent);
     void Cmd_Jump_PlayertimesGlobal(edict_t* ent);
+
+    // Global database cmd responses
+    void HandleGlobalCmdResponse(const global_cmd_response& response);
+    void HandleGlobalPlayertimesResponse(const global_cmd_response& response);
 }

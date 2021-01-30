@@ -10,6 +10,7 @@
 #include "jump_logger.h"
 #include "jump_global.h"
 #include <algorithm>
+#include "rapidjson/document.h"
 
 namespace Jump
 {
@@ -615,11 +616,114 @@ namespace Jump
             page = 1;
         }
 
+        gi.cprintf(ent, PRINT_HIGH, "Retrieving scores from global database. Please wait...\n");
         std::shared_ptr<global_cmd_playertimes> cmd = std::make_shared<global_cmd_playertimes>();
         cmd->user = ent;
         cmd->page = page;
         cmd->count_per_page = 20;
         QueueGlobalDatabaseCmd(cmd);
+    }
+
+    void HandleGlobalCmdResponse(const global_cmd_response& response)
+    {
+        global_cmd cmd_type = response.cmd_base->get_type();
+
+        switch (cmd_type)
+        {
+        case global_cmd::playertimes:
+            HandleGlobalPlayertimesResponse(response);
+            break;
+        default:
+            break;
+        }
+    }
+
+    void HandleGlobalPlayertimesResponse(const global_cmd_response& response)
+    {
+        if (response.cmd_base->get_type() != global_cmd::playertimes)
+        {
+            assert(false);
+            Logger::Error("ASSERT FAILURE: invalid input args to HandleGlobalPlayertimesResponse");
+            return;
+        }
+
+        const global_cmd_playertimes* cmd = dynamic_cast<global_cmd_playertimes*>(response.cmd_base.get());
+        if (!cmd->user->inuse)
+        {
+            return;
+        }
+        if (!response.success)
+        {
+            gi.cprintf(cmd->user, PRINT_HIGH, "Error contacting global database.\n");
+            return;
+        }
+        if (response.data.empty())
+        {
+            Logger::Error("Global playertimes command returned no data");
+            gi.cprintf(cmd->user, PRINT_HIGH, "Error contacting global database.\n");
+            return;
+        }
+        rapidjson::Document json_obj;
+        json_obj.Parse(response.data.c_str());
+
+        size_t user_count = json_obj["user_records"].GetArray().Size();
+        if (user_count == 0)
+        {
+            gi.cprintf(cmd->user, PRINT_HIGH, "There are no global playertimes for this page.\n");
+            return;
+        }
+        
+        // Point info
+        gi.cprintf(cmd->user, PRINT_HIGH, "-----------------------------------------\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "Point Values: 1-15: 25,20,16,13,11,10,9,8,7,6,5,4,3,2,1\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "-----------------------------------------\n");
+
+        // Header row
+        std::string header = GetGreenConsoleText(
+            "No. Name            1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th Score");
+        gi.cprintf(cmd->user, PRINT_HIGH, "%s\n", header.c_str());
+
+        // Highscores
+        for (size_t i = 0; i < user_count; ++i)
+        {
+            int rank = json_obj["user_records"][i]["rank"].GetInt();
+
+            const char* username = json_obj["user_records"][i]["username"].GetString();
+
+            const char* highscore_counts_str = json_obj["user_records"][i]["highscore_counts"].GetString();
+            std::vector<std::string> highscore_counts = SplitString(highscore_counts_str, ',');
+
+            int score = json_obj["user_records"][i]["total_score"].GetInt();
+
+            gi.cprintf(cmd->user, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %5d\n",
+                rank,
+                username,
+                std::stoi(highscore_counts[0]),
+                std::stoi(highscore_counts[1]),
+                std::stoi(highscore_counts[2]),
+                std::stoi(highscore_counts[3]),
+                std::stoi(highscore_counts[4]),
+                std::stoi(highscore_counts[5]),
+                std::stoi(highscore_counts[6]),
+                std::stoi(highscore_counts[7]),
+                std::stoi(highscore_counts[8]),
+                std::stoi(highscore_counts[9]),
+                std::stoi(highscore_counts[10]),
+                std::stoi(highscore_counts[11]),
+                std::stoi(highscore_counts[12]),
+                std::stoi(highscore_counts[13]),
+                std::stoi(highscore_counts[14]),
+                score
+            );
+        }
+
+        // Footer
+        int page = json_obj["page"].GetInt();
+        int total_pages = json_obj["max_pages"].GetInt();
+        int total_users = json_obj["user_count"].GetInt();
+        gi.cprintf(cmd->user, PRINT_HIGH, "Page %d/%d (%d users). User playertimesglobal <page>\n",
+            page, total_pages, total_users);
+        gi.cprintf(cmd->user, PRINT_HIGH, "-----------------------------------------\n");
     }
 
 } // namespace Jump

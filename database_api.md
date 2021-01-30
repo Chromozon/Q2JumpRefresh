@@ -59,7 +59,7 @@
             "mapname": "ddrace" (string),
             "page": 1 (int, 1-based),
             "max_pages": 20 (int, total number of pages available),
-            "count_per_page": 20 (int, how many results are returned in user_records),
+            "count_per_page": 20 (int, how many results were requested),
             "user_count": 1023 (int, total number of users),
             "last_updated": 1610596223836 (int, Unix time s),
             "user_records":
@@ -89,7 +89,7 @@
         {
             "page": 1 (int, 1-based),
             "max_pages": 70 (int, total number of pages available),
-            "count_per_page": 15 (int, how many results are returned in user_records),
+            "count_per_page": 15 (int, how many results were requested),
             "user_count": 1023 (int, total number of users),
             "last_updated": 1610596223836 (int, Unix time s),
             "user_records":
@@ -117,7 +117,7 @@
         {
             "page": 1 (int, 1-based),
             "max_pages": 70 (int, total number of pages available),
-            "count_per_page": 15 (int, how many results are returned in user_records),
+            "count_per_page": 15 (int, how many results were requested),
             "user_count": 1023 (int, total number of users),
             "last_updated": 1610596223836 (int, Unix time s),
             "user_records":
@@ -145,7 +145,7 @@
         {
             "page": 1 (int, 1-based),
             "max_pages": 70 (int, total number of pages available),
-            "count_per_page": 15 (int, how many results are returned in user_records),
+            "count_per_page": 15 (int, how many results were requested),
             "user_count": 1023 (int, total number of users),
             "last_updated": 1610596223836 (int, Unix time s),
             "user_records":

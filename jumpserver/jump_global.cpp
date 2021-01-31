@@ -48,6 +48,11 @@ namespace Jump
                 global_cmd_playerscores* cmd = dynamic_cast<global_cmd_playerscores*>(cmd_base.get());
                 json = GetPlayersQueryCmdJson(LOGIN_TOKEN, cmd_type, cmd->page, cmd->count_per_page);
             }
+            else if (cmd_type == global_cmd::maptimes)
+            {
+                global_cmd_maptimes* cmd = dynamic_cast<global_cmd_maptimes*>(cmd_base.get());
+                json = GetMaptimesCmdJson(LOGIN_TOKEN, cmd->mapname, cmd->page, cmd->count_per_page);
+            }
             std::string response_data;
             bool success = PostAndResponse(json, response_data);
 

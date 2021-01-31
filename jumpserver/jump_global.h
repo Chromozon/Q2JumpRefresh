@@ -65,6 +65,17 @@ namespace Jump
         int count_per_page;
     };
 
+    // Global maptimes
+    class global_cmd_maptimes : public global_cmd_base
+    {
+    public:
+        global_cmd get_type() const override { return global_cmd::maptimes; }
+        edict_t* user;
+        int page;
+        int count_per_page;
+        std::string mapname;
+    };
+
     // Global command response
     class global_cmd_response
     {

@@ -33,9 +33,10 @@ namespace Jump
         { "playertimes", Cmd_Jump_Playertimes },
         { "playerscores", Cmd_Jump_Playerscores },
         { "!seen", Cmd_Jump_Seen },
-        { "playertimesglobal", Cmd_Jump_PlayertimesGlobal},
-        { "playerscoresglobal", Cmd_Jump_PlayerscoresGlobal},
-        { "playermapsglobal", Cmd_Jump_PlayermapsGlobal},
+        { "playertimesglobal", Cmd_Jump_PlayertimesGlobal },
+        { "playerscoresglobal", Cmd_Jump_PlayerscoresGlobal} ,
+        { "playermapsglobal", Cmd_Jump_PlayermapsGlobal },
+        { "maptimesglobal", Cmd_Jump_MaptimesGlobal },
 
         // TODO
         { "showtimes", Cmd_Jump_Void },
@@ -666,6 +667,33 @@ namespace Jump
         QueueGlobalDatabaseCmd(cmd);
     }
 
+    void Cmd_Jump_MaptimesGlobal(edict_t* ent)
+    {
+        std::string mapname = level.mapname;
+        if (gi.argc() >= 2)
+        {
+            mapname = gi.argv(1);
+        }
+
+        int page = 1;
+        if (gi.argc() >= 3)
+        {
+            StringToIntMaybe(gi.argv(2), page);
+        }
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        gi.cprintf(ent, PRINT_HIGH, "Retrieving scores from global database. Please wait...\n");
+        std::shared_ptr<global_cmd_maptimes> cmd = std::make_shared<global_cmd_maptimes>();
+        cmd->user = ent;
+        cmd->page = page;
+        cmd->count_per_page = 20;
+        cmd->mapname = mapname;
+        QueueGlobalDatabaseCmd(cmd);
+    }
+
     void HandleGlobalCmdResponse(const global_cmd_response& response)
     {
         global_cmd cmd_type = response.cmd_base->get_type();
@@ -680,6 +708,9 @@ namespace Jump
             break;
         case global_cmd::playermaps:
             HandleGlobalPlayermapsResponse(response);
+            break;
+        case global_cmd::maptimes:
+            HandleGlobalMaptimesResponse(response);
             break;
         default:
             break;
@@ -902,7 +933,8 @@ namespace Jump
 
         // Header
         gi.cprintf(cmd->user, PRINT_HIGH, "--------------------------------------\n");
-        gi.cprintf(cmd->user, PRINT_HIGH, "No. Name            Maps     %%\n");
+        std::string header = GetGreenConsoleText("No. Name            Maps     %\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "%s\n", header.c_str());
 
         // Highscores
         for (size_t i = 0; i < user_count; ++i)
@@ -930,6 +962,83 @@ namespace Jump
         gi.cprintf(cmd->user, PRINT_HIGH, "Page %d/%d (%d users). Use playermapsglobal <page>\n",
             page, total_pages, total_users);
         gi.cprintf(cmd->user, PRINT_HIGH, "--------------------------------------\n");
+    }
+
+    void HandleGlobalMaptimesResponse(const global_cmd_response& response)
+    {
+        if (response.cmd_base->get_type() != global_cmd::maptimes)
+        {
+            assert(false);
+            Logger::Error("ASSERT FAILURE: invalid input args to HandleGlobalMaptimesResponse");
+            return;
+        }
+
+        const global_cmd_maptimes* cmd = dynamic_cast<global_cmd_maptimes*>(response.cmd_base.get());
+        if (!cmd->user->inuse)
+        {
+            return;
+        }
+        if (!response.success)
+        {
+            gi.cprintf(cmd->user, PRINT_HIGH, "Error contacting global database.\n");
+            return;
+        }
+        if (response.data.empty())
+        {
+            Logger::Error("Global maptimes command returned no data");
+            gi.cprintf(cmd->user, PRINT_HIGH, "Error contacting global database.\n");
+            return;
+        }
+        rapidjson::Document json_obj;
+        json_obj.Parse(response.data.c_str());
+
+        size_t user_count = json_obj["user_records"].GetArray().Size();
+        if (user_count == 0)
+        {
+            gi.cprintf(cmd->user, PRINT_HIGH, "There are no global maptimes for this page.\n");
+            return;
+        }
+
+        // Header
+        gi.cprintf(cmd->user, PRINT_HIGH, "--------------------------------------------------------\n");
+        gi.cprintf(cmd->user, PRINT_HIGH, "Best Times for %s\n", cmd->mapname.c_str());
+        std::string header = "No. Name            Date        Server        Time";
+        header = GetGreenConsoleText(header);
+        gi.cprintf(cmd->user, PRINT_HIGH, "%s\n", header.c_str());
+
+        // Highscores
+        for (size_t i = 0; i < user_count; ++i)
+        {
+            int rank = json_obj["user_records"][i]["rank"].GetInt();
+
+            const char* username = json_obj["user_records"][i]["username"].GetString();
+
+            const char* servername = json_obj["user_records"][i]["server_name_short"].GetString();
+
+            int64_t date =  json_obj["user_records"][i]["date"].GetInt64();
+            std::string date_str = GetDateStringFromTimestamp(date);
+
+            int64_t time_ms = json_obj["user_records"][i]["time_ms"].GetInt64();
+            std::string time_ms_str = GetCompletionTimeDisplayString(time_ms);
+
+            int64_t pmove_time_ms = json_obj["user_records"][i]["pmove_time_ms"].GetInt64();
+
+            gi.cprintf(cmd->user, PRINT_HIGH, "%-3d %-15s %-10s  %-6s %11s\n",
+                rank,
+                username,
+                date_str.c_str(),
+                servername,
+                time_ms_str.c_str()
+            );
+        }
+
+        // Footer
+        int page = json_obj["page"].GetInt();
+        int total_pages = json_obj["max_pages"].GetInt();
+        int total_users = json_obj["user_count"].GetInt();
+        gi.cprintf(cmd->user, PRINT_HIGH, "Page %d/%d (%d users). Use maptimesglobal <map> <page>\n",
+            page, total_pages, total_users);
+        gi.cprintf(cmd->user, PRINT_HIGH, "--------------------------------------------------------\n");
     }
 
 } // namespace Jump

@@ -52,4 +52,7 @@ namespace Jump
 
     // Reads the entire contents of a file into a buffer.  Returns true on success, false on failure.
     bool ReadFileIntoBuffer(const std::string& filepath, std::vector<uint8_t>& buffer);
+
+    // Gets the date display string "2020/12/23" from a Unix timestamp (seconds)
+    std::string GetDateStringFromTimestamp(int64_t unix_s);
 }

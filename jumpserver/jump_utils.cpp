@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <unordered_set>
 #include <fstream>
+#include <time.h>
 
 namespace Jump
 {
@@ -215,6 +216,15 @@ namespace Jump
         buffer.resize(num_bytes);
         file.read(reinterpret_cast<char*>(&buffer[0]), num_bytes);
         return file.eof();
+    }
+
+    // Gets the date display string "2020/12/23" from a Unix timestamp (seconds)
+    std::string GetDateStringFromTimestamp(int64_t unix_s)
+    {
+        std::string date_string(11, '\0');
+        time_t time = unix_s;
+        strftime(&date_string[0], 11, "%Y/%m/%d", gmtime(&time));
+        return date_string;
     }
 
 } // namespace Jump

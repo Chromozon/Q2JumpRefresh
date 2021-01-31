@@ -186,6 +186,7 @@ namespace Jump
         bool update_replay_spectating;
 
         int fps;
+        int async;
         std::string ip;
         team_t team;
         int64_t timer_pmove_msec;

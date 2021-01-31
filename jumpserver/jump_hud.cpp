@@ -125,11 +125,23 @@ namespace Jump
         // FPS
         "if " XSTRINGIFY(STAT_JUMP_FPS) " "
         "xl 0 "
-        "yb -76 "
+        "yb -86 "
         "num 3 " XSTRINGIFY(STAT_JUMP_FPS) " "
         "xl 54 "
-        "yb -60 "
+        "yb -70 "
         "string2 \"FPS\" "
+        "endif "
+        ""
+        // Async
+        "if " XSTRINGIFY(STAT_JUMP_ASYNC_1) " "
+        "xl 80 "
+        "yb -70 "
+        "string2 \"(1)\" "
+        "endif "
+        "if " XSTRINGIFY(STAT_JUMP_ASYNC_0) " "
+        "xl 80 "
+        "yb -70 "
+        "string2 \"(0)\" "
         "endif "
         ""
         // Speedometer
@@ -218,6 +230,17 @@ namespace Jump
         if (ent->client->jumpdata->key_states & KEY_STATE_ATTACK)
         {
             ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = true;
+        }
+
+        if (ent->client->jumpdata->async == 0)
+        {
+            ent->client->ps.stats[STAT_JUMP_ASYNC_0] = 1;
+            ent->client->ps.stats[STAT_JUMP_ASYNC_1] = 0;
+        }
+        else
+        {
+            ent->client->ps.stats[STAT_JUMP_ASYNC_0] = 0;
+            ent->client->ps.stats[STAT_JUMP_ASYNC_1] = 1;
         }
 
         ent->client->ps.stats[STAT_JUMP_FPS] = static_cast<short>(ent->client->jumpdata->fps);

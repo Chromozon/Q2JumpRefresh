@@ -829,18 +829,25 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
         ent->client->jumpdata->fps = atoi(s);
         if (ent->client->jumpdata->fps < 20)
         {
-            gi.cprintf(ent, PRINT_HIGH, "[Server] You have been kicked for lowering CL_MAXFPS below 20\n");
+            gi.cprintf(ent, PRINT_HIGH, "[Server] You have been kicked for lowering cl_maxfps below 20\n");
             gi.AddCommandString(va("kick %d", ent - g_edicts - 1));
         }
         else if (ent->client->jumpdata->fps > 120)
         {
-            gi.cprintf(ent, PRINT_HIGH, "[Server] You have been kicked for raising CL_MAXFPS above 120\n");
+            gi.cprintf(ent, PRINT_HIGH, "[Server] You have been kicked for raising cl_maxfps above 120\n");
 			gi.AddCommandString(va("kick %d", ent - g_edicts - 1));
         }
     }
 
+	// async
+	s = Info_ValueForKey(userinfo, "cl_async");
+	if (strlen(s))
+	{
+		ent->client->jumpdata->async = atoi(s);
+	}
+
 	// save off the userinfo in case we want to check something later
-	strncpy (ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo)-1);
+	strncpy(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo)-1);
 }
 
 
@@ -1020,11 +1027,6 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	else
 	{
 		ent->client->jumpdata->timer_pmove_msec += ucmd->msec;
-	}
-
-	if (ucmd->msec > 0)
-	{
-		ent->client->jumpdata->fps = 1000 / ucmd->msec;
 	}
 
 	if (level.intermissiontime)

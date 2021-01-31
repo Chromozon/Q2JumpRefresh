@@ -12,7 +12,27 @@ namespace Jump
 
     // q_shared.h defines stat strings 0-17.  We can overlap with those since we are setting everything
     // in the HUD and not relying on base game logic, but try to avoid it.
+    //#define   STAT_HEALTH_ICON		0
+    //#define	STAT_HEALTH				1
+    //#define	STAT_AMMO_ICON			2
+    //#define	STAT_AMMO				3
+    //#define	STAT_ARMOR_ICON			4
+    //#define	STAT_ARMOR				5
+    //#define	STAT_SELECTED_ICON		6
+    //#define	STAT_PICKUP_ICON		7
+    //#define	STAT_PICKUP_STRING		8
+    //#define	STAT_TIMER_ICON			9
+    //#define	STAT_TIMER				10
+    //#define	STAT_HELPICON			11
+    //#define	STAT_SELECTED_ITEM		12
+    //#define	STAT_LAYOUTS			13
+    //#define	STAT_FRAGS				14
+    //#define	STAT_FLASHES			15		// cleared each frame, 1 = health, 2 = armor
+    //#define   STAT_CHASE				16
+    //#define   STAT_SPECTATOR			17
 
+    #define STAT_JUMP_ASYNC_0 10        // (int) 0 or 1
+    #define STAT_JUMP_ASYNC_1 14        // (int) 0 or 1
     #define STAT_JUMP_HUD_FOOTER_1 15   // set client-specific configstring for "Team: <team>"
     #define STAT_JUMP_HUD_FOOTER_2 16   // set client-specific configstring for "Race: n/NOW" or "Replay: n/NOW"
     #define STAT_JUMP_HUD_FOOTER_3 17   // set client-specific configstring for "Chkpts: n/n"

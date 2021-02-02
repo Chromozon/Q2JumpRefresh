@@ -227,4 +227,21 @@ namespace Jump
         return date_string;
     }
 
+    // Generates a random alphanumeric string of length len.
+    std::string GenerateRandomString(int len)
+    {
+        std::string tmp;
+        tmp.reserve(len);
+        static const char alphanum[] =
+            "0123456789"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz";
+        std::srand(std::time(nullptr));
+        for (size_t i = 0; i < len; ++i)
+        {
+            tmp += alphanum[std::rand() % (sizeof(alphanum) - 1)];
+        }
+        return tmp;
+    }
+
 } // namespace Jump

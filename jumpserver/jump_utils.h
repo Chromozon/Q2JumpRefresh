@@ -55,4 +55,7 @@ namespace Jump
 
     // Gets the date display string "2020/12/23" from a Unix timestamp (seconds)
     std::string GetDateStringFromTimestamp(int64_t unix_s);
+
+    // Generates a random alphanumeric string of length len.
+    std::string GenerateRandomString(int len);
 }

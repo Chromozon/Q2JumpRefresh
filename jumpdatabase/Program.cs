@@ -11,24 +11,33 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using log4net;
+using log4net.Config;
+using System.Reflection;
 
 namespace jumpdatabase
 {
     class Program
     {
-        const int ServicePort = 57540;
-        const string DatabasePath = "./jumpdatabase.sqlite3";
-        const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
-        const int StatisticsRefreshTimeMs = 1000 * 60 * 5; // 5 minutes
-        const string ReplayDirectory = "./replays/";
-        const string ReplayExtension = ".demo";
+        private static readonly ILog Log = LogManager.GetLogger("jumpdatabase");
+
+        private const string ServiceUrl = "http://localhost:57540/";
+        private const string DatabasePath = "./jumpdatabase.sqlite3";
+        private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
+        private const int StatisticsRefreshTimeMs = 1000 * 60 * 5; // 5 minutes
+        private const string ReplayDirectory = "./replays/";
+        private const string ReplayExtension = ".demo";
 
         static void Main(string[] args)
         {
+            // Initialize the logger
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+
             // Initialize the database
             SqliteConnection dbConnection = new SqliteConnection($"Data Source={DatabasePath}");
             dbConnection.Open();
-            Console.WriteLine($"Opened connection to database \"{DatabasePath}\"");
+            Log.Info($"Opened connection to database: {DatabasePath}");
             Tables.CreateAllTables(dbConnection);
             LoadServerLoginsCache(dbConnection);
             Statistics.LoadAllStatistics(dbConnection);
@@ -37,9 +46,9 @@ namespace jumpdatabase
 
             // Start listening for requests from the various servers
             HttpListener httpListener = new HttpListener();
-            httpListener.Prefixes.Add($"http://localhost:{ServicePort}/");
+            httpListener.Prefixes.Add(ServiceUrl);
             httpListener.Start();
-            Console.WriteLine($"Q2 Jump Database service listening on port {ServicePort}");
+            Log.Info($"Q2 Jump Database Service listening at: {ServiceUrl}");
 
             while (true)
             {
@@ -52,16 +61,19 @@ namespace jumpdatabase
                     {
                         Statistics.LoadAllStatistics(dbConnection);
                         _lastStatisticsRefresh = now;
+                        Log.Info("Refreshed statistics");
                     }
 
                     // Receive a request from a server
                     var context = httpListener.GetContext();
                     var request = context.Request;
                     var response = context.Response;
+                    Log.Info($"Received request from {request.RemoteEndPoint}");
 
                     // Parse the request
                     if (!request.ContentType.Contains("application/json"))
                     {
+                        Log.Warn("Invalid request- not json");
                         response.StatusCode = (int)HttpStatusCode.BadRequest;
                         response.Close();
                         continue;
@@ -147,7 +159,7 @@ namespace jumpdatabase
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Exception: {e}");
+                    Log.Error($"Exception: {e}");
                 }
             }
         }
@@ -227,11 +239,15 @@ namespace jumpdatabase
             int rows = command.ExecuteNonQuery();
             if (rows == 1)
             {
-                // Save the replay
-                byte[] replayData = Convert.FromBase64String(replayDataB64);
+                // Save the replay file to "replays/<mapname>/<userid>.demo"
+                string mapdir = Path.Combine(ReplayDirectory, mapname);
+                Directory.CreateDirectory(mapdir);
 
-                // TODO
+                long? userid = Statistics.GetUserIdFromUserName(username);
+                string replayPath = Path.Combine(mapdir, userid.Value.ToString()) + ReplayExtension;
 
+                string replayData = JsonConvert.SerializeObject(args);
+                File.WriteAllText(replayPath, replayData);
                 status = (int)HttpStatusCode.OK;
             }
         }

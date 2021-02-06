@@ -25,8 +25,6 @@ namespace jumpdatabase
         private const string DatabasePath = "./jumpdatabase.sqlite3";
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss"; // format supported by sqlite db
         private const int StatisticsRefreshTimeMs = 1000 * 60 * 5; // 5 minutes
-        private const string ReplayDirectory = "./replays/";
-        private const string ReplayExtension = ".demo";
 
         static void Main(string[] args)
         {
@@ -42,7 +40,6 @@ namespace jumpdatabase
             LoadServerLoginsCache(dbConnection);
             Statistics.LoadAllStatistics(dbConnection);
             _lastStatisticsRefresh = DateTime.UtcNow;
-            Directory.CreateDirectory(ReplayDirectory);
 
             // Start listening for requests from the various servers
             HttpListener httpListener = new HttpListener();
@@ -118,7 +115,6 @@ namespace jumpdatabase
                     switch (command)
                     {
                         case "addtime":
-                            // TODO add replay to file system
                             HandleCommandAddTime(dbConnection, serverId, commandArgs, out responseStatus);
                             break;
                         case "userlogin":
@@ -145,7 +141,9 @@ namespace jumpdatabase
                         case "maptimes":
                             HandleCommandMaptimes(dbConnection, commandArgs, out responseStatus, out responseData);
                             break;
-                            // TODO: get replay cmd
+                        case "replay":
+                            HandleCommandReplay(dbConnection, commandArgs, out responseStatus, out responseData);
+                            break;
                         default:
                             break;
                     }
@@ -162,12 +160,6 @@ namespace jumpdatabase
                     Log.Error($"Exception: {e}");
                 }
             }
-        }
-
-        private static void ListenerCallback(IAsyncResult result)
-        {
-            HttpListener httpListener = (HttpListener)result.AsyncState;
-            httpListener?.EndGetContext(result);
         }
 
         /// <summary>
@@ -187,7 +179,7 @@ namespace jumpdatabase
         /// }
         /// </param>
         /// <param name="status"></param>
-        static private void HandleCommandAddTime(IDbConnection connection, long serverId, dynamic args,
+        private static void HandleCommandAddTime(IDbConnection connection, long serverId, dynamic args,
             out int status)
         {
             status = (int)HttpStatusCode.BadRequest;
@@ -239,16 +231,10 @@ namespace jumpdatabase
             int rows = command.ExecuteNonQuery();
             if (rows == 1)
             {
-                // Save the replay file to "replays/<mapname>/<userid>.demo"
-                string mapdir = Path.Combine(ReplayDirectory, mapname);
-                Directory.CreateDirectory(mapdir);
-
-                long? userid = Statistics.GetUserIdFromUserName(username);
-                string replayPath = Path.Combine(mapdir, userid.Value.ToString()) + ReplayExtension;
-
-                string replayData = JsonConvert.SerializeObject(args);
-                File.WriteAllText(replayPath, replayData);
-                status = (int)HttpStatusCode.OK;
+                if (Statistics.SaveReplayToFile(mapname, username, JsonConvert.SerializeObject(args)))
+                {
+                    status = (int)HttpStatusCode.OK;
+                }
             }
         }
 
@@ -263,7 +249,7 @@ namespace jumpdatabase
         /// }
         /// </param>
         /// <param name="status"></param>
-        static private void HandleCommandUserLogin(IDbConnection connection, dynamic args, out int status)
+        private static void HandleCommandUserLogin(IDbConnection connection, dynamic args, out int status)
         {
             status = (int)HttpStatusCode.BadRequest;
 
@@ -312,7 +298,7 @@ namespace jumpdatabase
         /// }
         /// </param>
         /// <param name="status"></param>
-        static private void HandleCommandChangePassword(IDbConnection connection, dynamic args, out int status)
+        private static void HandleCommandChangePassword(IDbConnection connection, dynamic args, out int status)
         {
             status = (int)HttpStatusCode.BadRequest;
 
@@ -355,7 +341,7 @@ namespace jumpdatabase
         /// }
         /// </param>
         /// <param name="status"></param>
-        static private void HandleCommandAddMap(IDbConnection connection, dynamic args, out int status)
+        private static void HandleCommandAddMap(IDbConnection connection, dynamic args, out int status)
         {
             status = (int)HttpStatusCode.BadRequest;
 
@@ -396,7 +382,7 @@ namespace jumpdatabase
         /// }
         /// </param>
         /// <param name="status"></param>
-        static private void HandleCommandAddUserPrivate(IDbConnection connection, dynamic args, out int status)
+        private static void HandleCommandAddUserPrivate(IDbConnection connection, dynamic args, out int status)
         {
             status = (int)HttpStatusCode.BadRequest;
 
@@ -439,7 +425,7 @@ namespace jumpdatabase
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
-        static private void HandleCommandMaptimes(IDbConnection connection, dynamic args, out int status,
+        private static void HandleCommandMaptimes(IDbConnection connection, dynamic args, out int status,
             out string data)
         {
             status = (int)HttpStatusCode.BadRequest;
@@ -468,7 +454,7 @@ namespace jumpdatabase
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
-        static private void HandleCommandPlayertimes(IDbConnection connection, dynamic args, out int status,
+        private static void HandleCommandPlayertimes(IDbConnection connection, dynamic args, out int status,
             out string data)
         {
             status = (int)HttpStatusCode.BadRequest;
@@ -496,7 +482,7 @@ namespace jumpdatabase
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
-        static private void HandleCommandPlayerscores(IDbConnection connection, dynamic args, out int status,
+        private static void HandleCommandPlayerscores(IDbConnection connection, dynamic args, out int status,
             out string data)
         {
             status = (int)HttpStatusCode.BadRequest;
@@ -524,7 +510,7 @@ namespace jumpdatabase
         /// </param>
         /// <param name="status"></param>
         /// <param name="data"></param>
-        static private void HandleCommandPlayermaps(IDbConnection connection, dynamic args, out int status,
+        private static void HandleCommandPlayermaps(IDbConnection connection, dynamic args, out int status,
             out string data)
         {
             status = (int)HttpStatusCode.BadRequest;
@@ -541,10 +527,39 @@ namespace jumpdatabase
         }
 
         /// <summary>
+        /// Get a replay.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="args">
+        /// {
+        ///     "mapname": "mapname" (string, no file extension)
+        ///     "username": "username" (string, optional- null or empty)
+        ///     "rank": 1 (int, optional- null or <= 0)
+        /// }
+        /// </param>
+        /// <param name="status"></param>
+        /// <param name="data"></param>
+        private static void HandleCommandReplay(SqliteConnection connection, dynamic args, out int status,
+            out string data)
+        {
+            status = (int)HttpStatusCode.BadRequest;
+
+            string mapname = args.mapname;
+            string username = args.username;
+            int? rank = args.rank;
+
+            data = Statistics.GetReplayJson(mapname, username, rank);
+            if (!string.IsNullOrEmpty(data))
+            {
+                status = (int)HttpStatusCode.OK;
+            }
+        }
+
+        /// <summary>
         /// Load the server login tokens so we don't have to check this for each query.
         /// </summary>
         /// <param name="connection"></param>
-        static private void LoadServerLoginsCache(IDbConnection connection)
+        private static void LoadServerLoginsCache(IDbConnection connection)
         {
             _serverLogins.Clear();
             var command = connection.CreateCommand();
@@ -561,53 +576,6 @@ namespace jumpdatabase
         }
 
         /// <summary>
-        /// Saves a replay to the filesystem.
-        /// </summary>
-        /// <param name="username"></param>
-        /// <param name="mapname"></param>
-        /// <param name="serverId"></param>
-        /// <param name="timeMs"></param>
-        /// <param name="pmoveTimeMs"></param>
-        /// <param name="date"></param>
-        /// <param name="data"></param>
-        /// <returns>True if replay saved successfully.</returns>
-        bool SaveReplayToFile(string username, string mapname, long serverId, int timeMs, int pmoveTimeMs,
-            long date, byte[] data)
-        {
-            long? userId = Statistics.GetUserIdFromUserName(username);
-            long? mapId = Statistics.GetMapIdFromMapName(mapname);
-            string serverShortName = Statistics.GetShortServerNameFromId(serverId);
-            if (userId == null || mapId == null || string.IsNullOrEmpty(serverShortName))
-            {
-                return false;
-            }
-            string mapDir = Path.Combine(ReplayDirectory, mapId.Value.ToString());
-            Directory.CreateDirectory(mapDir);
-            string replayFilename = userId.Value.ToString() + ReplayExtension;
-            string replayPath = Path.Combine(mapDir, replayFilename);
-            string backupPath = replayPath + "_backup";
-            if (File.Exists(replayPath))
-            {
-                File.Copy(replayPath, backupPath);
-            }
-            using (BinaryWriter outfile = new BinaryWriter(File.Open(replayPath, FileMode.Create)))
-            {
-                outfile.Write($"server\t{serverShortName}\n");
-                outfile.Write($"mapname\t{mapname}\n");
-                outfile.Write($"username\t{username}\n");
-                outfile.Write($"date\t{GetDateStrFromUnixTimestamp(date)}\n");
-                outfile.Write($"time_ms\t{timeMs}\n");
-                outfile.Write($"pmove_time_ms\t{pmoveTimeMs}\n");
-                outfile.Write(data);
-            }
-            if (File.Exists(backupPath))
-            {
-                File.Delete(backupPath);
-            }
-            return true;
-        }
-
-        /// <summary>
         /// Gets a readable datetime string from a Unix timestamp (seconds).
         /// </summary>
         /// <param name="unixTimestampSeconds"></param>
@@ -621,9 +589,9 @@ namespace jumpdatabase
         }
 
         // Cache the server LoginToken -> ServerId
-        static private Dictionary<string, long> _serverLogins = new Dictionary<string, long>();
+        private static Dictionary<string, long> _serverLogins = new Dictionary<string, long>();
 
         // Last time the statistics were updated
-        static private DateTime _lastStatisticsRefresh = DateTime.MinValue;
+        private static DateTime _lastStatisticsRefresh = DateTime.MinValue;
     }
 }

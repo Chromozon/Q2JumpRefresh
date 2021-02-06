@@ -11,11 +11,15 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Diagnostics;
 
 namespace jumpdatabase
 {
     public class Statistics
     {
+        private const string ReplayDirectory = "./replays/";
+        private const string ReplayExtension = ".demo";
+
         private class MapTimeModel
         {
             public long MapId { get; set; }
@@ -441,6 +445,90 @@ namespace jumpdatabase
             }
             string json = JsonConvert.SerializeObject(mapTimes);
             return json;
+        }
+
+        /// <summary>
+        /// Saves replay data to disk.
+        /// </summary>
+        /// <param name="mapname"></param>
+        /// <param name="username"></param>
+        /// <param name="replayData">
+        /// {
+        ///     "mapname": "ddrace" (string, no file extension),
+        ///     "username": "Slip" (string),
+        ///     "date": 1610596223836 (int, Unix time s),
+        ///     "time_ms": 8876 (int, completion time in server milliseconds),
+        ///     "pmove_time_ms": 8850 (int, -1 means no time, completion time sum of pmove packets),
+        ///     "replay_data": "dGhpcyBpcyBhIHRlc3Q=" (string, base64 encoded replay frames)
+        /// }
+        /// </param>
+        /// <returns>True if success, false on failure</returns>
+        public static bool SaveReplayToFile(string mapname, string username, string replayData)
+        {
+            long? userId = GetUserIdFromUserName(username);
+            if (!userId.HasValue)
+            {
+                return false;
+            }
+            string replayPath = GetReplayFilename(mapname, userId.Value);
+            Directory.CreateDirectory(Path.GetDirectoryName(replayPath));
+
+            // We could create a backup before writing the file, but will this reaalllly ever fail?
+            File.WriteAllText(replayPath, replayData);
+            return true;
+        }
+
+        /// <summary>
+        /// Gets the replay file json.
+        /// </summary>
+        /// <param name="mapname">Required</param>
+        /// <param name="username">Optional, must provide username or rank</param>
+        /// <param name="rank">Optional, must provide username or rank</param>
+        /// <returns>Empty string on error, else replay json</returns>
+        public static string GetReplayJson(string mapname, string username, int? rank)
+        {
+            string replayJson = string.Empty;
+            long? mapId = GetMapIdFromMapName(mapname);
+            if (mapId.HasValue)
+            {
+                if (rank.HasValue && rank.Value > 0 && rank <= _cacheMaptimes[mapId.Value].Count)
+                {
+                    MapTimeModel maptime = _cacheMaptimes[mapId.Value][rank.Value - 1];
+                    long userId = maptime.UserId;
+
+                    string replayFile = GetReplayFilename(mapname, userId);
+                    if (File.Exists(replayFile))
+                    {
+                        replayJson = File.ReadAllText(replayFile);
+                    }
+                }
+                else if (!string.IsNullOrEmpty(username))
+                {
+                    long? userId = GetUserIdFromUserName(username);
+                    if (userId.HasValue)
+                    {
+                        string replayFile = GetReplayFilename(mapname, userId.Value);
+                        if (File.Exists(replayFile))
+                        {
+                            replayJson = File.ReadAllText(replayFile);
+                        }
+                    }
+                }
+            }
+            return replayJson;
+        }
+
+        /// <summary>
+        /// Gets the path to the replay file.
+        /// </summary>
+        /// <param name="mapname">Must not be null or empty</param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public static string GetReplayFilename(string mapname, long userId)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(mapname), "Invalid mapname arg");
+            string filename = Path.Combine(ReplayDirectory, mapname, $"{userId}{ReplayExtension}");
+            return filename;
         }
 
         /// <summary>

@@ -61,6 +61,13 @@ namespace jumpdatabase
                     MapId INTEGER NOT NULL,
 	                MapName TEXT NOT NULL UNIQUE,
                     DateAdded TEXT NOT NULL,
+                    HashMD5 TEXT NULL,
+                    MSetHashMD5 TEXT NULL,
+                    MSetDateUpdated TEXT NULL,
+                    MSetUpdatedBy TEXT NULL,
+                    EntHashMD5 TEXT NULL,
+                    EntDateUpdated TEXT NULL,
+                    EntUpdatedBy TEXT NULL,
 	                PRIMARY KEY (MapId AUTOINCREMENT)
                 )
             ";

@@ -1,5 +1,6 @@
 ﻿using log4net;
 using Microsoft.Data.Sqlite;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -34,6 +35,7 @@ namespace jumpdatabase
             string oldMSetDir = @"G:\Dropbox\Quake2\German_q2jump\german_msets\ent";
             string oldUserFile = @"G:\Dropbox\Quake2\German_q2jump\german_times_dec_2020\27910\users.t";
             string oldMaptimesDir = @"G:\Dropbox\Quake2\German_q2jump\german_times_dec_2020\27910";
+            string oldReplayDir = @"E:\Quake2\jump\jumpdemo\";
             int serverId = 1; // German
 
             // Wipe the database
@@ -54,7 +56,7 @@ namespace jumpdatabase
             LoadMaptimesIntoDatabase(connection, oldMaptimesDir, serverId);
 
             // Load the replays.
-            // TODO
+            ConvertReplays(connection, oldReplayDir);
 
             DateTime end = DateTime.Now;
             TimeSpan elapsed = end - start;
@@ -401,6 +403,7 @@ namespace jumpdatabase
                 count++;
                 if (count % 100 == 0)
                 {
+                    // Note this counts all maps that we have attempted to load, not just the successful ones
                     Log.Info($"Loaded maptimes from {count} maps");
                 }
             }
@@ -435,6 +438,254 @@ namespace jumpdatabase
                     Log.Info($"Cleared all records from table {tableName}");
                 }
             }
+        }
+
+        /// {
+        ///     "mapname": "mapname" (string, no file extension)
+        ///     "username": "username" (string)
+        ///     "date": 1610596223836 (int, Unix time s)
+        ///     "time_ms": 234934 (int, ms)
+        ///     "pmove_time_ms": 223320 (int, ms, -1 means no time)
+        ///     "replay_data": "dGhpcyBpcyBhIHRlc3Q=" (string, base64 encoded)
+        /// }
+        private class NewReplayData
+        {
+            public string mapname { get; set; }
+            public string username { get; set; }
+            public long date { get; set; }
+            public long time_ms { get; set; }
+            public long pmove_time_ms { get; set; }
+            public string replay_data { get; set; }
+        }
+
+        private static void ConvertReplays(IDbConnection connection, string oldReplayDir)
+        {
+            // Old replay [mapname]_[userid].dj3 file is array of:
+            // {
+            //     float32 angle[3];
+            //     float32 origin[3];
+            //     int32 frame;
+            // }
+            // This structure is packed with size 28 bytes.
+            //
+            // The 4 bytes of frame are a combo of fps and bitmask key states:
+            // frame[0] = ignored
+            // frame[1] = fps
+            // frame[2] = key states
+            // frame[3] = ignored
+            //
+            // Key states bitmask positions:
+            // Up (jump) = 1
+            // Down (crouch) = 2
+            // Left = 4
+            // Right = 8
+            // Forward = 16
+            // Back = 32
+            // Attack = 64
+            //
+            // New format:
+            // {
+            //     vec3_t pos;         // (12 bytes) player position in the world
+            //     vec3_t angles;      // (12 bytes) player view angles
+            //     int32_t key_states; // (4 bytes) active inputs (jump, crouch, left, right, etc.)
+            //     int32_t fps;        // (4 bytes) current fps
+            //     int32_t reserved1;  // (4 bytes) reserved bytes for future use (checkpoints, weapons, etc.)
+            //     int32_t reserved2;  // (4 bytes) reserved bytes for future use
+            // }
+            //
+            // KEY_STATE_NONE = 0
+            // KEY_STATE_FORWARD = 1 << 0
+            // KEY_STATE_BACK = 1 << 1
+            // KEY_STATE_LEFT = 1 << 2
+            // KEY_STATE_RIGHT = 1 << 3
+            // KEY_STATE_JUMP = 1 << 4
+            // KEY_STATE_CROUCH = 1 << 5
+            // KEY_STATE_ATTACK = 1 << 6
+
+            const int OldReplayFrameSizeBytes = 28;
+            const int NewReplayFrameSizeBytes = 40;
+
+            int count = 0;
+            foreach (var file in Directory.EnumerateFiles(oldReplayDir))
+            {
+                if (Path.GetExtension(file) != ".dj3")
+                {
+                    continue;
+                }
+                string filename = Path.GetFileName(file);
+                int indexExt = filename.LastIndexOf(".dj3");
+                int indexId = filename.LastIndexOf("_");
+                if (indexExt == -1 || indexId == -1 || indexExt <= indexId)
+                {
+                    Log.Warn($"Invalid replay filename format (bad name): {filename}");
+                    continue;
+                }
+                string userIdStr = filename.Substring(indexId + 1, indexExt - (indexId + 1));
+                bool success = int.TryParse(userIdStr, out int userId);
+                if (!success)
+                {
+                    Log.Warn($"Invalid replay filename format (bad user id): {filename}");
+                    continue;
+                }
+                string mapname = filename.Substring(0, indexId);
+                if (string.IsNullOrEmpty(mapname))
+                {
+                    Log.Warn($"Invalid replay filename format (bad mapname): {filename}");
+                    continue;
+                }
+                byte[] oldReplay = File.ReadAllBytes(file);
+                if (oldReplay.Length % OldReplayFrameSizeBytes != 0)
+                {
+                    Log.Warn($"Invalid replay file format (bad byte count): {filename}");
+                    continue;
+                }
+                int frameCount = oldReplay.Length / OldReplayFrameSizeBytes;
+                byte[] newReplay = new byte[frameCount * NewReplayFrameSizeBytes];
+                for (int i = 0; i < frameCount; i++)
+                {
+                    // Extract the old values
+                    int oldStart = i * OldReplayFrameSizeBytes;
+
+                    byte[] oldAngle = new byte[12];
+                    Array.Copy(oldReplay, oldStart, oldAngle, 0, 12);
+
+                    byte[] oldOrigin = new byte[12];
+                    Array.Copy(oldReplay, oldStart + 12, oldOrigin, 0, 12);
+
+                    byte oldFps = oldReplay[oldStart + 24 + 1];
+                    byte oldKeys = oldReplay[oldStart + 24 + 2];
+
+                    // Create the new values
+                    byte[] newAngle = oldAngle;
+                    byte[] newPos = oldOrigin;
+
+                    Int32 newFps = oldFps;
+                    Int32 newReserved1 = 0;
+                    Int32 newReserved2 = 0;
+
+                    Int32 newKeys = 0;
+                    if ((oldKeys & 1) != 0) // jump
+                    {
+                        newKeys |= 1 << 4;
+                    }
+                    if ((oldKeys & 2) != 0) // crouch
+                    {
+                        newKeys |= 1 << 5;
+                    }
+                    if ((oldKeys & 4) != 0) // left
+                    {
+                        newKeys |= 1 << 2;
+                    }
+                    if ((oldKeys & 8) != 0) // right
+                    {
+                        newKeys |= 1 << 3;
+                    }
+                    if ((oldKeys & 16) != 0) // forward
+                    {
+                        newKeys |= 1 << 0;
+                    }
+                    if ((oldKeys & 32) != 0) // back
+                    {
+                        newKeys |= 1 << 1;
+                    }
+                    if ((oldKeys & 64) != 0) // attack
+                    {
+                        newKeys |= 1 << 6;
+                    }
+
+                    // Copy the new values to the new array
+                    int newStart = i * NewReplayFrameSizeBytes;
+
+                    Array.Copy(newPos, 0, newReplay, newStart, 12);
+
+                    Array.Copy(newAngle, 0, newReplay, newStart + 12, 12);
+
+                    Array.Copy(BitConverter.GetBytes(newKeys), 0, newReplay, newStart + 24, 4);
+
+                    Array.Copy(BitConverter.GetBytes(newFps), 0, newReplay, newStart + 28, 4);
+
+                    Array.Copy(BitConverter.GetBytes(newReserved1), 0, newReplay, newStart + 32, 4);
+
+                    Array.Copy(BitConverter.GetBytes(newReserved2), 0, newReplay, newStart + 36, 4);
+                }
+
+                // Construct the file data
+                var command = connection.CreateCommand();
+                command.CommandText = $@"
+                    SELECT UserName FROM Users WHERE UserId = {userId}
+                ";
+                var reader = command.ExecuteReader();
+                string username = string.Empty;
+                while (reader.Read())
+                {
+                    username = (string)reader[0];
+                }
+                if (string.IsNullOrEmpty(username))
+                {
+                    Log.Warn($"Invalid username for replay file: {filename}");
+                    continue;
+                }
+
+                command = connection.CreateCommand();
+                command.CommandText = $@"
+                    SELECT MapId FROM Maps WHERE MapName = @mapname
+                ";
+                SqliteParameter paramMapName = new SqliteParameter("@mapname", SqliteType.Text);
+                paramMapName.Value = mapname;
+                command.Parameters.Add(paramMapName);
+                command.Prepare();
+                reader = command.ExecuteReader();
+                long mapId = -1;
+                while (reader.Read())
+                {
+                    mapId = (long)reader[0];
+                }
+                if (mapId == -1)
+                {
+                    Log.Warn($"Invalid map id for replay file: {filename}");
+                    continue;
+                }
+
+                command = connection.CreateCommand();
+                command.CommandText = $@"
+                    SELECT TimeMs, Date FROM MapTimes
+                    WHERE
+                        MapId = {mapId} AND UserId = {userId}
+                ";
+                reader = command.ExecuteReader();
+                long timeMs = -1;
+                string date = string.Empty;
+                while (reader.Read())
+                {
+                    timeMs = (long)reader[0];
+                    date = (string)reader[1];
+                }
+                if (timeMs == -1 || string.IsNullOrEmpty(date))
+                {
+                    Log.Warn($"Could not load maptimes for replay file: {filename}");
+                    continue;
+                }
+                DateTime dateTime = DateTime.ParseExact(date, DateTimeFormat, CultureInfo.InvariantCulture);
+                dateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                long dateUnixS = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
+                NewReplayData newReplayData = new NewReplayData()
+                {
+                    username = username,
+                    mapname = mapname,
+                    date = dateUnixS,
+                    time_ms = timeMs,
+                    pmove_time_ms = -1,
+                    replay_data = Convert.ToBase64String(newReplay)
+                };
+                string json = JsonConvert.SerializeObject(newReplayData);
+                Statistics.SaveReplayToFile(mapname, userId, json);
+                count++;
+                if (count % 100 == 0)
+                {
+                    Log.Info($"Converted {count} replays");
+                }
+            }
+            Log.Info($"Converted a total of {count} replays");
         }
 
         /// <summary>

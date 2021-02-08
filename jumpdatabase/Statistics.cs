@@ -470,12 +470,17 @@ namespace jumpdatabase
             {
                 return false;
             }
-            string replayPath = GetReplayFilename(mapname, userId.Value);
+            SaveReplayToFile(mapname, userId.Value, replayData);
+            return true;
+        }
+
+        public static void SaveReplayToFile(string mapname, long userId, string replayData)
+        {
+            string replayPath = GetReplayFilename(mapname, userId);
             Directory.CreateDirectory(Path.GetDirectoryName(replayPath));
 
             // We could create a backup before writing the file, but will this reaalllly ever fail?
             File.WriteAllText(replayPath, replayData);
-            return true;
         }
 
         /// <summary>

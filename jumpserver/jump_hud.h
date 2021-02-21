@@ -9,14 +9,14 @@ namespace Jump
     #define XSTRINGIFY(s) STRINGIFY(s)
 
     // STATs are values for HUD tokens which can be updated each server frame
-    #define STAT_JUMP_AVAILABLE_FOR_USE     0
-    #define STAT_JUMP_AVAILABLE_FOR_USE     1
-    #define STAT_JUMP_AVAILABLE_FOR_USE     2
-    #define STAT_JUMP_AVAILABLE_FOR_USE     3
-    #define STAT_JUMP_AVAILABLE_FOR_USE     4
-    #define STAT_JUMP_AVAILABLE_FOR_USE     5
-    #define STAT_JUMP_AVAILABLE_FOR_USE     6
-    #define STAT_JUMP_AVAILABLE_FOR_USE     7
+    #define STAT_JUMP_AVAILABLE_FOR_USE0    0
+    #define STAT_JUMP_AVAILABLE_FOR_USE1    1
+    #define STAT_JUMP_AVAILABLE_FOR_USE2    2
+    #define STAT_JUMP_AVAILABLE_FOR_USE3    3
+    #define STAT_JUMP_AVAILABLE_FOR_USE4    4
+    #define STAT_JUMP_AVAILABLE_FOR_USE5    5
+    #define STAT_JUMP_AVAILABLE_FOR_USE6    6
+    #define STAT_JUMP_AVAILABLE_FOR_USE7    7
     #define STAT_JUMP_ASYNC_0               8  // (int) 0 or 1
     #define STAT_JUMP_ASYNC_1               9  // (int) 0 or 1
     #define STAT_JUMP_HUD_VOTE_CAST         10 // (configstring) for "Votes: X of X" 

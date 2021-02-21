@@ -33,4 +33,15 @@ namespace Jump
     void HandleGlobalPlayerscoresResponse(const global_cmd_response& response);
     void HandleGlobalPlayermapsResponse(const global_cmd_response& response);
     void HandleGlobalMaptimesResponse(const global_cmd_response& response);
+    
+    void Cmd_Jump_Vote_Time(edict_t* ent);
+    void Cmd_Jump_Vote_Nominate(edict_t* ent);
+    void Cmd_Jump_Vote_ChangeMap(edict_t* ent);
+    void Cmd_Jump_Vote_Silence(edict_t* ent);
+    void Cmd_Jump_Vote_Kick(edict_t* ent);
+#ifdef _DEBUG
+    void Cmd_Jump_Vote_MapEndVote(edict_t* ent);
+#endif // _DEBUG
+    void Cmd_Jump_Vote_CastYes(edict_t* ent);
+    void Cmd_Jump_Vote_CastNo(edict_t* ent);
 }

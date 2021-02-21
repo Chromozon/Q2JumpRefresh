@@ -123,6 +123,12 @@
     <ClCompile Include="jump_global.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="jump_voting.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="jump_voting_types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h">
@@ -174,6 +180,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="thread_queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jump_voting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

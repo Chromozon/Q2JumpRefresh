@@ -9,6 +9,7 @@
 #include "jump_utils.h"
 #include "jump_logger.h"
 #include "jump_global.h"
+#include "jump_voting.h"
 #include <algorithm>
 #include "rapidjson/document.h"
 
@@ -38,14 +39,22 @@ namespace Jump
         { "playermapsglobal", Cmd_Jump_PlayermapsGlobal },
         { "maptimesglobal", Cmd_Jump_MaptimesGlobal },
 
+        { "votetime", Cmd_Jump_Vote_Time },
+        { "timevote", Cmd_Jump_Vote_Time },
+        { "nominate", Cmd_Jump_Vote_Nominate },
+        { "yes", Cmd_Jump_Vote_CastYes },
+        { "no", Cmd_Jump_Vote_CastNo },
+        { "mapvote", Cmd_Jump_Vote_ChangeMap },
+        { "votemap", Cmd_Jump_Vote_ChangeMap },
+        { "silence", Cmd_Jump_Vote_Silence },
+        { "votekick", Cmd_Jump_Vote_Kick },
+#ifdef _DEBUG
+        { "mapend", Cmd_Jump_Vote_MapEndVote },
+#endif // _DEBUG
+
         // TODO
         { "showtimes", Cmd_Jump_Void },
-        { "nominate", Cmd_Jump_Void },
-        { "votetime", Cmd_Jump_Void },
         { "timevote", Cmd_Jump_Void },
-        { "mapvote", Cmd_Jump_Void },
-        { "yes", Cmd_Jump_Void },
-        { "no", Cmd_Jump_Void },
         { "maplist", Cmd_Jump_Void },
         { "playermaps", Cmd_Jump_Void },
         { "globaltimes", Cmd_Jump_Void },
@@ -60,7 +69,6 @@ namespace Jump
         { "1st", Cmd_Jump_Void },
         { "!help", Cmd_Jump_Void },
         { "boot", Cmd_Jump_Void },
-        { "silence", Cmd_Jump_Void },
         { "+hook", Cmd_Jump_Void },
         { "race", Cmd_Jump_Void }, // race n, race now, race delay n, race off
 
@@ -625,6 +633,48 @@ namespace Jump
         cmd->page = page;
         cmd->count_per_page = 20;
         QueueGlobalDatabaseCmd(cmd);
+    }
+    
+    void Cmd_Jump_Vote_Time(edict_t* ent)
+    {
+        VoteSystem::AttemptStartVote(ent, VOTETYPE_VOTETIME, gi.args());
+    }
+
+    void Cmd_Jump_Vote_Nominate(edict_t* ent)
+    {
+        VoteSystem::AttemptStartVote(ent, VOTETYPE_NOMINATE, gi.args());
+    }
+
+    void Cmd_Jump_Vote_ChangeMap(edict_t* ent)
+    {
+        VoteSystem::AttemptStartVote(ent, VOTETYPE_MAPCHANGE, gi.args());
+    }
+
+    void Cmd_Jump_Vote_Silence(edict_t* ent)
+    {
+        VoteSystem::AttemptStartVote(ent, VOTETYPE_SILENCE, gi.args());
+    }
+
+    void Cmd_Jump_Vote_Kick(edict_t* ent)
+    {
+        VoteSystem::AttemptStartVote(ent, VOTETYPE_KICK, gi.args());
+    }
+
+#ifdef _DEBUG
+    void Cmd_Jump_Vote_MapEndVote(edict_t* ent)
+    {
+        VoteSystem::AttemptStartVote(ent, VOTETYPE_MAPEND, gi.args());
+    }
+#endif // _DEBUG
+
+    void Cmd_Jump_Vote_CastYes(edict_t* ent)
+    {
+        VoteSystem::CastVote(ent, VOTEOPTION_YES);
+    }
+
+    void Cmd_Jump_Vote_CastNo(edict_t* ent)
+    {
+        VoteSystem::CastVote(ent, VOTEOPTION_NO);
     }
 
     void Cmd_Jump_PlayerscoresGlobal(edict_t* ent)

@@ -35,7 +35,7 @@ namespace Jump
         virtual global_cmd get_type() const = 0;
     };
 
-    // Global playertimes
+    // Playertimes
     class global_cmd_playertimes : public global_cmd_base
     {
     public:
@@ -45,7 +45,7 @@ namespace Jump
         int count_per_page;
     };
 
-    // Global playermaps
+    // Playermaps
     class global_cmd_playermaps : public global_cmd_base
     {
     public:
@@ -55,7 +55,7 @@ namespace Jump
         int count_per_page;
     };
 
-    // Global playerscores
+    // Playerscores
     class global_cmd_playerscores : public global_cmd_base
     {
     public:
@@ -65,7 +65,7 @@ namespace Jump
         int count_per_page;
     };
 
-    // Global maptimes
+    // Maptimes
     class global_cmd_maptimes : public global_cmd_base
     {
     public:
@@ -74,6 +74,19 @@ namespace Jump
         int page;
         int count_per_page;
         std::string mapname;
+    };
+
+    // Addtime
+    class global_cmd_addtime : public global_cmd_base
+    {
+    public:
+        global_cmd get_type() const override { return global_cmd::addtime; }
+        std::string mapname;
+        std::string username;
+        int64_t date;
+        int64_t time_ms;
+        int64_t pmove_time_ms;
+        std::vector<replay_frame_t> replay_buffer;
     };
 
     // Global command response

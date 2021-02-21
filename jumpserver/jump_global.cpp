@@ -7,6 +7,7 @@
 #include "jump_utils.h"
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
+#include <filesystem>
 
 // Windows is needed for the HTTP lib header
 #if _WIN32
@@ -31,6 +32,7 @@ namespace Jump
         std::shared_ptr<global_cmd_base> cmd_base;
         while (global_cmd_queue.wait_and_pop(cmd_base))
         {
+            std::string temp_path;
             std::string json;
             global_cmd cmd_type = cmd_base->get_type();
             if (cmd_type == global_cmd::playertimes)
@@ -53,8 +55,38 @@ namespace Jump
                 global_cmd_maptimes* cmd = dynamic_cast<global_cmd_maptimes*>(cmd_base.get());
                 json = GetMaptimesCmdJson(LOGIN_TOKEN, cmd->mapname, cmd->page, cmd->count_per_page);
             }
+            else if (cmd_type == global_cmd::addtime)
+            {
+                global_cmd_addtime* cmd = dynamic_cast<global_cmd_addtime*>(cmd_base.get());
+                json = GetAddTimeCmdJson(LOGIN_TOKEN, cmd->username, cmd->mapname, cmd->time_ms,
+                    cmd->pmove_time_ms, cmd->date, cmd->replay_buffer);
+
+                std::string queue_dir = GetModDir() + '/' + "global_uploads_tmp";
+                std::filesystem::create_directories(queue_dir);
+                temp_path = queue_dir + '/' + GenerateRandomString(16);
+                std::ofstream temp_file(temp_path, std::ios::trunc);
+                if (temp_file.is_open())
+                {
+                    temp_file << "username\t" << cmd->username << std::endl;
+                    temp_file << "mapname\t" << cmd->mapname << std::endl;
+                    temp_file << "date\t" << cmd->date << std::endl;
+                    temp_file << "time_ms\t" << cmd->time_ms << std::endl;
+                    temp_file << "pmove_time_ms\t" << cmd->pmove_time_ms << std::endl;
+                }
+                else
+                {
+                    // log error, but try to still send to server
+                }
+                temp_file.close();
+
+            }
             std::string response_data;
             bool success = PostAndResponse(json, response_data);
+
+            if (cmd_type == global_cmd::addtime && success)
+            {
+                std::filesystem::remove(temp_path);
+            }
 
             std::shared_ptr<global_cmd_response> cmd_response = std::make_shared<global_cmd_response>();
             cmd_response->cmd_base = cmd_base;

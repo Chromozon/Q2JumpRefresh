@@ -190,7 +190,10 @@ namespace Jump
         assert(IsVoting());
 
         auto num_participants = participants.size();
-
+        if (num_participants == 0)
+        {
+            return 0;
+        }
 
         if (IsYesNoVote())
         {

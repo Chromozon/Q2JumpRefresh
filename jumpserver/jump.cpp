@@ -90,7 +90,22 @@ namespace Jump
     {
         ent->client->jumpdata->team = team;
         AssignTeamSkin(ent);
-        SpawnForJumping(ent);
+        if (team == TEAM_EASY)
+        {
+            if (ent->client->jumpdata->stores.HasStore())
+            {
+                store_data_t data = ent->client->jumpdata->stores.GetStore(1);
+                SpawnAtStorePosition(ent, data);
+            }
+            else
+            {
+                SpawnForJumping(ent);
+            }
+        }
+        else
+        {
+            SpawnForJumping(ent);
+        }
     }
 
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd)

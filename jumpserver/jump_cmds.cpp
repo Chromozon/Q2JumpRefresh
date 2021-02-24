@@ -78,6 +78,7 @@ namespace Jump
     bool HandleJumpCommand(edict_t* client)
     {
         std::string cmd = gi.argv(0);
+        cmd = AsciiToLower(cmd);
         const auto cmdPair = CmdTable.find(cmd);
         if (cmdPair != CmdTable.end())
         {
@@ -91,6 +92,16 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        typedef struct
+        {
+            vec3_t		angle;
+            vec3_t		origin;
+            int			frame;
+        } record_data;
+
+        record_data test;
+        int size = sizeof(test);
+
         //ConvertOldHighscores();
 
         CalculateAllLocalStatistics();

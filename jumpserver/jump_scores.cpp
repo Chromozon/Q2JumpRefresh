@@ -26,7 +26,7 @@ namespace Jump
         std::vector<user_time_record>& maptimes = it->second;
         std::string username_lower = AsciiToLower(username);
 
-        std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
+        std::string path = GetModPortDir() + '/' + SCORES_DIR + '/' + mapname;
         std::filesystem::create_directories(path);
         path += '/' + username + TIME_FILE_EXTENSION;
 
@@ -105,7 +105,7 @@ namespace Jump
     void LoadLocalMapList(std::unordered_set<std::string>& maplist)
     {
         maplist.clear();
-        std::string path = GetModDir() + '/' + MAPLIST_FILENAME;
+        std::string path = GetModPortDir() + '/' + MAPLIST_FILENAME;
         std::ifstream file(path);
         if (!file.is_open())
         {
@@ -127,8 +127,9 @@ namespace Jump
         std::unordered_map<std::string, std::vector<user_time_record>>& all_local_maptimes)
     {
         all_local_maptimes.clear();
+        //return;
 
-        std::string scores_dir = GetModDir() + '/' + SCORES_DIR;
+        std::string scores_dir = GetModPortDir() + '/' + SCORES_DIR;
         std::filesystem::create_directories(scores_dir);
 
         for (const std::string& mapname : maplist)
@@ -252,7 +253,7 @@ namespace Jump
         int64_t time_ms,
         const std::vector<replay_frame_t>& replay_buffer)
     {
-        std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname;
+        std::string path = GetModPortDir() + '/' + SCORES_DIR + '/' + mapname;
         std::filesystem::create_directories(path);
         path += '/' + username + DEMO_FILE_EXTENSION;
         std::string path_old = path + ".old";
@@ -308,7 +309,7 @@ namespace Jump
     {
         replay_buffer.clear();
 
-        std::string path = GetModDir() + '/' + SCORES_DIR + '/' + mapname + '/' + username + DEMO_FILE_EXTENSION;
+        std::string path = GetModPortDir() + '/' + SCORES_DIR + '/' + mapname + '/' + username + DEMO_FILE_EXTENSION;
         if (!std::filesystem::exists(path))
         {
             Logger::Warning("Replay file does not exist for user " + username + ", map " + mapname);
@@ -446,7 +447,7 @@ namespace Jump
     // NOTE: this function will completely overwrite all current maptimes
     void ConvertOldHighscores()
     {
-        std::string path = GetModDir() + '/' + "old";
+        std::string path = GetModPortDir() + '/' + "old";
 
         // Load the old maplist
         std::vector<std::string> old_maplist;
@@ -528,7 +529,7 @@ namespace Jump
 
                         record.completions = completions;
                         record.date = buffer;
-                        record.filepath = GetModDir() + '/' + SCORES_DIR + '/' + mapname + '/' + username + TIME_FILE_EXTENSION;
+                        record.filepath = GetModPortDir() + '/' + SCORES_DIR + '/' + mapname + '/' + username + TIME_FILE_EXTENSION;
                         record.time_ms = time * 1000;
                         record.username_key = username_key;
 
@@ -543,7 +544,7 @@ namespace Jump
         int j = 0;
         for (auto it = old_maptimes.begin(); it != old_maptimes.end(); ++it)
         {
-            std::string path = GetModDir() + '/' + SCORES_DIR + '/' + it->first;
+            std::string path = GetModPortDir() + '/' + SCORES_DIR + '/' + it->first;
             std::filesystem::create_directories(path);
 
             j++;
@@ -560,7 +561,7 @@ namespace Jump
 
     void LoadLastSeenTimes()
     {
-        std::string path = GetModDir() + '/' + SEEN_DIR;
+        std::string path = GetModPortDir() + '/' + SEEN_DIR;
         std::filesystem::create_directories(path);
         for (const auto& entry : std::filesystem::directory_iterator(path))
         {
@@ -595,7 +596,7 @@ namespace Jump
 
     void UpdateLastSeenTime(std::string username)
     {
-        std::string path = GetModDir() + '/' + SEEN_DIR;
+        std::string path = GetModPortDir() + '/' + SEEN_DIR;
         std::filesystem::create_directories(path);
         path += '/' + username + SEEN_FILE_EXTENSION;
         std::ofstream seen_file(path, std::ios::trunc);

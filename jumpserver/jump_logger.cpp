@@ -79,7 +79,7 @@ namespace Jump
     {
         if (!server_log_handle.is_open())
         {
-            std::string path = GetModDir();
+            std::string path = GetModPortDir();
             path += '/';
             path += LOGS_DIR;
             std::filesystem::create_directories(path);
@@ -98,7 +98,7 @@ namespace Jump
     {
         if (!completions_log_handle.is_open())
         {
-            std::string path = GetModDir();
+            std::string path = GetModPortDir();
             path += '/';
             path += LOGS_DIR;
             std::filesystem::create_directories(path);
@@ -117,7 +117,7 @@ namespace Jump
     {
         if (!activity_log_handle.is_open())
         {
-            std::string path = GetModDir();
+            std::string path = GetModPortDir();
             path += '/';
             path += LOGS_DIR;
             std::filesystem::create_directories(path);

@@ -7,8 +7,24 @@
 
 namespace Jump
 {
-    // Returns the path to the mod files relative to the root q2 folder ("jumprefresh/27910")
+    // Returns the path to the mod files relative to the root q2 folder ("jumprefresh")
     std::string GetModDir()
+    {
+        // The server application current directory is always the root q2 folder because that
+        // is where dedicated.exe or the client (r1q2.exe/q2pro.exe) is launched from.
+        // All files used by this mod must be appended with the game folder path
+        // so that we aren't writing them into the root q2 folder.
+        std::string path;
+        cvar_t* game = gi.cvar("game", "jumprefresh", 0);
+        if (game != NULL)
+        {
+            path += game->string;
+        }
+        return path;
+    }
+
+    // Returns the path to the mod files relative to the root q2 folder ("jumprefresh/27910")
+    std::string GetModPortDir()
     {
         // The server application current directory is always the root q2 folder because that
         // is where dedicated.exe or the client (r1q2.exe/q2pro.exe) is launched from.

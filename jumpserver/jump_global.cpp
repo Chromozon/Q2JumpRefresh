@@ -61,7 +61,7 @@ namespace Jump
                 json = GetAddTimeCmdJson(LOGIN_TOKEN, cmd->username, cmd->mapname, cmd->time_ms,
                     cmd->pmove_time_ms, cmd->date, cmd->replay_buffer);
 
-                std::string queue_dir = GetModDir() + '/' + "global_uploads_tmp";
+                std::string queue_dir = GetModPortDir() + '/' + "global_uploads_tmp";
                 std::filesystem::create_directories(queue_dir);
                 temp_path = queue_dir + '/' + GenerateRandomString(16);
                 std::ofstream temp_file(temp_path, std::ios::trunc);

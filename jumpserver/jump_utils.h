@@ -5,8 +5,11 @@
 
 namespace Jump
 {
-    // Returns the path to the mod files relative to the root q2 folder ("jumprefresh/27910")
+    // Returns the path to the mod files relative to the root q2 folder ("jumprefresh")
     std::string GetModDir();
+
+    // Returns the path to the mod files relative to the root q2 folder ("jumprefresh/27910")
+    std::string GetModPortDir();
 
     // Removes the folder path from a filename if there is one
     std::string RemovePathFromFilename(const std::string& filepath);

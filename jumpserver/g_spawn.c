@@ -533,6 +533,106 @@ void G_FindTeams (void)
 	gi.dprintf ("%i teams with %i entities\n", c, c2);
 }
 
+
+
+
+void SpawnEntitiesJump(char* mapname, char* entities, char* spawnpoint)
+{
+	gi.FreeTags(TAG_LEVEL);
+
+	memset(&level, 0, sizeof(level));
+	memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
+
+	strncpy(level.mapname, mapname, sizeof(level.mapname) - 1);
+	strncpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint) - 1);
+
+	// TODO: is this necessary?
+	for (int i = 0; i < game.maxclients; i++)
+	{
+		g_edicts[i + 1].client = game.clients + i;
+	}
+
+	// TODO: load the ent file for the given mapname if it exists
+
+	bool first_ent = true;
+	bool has_info_player_start = false;
+	edict_t* first_info_player_deathmatch = NULL;
+
+	// Parse ents one-by-one
+	while (1)
+	{
+		edict_t* ent = NULL;
+
+		// Parse the opening brace
+		char* com_token = COM_Parse(&entities);
+		if (!entities)
+		{
+			break;
+		}
+		if (com_token[0] != '{')
+		{
+			gi.error("SpawnEntitiesJump: found %s when expecting {", com_token);
+		}
+
+		if (first_ent)
+		{
+			ent = g_edicts; // worldspawn
+			first_ent = false;
+		}
+		else
+		{
+			ent = G_Spawn();
+		}
+
+		// Parse this data into ent and remove it from the list of entities
+		entities = ED_ParseEdict(entities, ent);
+
+		// Keep track of player start so that we can remove other spawns later
+		if (strcmp(ent->classname, "info_player_start") == 0)
+		{
+			has_info_player_start = true;
+		}
+
+		// Only keep the first spawn we find
+		if (strcmp(ent->classname, "info_player_deathmatch") == 0)
+		{
+			if (first_info_player_deathmatch == NULL)
+			{
+				first_info_player_deathmatch = ent;
+			}
+			else
+			{
+				G_FreeEdict(ent);
+				continue;
+			}
+		}
+
+		// Remove entities that we don't need
+		// TODO: add back in the checkpoint ents (but only allow a few of them)
+		if (strstr(ent->classname, "ammo_") != NULL ||
+			strstr(ent->classname, "key_") != NULL ||
+			strstr(ent->classname, "item_") != NULL)
+		{
+			G_FreeEdict(ent);
+			continue;
+		}
+
+		// Spawn the ent
+		ED_CallSpawn(ent);
+	}
+
+	// Remove the deathmatch spawn if we found a player start
+	if (has_info_player_start && first_info_player_deathmatch != NULL)
+	{
+		G_FreeEdict(first_info_player_deathmatch);
+	}
+
+	// Link together ents that go together
+	G_FindTeams();
+}
+
+
+
 /*
 ==============
 SpawnEntities
@@ -543,6 +643,9 @@ parsing textual entity definitions out of an ent file.
 */
 void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 {
+	SpawnEntitiesJump(mapname, entities, spawnpoint);
+	return;
+
 	edict_t		*ent;
 	int			inhibit;
 	char		*com_token;

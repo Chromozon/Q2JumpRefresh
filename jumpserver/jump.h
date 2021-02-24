@@ -3,7 +3,7 @@
 #include "g_local.h"
 #include <unordered_map>
 
-#define JUMP_STRING_VERSION "1.0slip"
+#define JUMP_VERSION_STRING "1.0slip"
 
 #define STORE_MODEL "models/monsters/commandr/head/tris.md2"
 

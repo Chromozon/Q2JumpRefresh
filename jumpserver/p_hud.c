@@ -83,8 +83,8 @@ void BeginIntermission (edict_t *targ)
 		return;		// allready activated
 
 //ZOID
-	if (deathmatch->value && ctf->value)
-		CTFCalcScores();
+	//if (deathmatch->value && ctf->value)
+	//	CTFCalcScores();
 //ZOID
 
 	game.autosaved = false;
@@ -186,10 +186,10 @@ void DeathmatchScoreboardMessage (edict_t *ent, edict_t *killer)
 	char	*tag;
 
 //ZOID
-	if (ctf->value) {
-		CTFScoreboardMessage (ent, killer);
-		return;
-	}
+	//if (ctf->value) {
+	//	CTFScoreboardMessage (ent, killer);
+	//	return;
+	//}
 //ZOID
 
 	// sort the clients by score

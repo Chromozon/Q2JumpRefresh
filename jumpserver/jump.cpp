@@ -39,7 +39,7 @@ namespace Jump
         { NULL,                           PMENU_ALIGN_LEFT,   NULL },
         { "Highlight your choice and",    PMENU_ALIGN_LEFT,   NULL },
         { "press ENTER.",                 PMENU_ALIGN_LEFT,   NULL },
-        { "v" JUMP_STRING_VERSION,        PMENU_ALIGN_RIGHT,  NULL },
+        { "v" JUMP_VERSION_STRING,        PMENU_ALIGN_RIGHT,  NULL },
     };
 
 
@@ -124,6 +124,8 @@ namespace Jump
 
     void AssignTeamSkin(edict_t* ent)
     {
+        // TODO: we use female model for both easy and hard
+        // Current code uses male model for admins, but we don't have to implement this
         // TODO: doesn't seem to be working with the model
         int playernum = ent - g_edicts - 1;
 

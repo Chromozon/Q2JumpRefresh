@@ -101,6 +101,27 @@ namespace Jump
         int32_t reserved2;  // (4 bytes) reserved bytes for future use
     } replay_frame_t;
 
+    // Proposed new replay frame structure:
+    //typedef struct
+    //{
+    //    vec3_t pos;         // (12 bytes) player position in the world
+    //    vec3_t angles;      // (12 bytes) player view angles
+    //    int32_t key_states; // (4 bytes) active inputs (jump, crouch, left, right, etc.)
+    //
+    // NEW: FPS changed from 4 bytes to 1 byte, the 3 extra bytes are used for async and reserved
+    //    uint8_t fps;        // (1 byte) current fps
+    //    uint8_t async;      // (1 byte) async 0 or 1 (can just use a single bit for this)
+    //    uint16_t reserved1;   // (2 bytes) reserved for future use
+
+    // NEW: reserved1 is used for checkpoints (allows optionally ordered checkpoints up to 32)
+    //    uint32_t checkpoints; // (4 bytes) checkpoint bitset (set the bit when a certain checkpoint is picked up- allows up to 32 checkpoints)
+    // 
+    // NEW: reserved2 is used for weapons
+    //    uint16_t weapon_inven; // (2 bytes) picked up weapon bitset (set the bit when a weapon has been picked up, blaster through BFG and HGs)
+    //    uint8_t weapon_equipped;  // (1 byte) enum for current equipped weapon
+    //    uint8_t reserved2;     // (1 byte) reserved for future use
+    //} replay_frame_t;
+
     typedef struct
     {
         int64_t time_interval;

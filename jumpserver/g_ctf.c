@@ -341,17 +341,17 @@ void CTFSpawn(void)
 void CTFInit(void)
 {
 	ctf = gi.cvar("ctf", "1", CVAR_SERVERINFO);
-	ctf_forcejoin = gi.cvar("ctf_forcejoin", "", 0);
-	competition = gi.cvar("competition", "0", CVAR_SERVERINFO);
-	matchlock = gi.cvar("matchlock", "1", CVAR_SERVERINFO);
-	electpercentage = gi.cvar("electpercentage", "66", 0);
-	matchtime = gi.cvar("matchtime", "20", CVAR_SERVERINFO);
-	matchsetuptime = gi.cvar("matchsetuptime", "10", 0);
-	matchstarttime = gi.cvar("matchstarttime", "20", 0);
-	admin_password = gi.cvar("admin_password", "", 0);
-	allow_admin = gi.cvar("allow_admin", "1", 0);
-	warp_list = gi.cvar("warp_list", "q2ctf1 q2ctf2 q2ctf3 q2ctf4 q2ctf5", 0);
-	warn_unbalanced = gi.cvar("warn_unbalanced", "1", 0);
+	//ctf_forcejoin = gi.cvar("ctf_forcejoin", "", 0);
+	//competition = gi.cvar("competition", "0", CVAR_SERVERINFO);
+	//matchlock = gi.cvar("matchlock", "1", CVAR_SERVERINFO);
+	//electpercentage = gi.cvar("electpercentage", "66", 0);
+	//matchtime = gi.cvar("matchtime", "20", CVAR_SERVERINFO);
+	//matchsetuptime = gi.cvar("matchsetuptime", "10", 0);
+	//matchstarttime = gi.cvar("matchstarttime", "20", 0);
+	//admin_password = gi.cvar("admin_password", "", 0);
+	//allow_admin = gi.cvar("allow_admin", "1", 0);
+	//warp_list = gi.cvar("warp_list", "q2ctf1 q2ctf2 q2ctf3 q2ctf4 q2ctf5", 0);
+	//warn_unbalanced = gi.cvar("warn_unbalanced", "1", 0);
 }
 
 /*

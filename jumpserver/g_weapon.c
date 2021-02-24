@@ -831,10 +831,10 @@ void bfg_think (edict_t *self)
 
 //ZOID
 		//don't target players in CTF
-		if (ctf->value && ent->client &&
-			self->owner->client &&
-			ent->client->resp.ctf_team == self->owner->client->resp.ctf_team)
-			continue;
+		//if (ctf->value && ent->client &&
+		//	self->owner->client &&
+		//	ent->client->resp.ctf_team == self->owner->client->resp.ctf_team)
+		//	continue;
 //ZOID
 
 		VectorMA (ent->absmin, 0.5, ent->size, point);

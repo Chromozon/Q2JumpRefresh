@@ -776,7 +776,7 @@ void G_SetClientEffects (edict_t *ent)
 	}
 
 //ZOID
-	CTFEffects(ent);
+	//CTFEffects(ent);
 //ZOID
 
 	if (ent->client->quad_framenum > level.framenum)

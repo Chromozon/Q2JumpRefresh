@@ -633,7 +633,7 @@ void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 	PlayerTrail_Init ();
 
 //ZOID
-	CTFSpawn();
+	//CTFSpawn();
 //ZOID
 }
 

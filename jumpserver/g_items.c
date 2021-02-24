@@ -129,11 +129,11 @@ void DoRespawn (edict_t *ent)
 //ZOID
 //in ctf, when we are weapons stay, only the master of a team of weapons
 //is spawned
-		if (ctf->value &&
-			((int)dmflags->value & DF_WEAPONS_STAY) &&
-			master->item && (master->item->flags & IT_WEAPON))
-			ent = master;
-		else {
+		//if (ctf->value &&
+		//	((int)dmflags->value & DF_WEAPONS_STAY) &&
+		//	master->item && (master->item->flags & IT_WEAPON))
+		//	ent = master;
+		//else {
 //ZOID
 
 			for (count = 0, ent = master; ent; ent = ent->chain, count++)
@@ -143,7 +143,7 @@ void DoRespawn (edict_t *ent)
 
 			for (count = 0, ent = master; count < choice; ent = ent->chain, count++)
 				;
-		}
+		//}
 	}
 
 	ent->svflags &= ~SVF_NOCLIENT;
@@ -1144,12 +1144,12 @@ void SpawnItem (edict_t *ent, gitem_t *item)
 
 //ZOID
 //Don't spawn the flags unless enabled
-	if (!ctf->value &&
-		(strcmp(ent->classname, "item_flag_team1") == 0 ||
-		strcmp(ent->classname, "item_flag_team2") == 0)) {
-		G_FreeEdict(ent);
-		return;
-	}
+	//if (!ctf->value &&
+	//	(strcmp(ent->classname, "item_flag_team1") == 0 ||
+	//	strcmp(ent->classname, "item_flag_team2") == 0)) {
+	//	G_FreeEdict(ent);
+	//	return;
+	//}
 //ZOID
 
 	ent->item = item;

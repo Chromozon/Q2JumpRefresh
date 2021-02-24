@@ -505,10 +505,10 @@ void Cmd_Inven_f (edict_t *ent)
 	}
 
 //ZOID
-	if (ctf->value && cl->resp.ctf_team == CTF_NOTEAM) {
-		CTFOpenJoinMenu(ent);
-		return;
-	}
+	//if (ctf->value && cl->resp.ctf_team == CTF_NOTEAM) {
+	//	CTFOpenJoinMenu(ent);
+	//	return;
+	//}
 //ZOID
 
 	cl->showinventory = true;

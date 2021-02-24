@@ -42,7 +42,7 @@ cvar_t	*skill;
 cvar_t	*fraglimit;
 cvar_t	*timelimit;
 //ZOID
-cvar_t	*capturelimit;
+cvar_t	*capturelimit; // TODO remove
 cvar_t	*instantweap;
 //ZOID
 cvar_t	*password;
@@ -306,12 +306,12 @@ void CheckDMRules (void)
 		return;
 
 //ZOID
-	if (ctf->value && CTFCheckRules()) {
-		EndDMLevel ();
-		return;
-	}
-	if (CTFInMatch())
-		return; // no checking in match mode
+	//if (ctf->value && CTFCheckRules()) {
+	//	EndDMLevel ();
+	//	return;
+	//}
+	//if (CTFInMatch())
+	//	return; // no checking in match mode
 //ZOID
 
 	if (timelimit->value)

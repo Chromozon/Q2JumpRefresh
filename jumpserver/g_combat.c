@@ -360,10 +360,10 @@ void M_ReactToDamage (edict_t *targ, edict_t *attacker)
 qboolean CheckTeamDamage (edict_t *targ, edict_t *attacker)
 {
 //ZOID
-	if (ctf->value && targ->client && attacker->client)
-		if (targ->client->resp.ctf_team == attacker->client->resp.ctf_team &&
-			targ != attacker)
-			return true;
+	//if (ctf->value && targ->client && attacker->client)
+	//	if (targ->client->resp.ctf_team == attacker->client->resp.ctf_team &&
+	//		targ != attacker)
+	//		return true;
 //ZOID
 
 		//FIXME make the next line real and uncomment this block
@@ -421,7 +421,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 
 //ZOID
 //strength tech
-	damage = CTFApplyStrength(attacker, damage);
+	//damage = CTFApplyStrength(attacker, damage);
 //ZOID
 
 	if (targ->flags & FL_NO_KNOCKBACK)
@@ -474,25 +474,25 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 
 //ZOID
 //team armor protect
-	if (ctf->value && targ->client && attacker->client &&
-		targ->client->resp.ctf_team == attacker->client->resp.ctf_team &&
-		targ != attacker && ((int)dmflags->value & DF_ARMOR_PROTECT)) {
-		psave = asave = 0;
-	} else {
+	//if (ctf->value && targ->client && attacker->client &&
+	//	targ->client->resp.ctf_team == attacker->client->resp.ctf_team &&
+	//	targ != attacker && ((int)dmflags->value & DF_ARMOR_PROTECT)) {
+	//	psave = asave = 0;
+	//} else {
 //ZOID
 		psave = CheckPowerArmor (targ, point, normal, take, dflags);
 		take -= psave;
 	
 		asave = CheckArmor (targ, point, normal, take, te_sparks, dflags);
 		take -= asave;
-	}
+	//}
 
 	//treat cheat/powerup savings the same as armor
 	asave += save;
 
 //ZOID
 //resistance tech
-	take = CTFApplyResistance(targ, take);
+	//take = CTFApplyResistance(targ, take);
 //ZOID
 
 	// team damage avoidance
@@ -500,7 +500,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		return;
 
 //ZOID
-	CTFCheckHurtCarrier(targ, attacker);
+	//CTFCheckHurtCarrier(targ, attacker);
 //ZOID
 
 // do the damage
@@ -511,8 +511,8 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		else
 			SpawnDamage (te_sparks, point, normal, take);
 
-		if (!CTFMatchSetup())
-			targ->health = targ->health - take;
+		//if (!CTFMatchSetup())
+		//	targ->health = targ->health - take;
 			
 		if (targ->health <= 0)
 		{

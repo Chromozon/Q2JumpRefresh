@@ -71,6 +71,7 @@ namespace Jump
         { "boot", Cmd_Jump_Void },
         { "+hook", Cmd_Jump_Void },
         { "race", Cmd_Jump_Void }, // race n, race now, race delay n, race off
+        { "say_person", Cmd_Jump_Void },
 
         // TODO: all of the admin commands- remtime, addmap, etc.
     };

@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump_utils.h"
 #include "jump_hud.h"
 #include "jump_scores.h"
+#include "jump_logger.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -729,7 +730,7 @@ to be placed into the game.  This will happen every level load.
 void ClientBegin (edict_t *ent)
 {
     // Jump
-    Jump::ClientBeginJump(ent);
+    Jump::ClientOnEnterMap(ent);
     // Jump
 }
 
@@ -865,17 +866,17 @@ loadgames will.
 */
 qboolean ClientConnect(edict_t* ent, char* userinfo)
 {
-	char	*value;
+	char* value = NULL;
 
 	// check to see if they are on the banned IP list
-	value = Info_ValueForKey (userinfo, "ip");
+	value = Info_ValueForKey(userinfo, "ip");
 	if (SV_FilterPacket(value)) {
 		Info_SetValueForKey(userinfo, "rejmsg", "Banned.");
 		return false;
 	}
 
-	// check for a password
-	value = Info_ValueForKey (userinfo, "password");
+	// check for a server password
+	value = Info_ValueForKey(userinfo, "password");
 	if (*password->string && strcmp(password->string, "none") && 
 		strcmp(password->string, value)) {
 		Info_SetValueForKey(userinfo, "rejmsg", "Password required or incorrect.");
@@ -886,38 +887,31 @@ qboolean ClientConnect(edict_t* ent, char* userinfo)
 	value = Info_ValueForKey(userinfo, "name");
 	if (!Jump::IsUsernameValid(value))
 	{
-		Info_SetValueForKey(userinfo, "rejmsg", "Invalid username.");
+		Info_SetValueForKey(userinfo, "rejmsg", "Invalid username. Cannot use special characters: <>:\"/\\|?*");
 		return false;
 	}
 
 	// they can connect
 	ent->client = game.clients + (ent - g_edicts - 1);
 
-	// if there is already a body waiting for us (a loadgame), just
-	// take it, otherwise spawn one from scratch
-	// TODO: comment doesn't match this code for inuse
-	if (ent->inuse == false)
-	{
-		// clear the respawning variables
-//ZOID -- force team join
-//		ent->client->resp.ctf_team = -1;
-//		ent->client->resp.id_state = true; 
-//ZOID
-		InitClientResp (ent->client);
-		if (!game.autosaved || !ent->client->pers.weapon)
-			InitClientPersistant (ent->client);
-	}
+	// initialize the client
+	memset(ent->client, 0, sizeof(*ent->client));
+
+	ent->client->resp.enterframe = level.framenum;	// TODO: we might not need this for anything
+	ent->client->pers.connected = true;
+	ent->inuse = true;
 
 	// Jump
+	// TODO inline
 	Jump::JumpClientConnect(ent);
 	// Jump
 
-	ClientUserinfoChanged (ent, userinfo);
+	// TODO!!!
+	// ClientBegin() is called right after this and basically resets the ent
 
-	if (game.maxclients > 1)
-		gi.dprintf ("%s connected\n", ent->client->pers.netname);
+	ClientUserinfoChanged(ent, userinfo);
 
-	ent->client->pers.connected = true;
+	Jump::Logger::Info(va("%s connected", ent->client->pers.netname));
 	return true;
 }
 

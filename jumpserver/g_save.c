@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "g_local.h"
+#include "jump_logger.h"
 
 field_t fields[] = {
 	{"classname", FOFS(classname), F_LSTRING},
@@ -81,9 +82,9 @@ only happens when a new game is started or a save game
 is loaded.
 ============
 */
-void InitGame (void)
+void InitGame()
 {
-	gi.dprintf ("==== InitGame ====\n");
+	Jump::Logger::Info("==== InitGame ====");
 
 	gun_x = gi.cvar("gun_x", "0", 0);
 	gun_y = gi.cvar("gun_y", "0", 0);

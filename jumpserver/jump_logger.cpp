@@ -16,6 +16,7 @@ namespace Jump
             server_log_handle << GetCurrentTimeUTC() << '\t' << "ERROR: " << error << '\n';
             server_log_handle.flush();
             // TODO: can call gi.error("%s\n", msg); to also print to server console
+            // gi.error shuts down server
         }
     }
 

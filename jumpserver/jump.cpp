@@ -161,18 +161,43 @@ namespace Jump
     // This is called once whenever a player first enters a map.
     // We want to initialize everything to a clean state,
     // make the player a spectator, and open the join team menu.
-    void ClientBeginJump(edict_t* ent)
+    void ClientOnEnterMap(edict_t* ent)
     {
-        G_InitEdict(ent);
+        // TODO: go through all of the ent structs and set their values to what we want here
+
         memset(&ent->client->ps, 0, sizeof(ent->client->ps));
-        InitClientResp(ent->client);
+        memset(&ent->client->resp, 0, sizeof(ent->client->resp));
+        ent->client->resp.enterframe = level.framenum;
+        ent->client->resp.coop_respawn = ent->client->pers; // TODO don't need
 
         char userinfo[MAX_INFO_STRING];
-        memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo));
-        InitClientPersistant(ent->client);
+        memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo)); // TODO: not sure why we need this here
 
-        FetchClientEntData(ent);
+        gitem_t* item;
+        item = FindItem("Blaster");
+        ent->client->pers.selected_item = ITEM_INDEX(item);
+        ent->client->pers.inventory[ent->client->pers.selected_item] = 1;
+        ent->client->pers.weapon = item;
+        ent->client->pers.lastweapon = item;
 
+        ent->client->pers.health = 500;
+        ent->client->pers.max_health = 500;
+
+        ent->client->pers.max_bullets = 999;
+        ent->client->pers.max_shells = 999;
+        ent->client->pers.max_rockets = 999;
+        ent->client->pers.max_grenades = 999;
+        ent->client->pers.max_cells = 999;
+        ent->client->pers.max_slugs = 999;
+
+        ent->client->pers.connected = true;
+
+        ent->health = ent->client->pers.health;
+        ent->max_health = ent->client->pers.max_health;
+        ent->flags |= ent->client->pers.savedFlags;
+
+        ent->s.number = ent - g_edicts;
+        ent->gravity = 1.0;
         ent->groundentity = NULL;
         ent->takedamage = DAMAGE_AIM;
         ent->viewheight = 22;
@@ -202,7 +227,6 @@ namespace Jump
         ent->s.skinnum = ent - g_edicts - 1;
         ent->s.modelindex = 255;        // will use the skin specified model
         ent->s.modelindex2 = 255;       // custom gun model
-        ent->s.skinnum = ent - g_edicts - 1;
         ent->s.frame = 0;
 
         InitAsSpectator(ent);
@@ -284,7 +308,7 @@ namespace Jump
         char userinfo[MAX_INFO_STRING] = { 0 };
         memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo));
         InitClientPersistant(ent->client); // TODO: don't like this, should just set all the vars
-        ClientUserinfoChanged(ent, userinfo);
+        ClientUserinfoChanged(ent, userinfo); // TODO: dont' need this or the copy from above
 
         InitClientForRespawn(ent);
 

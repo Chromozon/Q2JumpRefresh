@@ -108,18 +108,18 @@ namespace Jump
     //    vec3_t angles;      // (12 bytes) player view angles
     //    int32_t key_states; // (4 bytes) active inputs (jump, crouch, left, right, etc.)
     //
-    // NEW: FPS changed from 4 bytes to 1 byte, the 3 extra bytes are used for async and reserved
+    // NEW: FPS changed from 4 bytes to 1 byte, the 3 extra bytes are used for async, checkpoints, and reserved
     //    uint8_t fps;        // (1 byte) current fps
     //    uint8_t async;      // (1 byte) async 0 or 1 (can just use a single bit for this)
-    //    uint16_t reserved1;   // (2 bytes) reserved for future use
-
-    // NEW: reserved1 is used for checkpoints (allows optionally ordered checkpoints up to 32)
-    //    uint32_t checkpoints; // (4 bytes) checkpoint bitset (set the bit when a certain checkpoint is picked up- allows up to 32 checkpoints)
-    // 
-    // NEW: reserved2 is used for weapons
+    //    uint8_t checkpoints; // (1 byte) number of checkpoints picked up
+    //    uint8_t reserved1;    // (1 byte)
+    //
+    // NEW: reserved1 is used for weapons
     //    uint16_t weapon_inven; // (2 bytes) picked up weapon bitset (set the bit when a weapon has been picked up, blaster through BFG and HGs)
     //    uint8_t weapon_equipped;  // (1 byte) enum for current equipped weapon
-    //    uint8_t reserved2;     // (1 byte) reserved for future use
+    //    uint8_t reserved2;     // (1 byte)
+    //
+    //    int32_t reserved3; // (4 bytes)
     //} replay_frame_t;
 
     typedef struct
@@ -190,6 +190,7 @@ namespace Jump
             replay_spectating_framenum = 0;
             update_replay_spectating = false;
             fps = 0;
+            async = 0;
             team = TEAM_SPECTATOR;
             timer_pmove_msec = 0;
             timer_begin = 0;

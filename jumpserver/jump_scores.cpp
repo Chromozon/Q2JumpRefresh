@@ -112,15 +112,28 @@ namespace Jump
             Logger::Warning(va("Maplist file \"%s\" not found, scores will not be saved", path.c_str()));
             return;
         }
+        std::vector<std::string> files_not_found;
         std::string line;
         while (std::getline(file, line))
         {
             if (!line.empty())
             {
-                maplist.insert(line);
+                std::string mapfile = GetModDir() + "/maps/" + line + ".bsp";
+                if (std::filesystem::exists(mapfile))
+                {
+                    maplist.insert(line);
+                }
+                else
+                {
+                    files_not_found.push_back(line);
+                }
             }
         }
         Logger::Info(va("Loaded %d maps from maplist \"%s\"", static_cast<int>(maplist.size()), path.c_str()));
+        for (const std::string& mapname : files_not_found)
+        {
+            Logger::Warning("Server does not have bsp file: " + mapname);
+        }
     }
 
     void LoadAllLocalMaptimes(const std::unordered_set<std::string>& maplist,

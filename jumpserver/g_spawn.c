@@ -159,9 +159,11 @@ spawn_t	spawns[] = {
 	{"info_player_deathmatch", SP_info_player_deathmatch},
 	{"info_player_coop", SP_info_player_coop},
 	{"info_player_intermission", SP_info_player_intermission},
+
+	// TODO: Are there jump maps that only have team spawns?
 //ZOID
-	{"info_player_team1", SP_info_player_team1},
-	{"info_player_team2", SP_info_player_team2},
+	//{"info_player_team1", SP_info_player_team1},
+	//{"info_player_team2", SP_info_player_team2},
 //ZOID
 
 	{"func_plat", SP_func_plat},
@@ -229,8 +231,9 @@ spawn_t	spawns[] = {
 	{"misc_explobox", SP_misc_explobox},
 	{"misc_banner", SP_misc_banner},
 //ZOID
-	{"misc_ctf_banner", SP_misc_ctf_banner},
-	{"misc_ctf_small_banner", SP_misc_ctf_small_banner},
+// TODO: add these back in
+	//{"misc_ctf_banner", SP_misc_ctf_banner},
+	//{"misc_ctf_small_banner", SP_misc_ctf_small_banner},
 //ZOID
 	{"misc_satellite_dish", SP_misc_satellite_dish},
 #if 0 // remove monster code
@@ -250,8 +253,9 @@ spawn_t	spawns[] = {
 	{"misc_teleporter", SP_misc_teleporter},
 	{"misc_teleporter_dest", SP_misc_teleporter_dest},
 //ZOID
-	{"trigger_teleport", SP_trigger_teleport},
-	{"info_teleport_destination", SP_info_teleport_destination},
+// TODO: do we use these in jump?
+	//{"trigger_teleport", SP_trigger_teleport},
+	//{"info_teleport_destination", SP_info_teleport_destination},
 //ZOID
 	{"misc_blackhole", SP_misc_blackhole},
 	{"misc_eastertank", SP_misc_eastertank},

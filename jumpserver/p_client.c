@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump_hud.h"
 #include "jump_scores.h"
 #include "jump_logger.h"
+#include "g_chase.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -355,14 +356,7 @@ void InitClientPersistant (gclient_t *client)
 	client->pers.inventory[client->pers.selected_item] = 1;
 
 	client->pers.weapon = item;
-//ZOID
 	client->pers.lastweapon = item;
-//ZOID
-
-//ZOID
-	item = FindItem("Grapple");
-	client->pers.inventory[ITEM_INDEX(item)] = 1;
-//ZOID
 
 	client->pers.health			= 100;
 	client->pers.max_health		= 100;
@@ -699,11 +693,6 @@ void PutClientInServer (edict_t *ent)
 	VectorCopy (ent->s.angles, client->ps.viewangles);
 	VectorCopy (ent->s.angles, client->v_angle);
 
-//ZOID
-	if (CTFStartClient(ent))
-		return;
-//ZOID
-
     // Jump note: KillBox does the telefrag on spawn, so we don't need this in our code!
 	if (!KillBox (ent))
 	{	// could't spawn in?
@@ -932,11 +921,6 @@ void ClientDisconnect (edict_t *ent)
 
 	gi.bprintf (PRINT_HIGH, "%s disconnected\n", ent->client->pers.netname);
 
-//ZOID
-	CTFDeadDropFlag(ent);
-	CTFDeadDropTech(ent);
-//ZOID
-
 	// send effect
 	gi.WriteByte (svc_muzzleflash);
 	gi.WriteShort (ent-g_edicts);
@@ -1122,8 +1106,8 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	}
 
 //ZOID
-	if (client->ctf_grapple)
-		CTFGrapplePull((edict_t*)client->ctf_grapple);
+	//if (client->ctf_grapple)
+	//	CTFGrapplePull((edict_t*)client->ctf_grapple);
 //ZOID
 
 	gi.linkentity (ent);
@@ -1167,11 +1151,6 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 			Think_Weapon (ent);
 		}
 	}
-
-//ZOID
-//regen tech
-	CTFApplyRegeneration(ent);
-//ZOID
 
 //ZOID
 	for (i = 1; i <= maxclients->value; i++) {
@@ -1271,8 +1250,7 @@ void ClientBeginServerFrame (edict_t *ent)
 				buttonMask = -1;
 
 			if ( ( client->latched_buttons & buttonMask ) ||
-				(deathmatch->value && ((int)dmflags->value & DF_FORCE_RESPAWN) ) ||
-				CTFMatchOn())
+				(deathmatch->value && ((int)dmflags->value & DF_FORCE_RESPAWN) ))
 			{
 				respawn(ent);
 				client->latched_buttons = 0;

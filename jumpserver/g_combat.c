@@ -536,7 +536,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	}
 	else if (client)
 	{
-		if (!(targ->flags & FL_GODMODE) && (take) && !CTFMatchSetup())
+		if (!(targ->flags & FL_GODMODE) && take != 0)
 			targ->pain (targ, attacker, knockback, take);
 	}
 	else if (take)

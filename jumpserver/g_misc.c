@@ -308,27 +308,6 @@ void ThrowDebris (edict_t *self, char *modelname, float speed, vec3_t origin)
 
 void BecomeExplosion1 (edict_t *self)
 {
-//ZOID
-	//flags are important
-	if (strcmp(self->classname, "item_flag_team1") == 0) {
-		CTFResetFlag(CTF_TEAM1); // this will free self!
-		gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n",
-			CTFTeamName(CTF_TEAM1));
-		return;
-	}
-	if (strcmp(self->classname, "item_flag_team2") == 0) {
-		CTFResetFlag(CTF_TEAM2); // this will free self!
-		gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n",
-			CTFTeamName(CTF_TEAM1));
-		return;
-	}
-	// techs are important too
-	if (self->item && (self->item->flags & IT_TECH)) {
-		CTFRespawnTech(self); // this frees self!
-		return;
-	}
-//ZOID
-
 	gi.WriteByte (svc_temp_entity);
 	gi.WriteByte (TE_EXPLOSION1);
 	gi.WritePosition (self->s.origin);
@@ -1822,10 +1801,6 @@ void teleporter_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_
 		gi.dprintf ("Couldn't find destination\n");
 		return;
 	}
-
-//ZOID
-	CTFPlayerResetGrapple(other);
-//ZOID
 
 	// unlink to make sure it can't possibly interfere with KillBox
 	gi.unlinkentity (other);

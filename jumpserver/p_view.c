@@ -522,14 +522,6 @@ void P_FallingDamage (edict_t *ent)
 	}
 	delta = delta*delta * 0.0001;
 
-//ZOID
-	// never take damage if just release grapple or on grapple
-	if (level.time - ent->client->ctf_grapplereleasetime <= FRAMETIME * 2 ||
-		(ent->client->ctf_grapple && 
-		ent->client->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY))
-		return;
-//ZOID
-
 	// never take falling damage if completely underwater
 	if (ent->waterlevel == 3)
 		return;
@@ -775,24 +767,18 @@ void G_SetClientEffects (edict_t *ent)
 		}
 	}
 
-//ZOID
-	//CTFEffects(ent);
-//ZOID
-
 	if (ent->client->quad_framenum > level.framenum)
 	{
 		remaining = ent->client->quad_framenum - level.framenum;
 		if (remaining > 30 || (remaining & 4) )
-//			ent->s.effects |= EF_QUAD;
-			CTFSetPowerUpEffect(ent, EF_QUAD);
+			ent->s.effects |= EF_QUAD;
 	}
 
 	if (ent->client->invincible_framenum > level.framenum)
 	{
 		remaining = ent->client->invincible_framenum - level.framenum;
 		if (remaining > 30 || (remaining & 4) )
-//			ent->s.effects |= EF_PENT;
-			CTFSetPowerUpEffect(ent, EF_PENT);
+			ent->s.effects |= EF_PENT;
 	}
 
 	// show cheaters!!!

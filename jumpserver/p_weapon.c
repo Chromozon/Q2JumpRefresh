@@ -522,15 +522,8 @@ static void Weapon_Generic2 (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FI
 		{
 			if (ent->client->ps.gunframe == fire_frames[n])
 			{
-//ZOID
-				if (!CTFApplyStrengthSound(ent))
-//ZOID
 				if (ent->client->quad_framenum > level.framenum)
 					gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
-//ZOID
-				CTFApplyHasteSound(ent);
-//ZOID
-
 				fire (ent);
 				break;
 			}
@@ -552,20 +545,6 @@ void Weapon_Generic (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST,
 	Weapon_Generic2 (ent, FRAME_ACTIVATE_LAST, FRAME_FIRE_LAST, 
 		FRAME_IDLE_LAST, FRAME_DEACTIVATE_LAST, pause_frames, 
 		fire_frames, fire);
-
-	// run the weapon frame again if hasted
-	if (stricmp(ent->client->pers.weapon->pickup_name, "Grapple") == 0 &&
-		ent->client->weaponstate == WEAPON_FIRING)
-		return;
-
-	if ((CTFApplyHaste(ent) ||
-		(Q_stricmp(ent->client->pers.weapon->pickup_name, "Grapple") == 0 &&
-		ent->client->weaponstate != WEAPON_FIRING))
-		&& oldstate == ent->client->weaponstate) {
-		Weapon_Generic2 (ent, FRAME_ACTIVATE_LAST, FRAME_FIRE_LAST, 
-			FRAME_IDLE_LAST, FRAME_DEACTIVATE_LAST, pause_frames, 
-			fire_frames, fire);
-	}
 }
 //ZOID
 

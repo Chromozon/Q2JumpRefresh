@@ -27,9 +27,6 @@
     <ClCompile Include="g_combat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="g_ctf.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="g_func.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -134,9 +131,6 @@
     <ClInclude Include="game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="g_ctf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="g_local.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -183,6 +177,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="jump_voting.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="g_chase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

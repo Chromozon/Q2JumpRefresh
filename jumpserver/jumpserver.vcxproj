@@ -151,7 +151,6 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
     <ClCompile Include="g_chase.c" />
     <ClCompile Include="g_cmds.c" />
     <ClCompile Include="g_combat.c" />
-    <ClCompile Include="g_ctf.c" />
     <ClCompile Include="g_func.c" />
     <ClCompile Include="g_items.c" />
     <ClCompile Include="g_main.c" />
@@ -188,9 +187,9 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base64.h" />
+    <ClInclude Include="g_chase.h" />
     <ClInclude Include="thread_queue.h" />
     <ClInclude Include="game.h" />
-    <ClInclude Include="g_ctf.h" />
     <ClInclude Include="g_local.h" />
     <ClInclude Include="jump.h" />
     <ClInclude Include="jump_global.h" />

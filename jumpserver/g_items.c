@@ -541,11 +541,7 @@ void Drop_Ammo (edict_t *ent, gitem_t *item)
 
 void MegaHealth_think (edict_t *self)
 {
-	if (self->owner->health > self->owner->max_health
-//ZOID
-		&& !CTFHasRegeneration(self->owner)
-//ZOID
-		)
+	if (self->owner->health > self->owner->max_health)
 	{
 		self->nextthink = level.time + 1;
 		self->owner->health -= 1;
@@ -582,11 +578,7 @@ qboolean Pickup_Health (edict_t *ent, edict_t *other)
 			other->health = other->max_health;
 	}
 
-//ZOID
-	if ((ent->style & HEALTH_TIMED)
-		&& !CTFHasRegeneration(other)
-//ZOID
-	)
+	if (ent->style & HEALTH_TIMED)
 	{
 		ent->think = MegaHealth_think;
 		ent->nextthink = level.time + 5;
@@ -787,9 +779,6 @@ void Touch_Item (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf
 		return;		// dead people can't pickup
 	if (!ent->item->pickup)
 		return;		// not a grabbable item?
-
-	if (CTFMatchSetup())
-		return; // can't pick stuff up right now
 
 	taken = ent->item->pickup(ent, other);
 
@@ -1142,16 +1131,6 @@ void SpawnItem (edict_t *ent, gitem_t *item)
 		item->drop = NULL;
 	}
 
-//ZOID
-//Don't spawn the flags unless enabled
-	//if (!ctf->value &&
-	//	(strcmp(ent->classname, "item_flag_team1") == 0 ||
-	//	strcmp(ent->classname, "item_flag_team2") == 0)) {
-	//	G_FreeEdict(ent);
-	//	return;
-	//}
-//ZOID
-
 	ent->item = item;
 	ent->nextthink = level.time + 2 * FRAMETIME;    // items start after other solids
 	ent->think = droptofloor;
@@ -1159,15 +1138,6 @@ void SpawnItem (edict_t *ent, gitem_t *item)
 	ent->s.renderfx = RF_GLOW;
 	if (ent->model)
 		gi.modelindex (ent->model);
-
-//ZOID
-//flags are server animated and have special handling
-	if (strcmp(ent->classname, "item_flag_team1") == 0 ||
-		strcmp(ent->classname, "item_flag_team2") == 0) {
-		ent->think = CTFFlagSetup;
-	}
-//ZOID
-
 }
 
 //======================================================================
@@ -1325,30 +1295,6 @@ gitem_t	itemlist[] =
 	//
 	// WEAPONS 
 	//
-
-/* weapon_grapple (.3 .3 1) (-16 -16 -16) (16 16 16)
-always owned, never in the world
-*/
-	{
-		"weapon_grapple", 
-		NULL,
-		Use_Weapon,
-		NULL,
-		CTFWeapon_Grapple,
-		"misc/w_pkup.wav",
-		NULL, 0,
-		"models/weapons/grapple/tris.md2",
-/* icon */		"w_grapple",
-/* pickup */	"Grapple",
-		0,
-		0,
-		NULL,
-		IT_WEAPON,
-		WEAP_GRAPPLE,
-		NULL,
-		0,
-/* precache */ "weapons/grapple/grfire.wav weapons/grapple/grpull.wav weapons/grapple/grhang.wav weapons/grapple/grreset.wav weapons/grapple/grhit.wav"
-	},
 
 /* weapon_blaster (.3 .3 1) (-16 -16 -16) (16 16 16)
 always owned, never in the world
@@ -2202,144 +2148,6 @@ tank commander's head
 		0,
 /* precache */ "items/s_health.wav items/n_health.wav items/l_health.wav items/m_health.wav"
 	},
-
-
-//ZOID
-/*QUAKED item_flag_team1 (1 0.2 0) (-16 -16 -24) (16 16 32)
-*/
-	{
-		"item_flag_team1",
-		CTFPickup_Flag,
-		NULL,
-		CTFDrop_Flag, //Should this be null if we don't want players to drop it manually?
-		NULL,
-		"ctf/flagtk.wav",
-		"players/male/flag1.md2", EF_FLAG1,
-		NULL,
-/* icon */		"i_ctf1",
-/* pickup */	"Red Flag",
-/* width */		2,
-		0,
-		NULL,
-		0,
-		0,
-		NULL,
-		0,
-/* precache */ "ctf/flagcap.wav"
-	},
-
-/*QUAKED item_flag_team2 (1 0.2 0) (-16 -16 -24) (16 16 32)
-*/
-	{
-		"item_flag_team2",
-		CTFPickup_Flag,
-		NULL,
-		CTFDrop_Flag, //Should this be null if we don't want players to drop it manually?
-		NULL,
-		"ctf/flagtk.wav",
-		"players/male/flag2.md2", EF_FLAG2,
-		NULL,
-/* icon */		"i_ctf2",
-/* pickup */	"Blue Flag",
-/* width */		2,
-		0,
-		NULL,
-		0,
-		0,
-		NULL,
-		0,
-/* precache */ "ctf/flagcap.wav"
-	},
-
-/* Resistance Tech */
-	{
-		"item_tech1",
-		CTFPickup_Tech,
-		NULL,
-		CTFDrop_Tech, //Should this be null if we don't want players to drop it manually?
-		NULL,
-		"items/pkup.wav",
-		"models/ctf/resistance/tris.md2", EF_ROTATE,
-		NULL,
-/* icon */		"tech1",
-/* pickup */	"Disruptor Shield",
-/* width */		2,
-		0,
-		NULL,
-		IT_TECH,
-		0,
-		NULL,
-		0,
-/* precache */ "ctf/tech1.wav"
-	},
-
-/* Strength Tech */
-	{
-		"item_tech2",
-		CTFPickup_Tech,
-		NULL,
-		CTFDrop_Tech, //Should this be null if we don't want players to drop it manually?
-		NULL,
-		"items/pkup.wav",
-		"models/ctf/strength/tris.md2", EF_ROTATE,
-		NULL,
-/* icon */		"tech2",
-/* pickup */	"Power Amplifier",
-/* width */		2,
-		0,
-		NULL,
-		IT_TECH,
-		0,
-		NULL,
-		0,
-/* precache */ "ctf/tech2.wav ctf/tech2x.wav"
-	},
-
-/* Haste Tech */
-	{
-		"item_tech3",
-		CTFPickup_Tech,
-		NULL,
-		CTFDrop_Tech, //Should this be null if we don't want players to drop it manually?
-		NULL,
-		"items/pkup.wav",
-		"models/ctf/haste/tris.md2", EF_ROTATE,
-		NULL,
-/* icon */		"tech3",
-/* pickup */	"Time Accel",
-/* width */		2,
-		0,
-		NULL,
-		IT_TECH,
-		0,
-		NULL,
-		0,
-/* precache */ "ctf/tech3.wav"
-	},
-
-/* Regeneration Tech */
-	{
-		"item_tech4",
-		CTFPickup_Tech,
-		NULL,
-		CTFDrop_Tech, //Should this be null if we don't want players to drop it manually?
-		NULL,
-		"items/pkup.wav",
-		"models/ctf/regeneration/tris.md2", EF_ROTATE,
-		NULL,
-/* icon */		"tech4",
-/* pickup */	"AutoDoc",
-/* width */		2,
-		0,
-		NULL,
-		IT_TECH,
-		0,
-		NULL,
-		0,
-/* precache */ "ctf/tech4.wav"
-	},
-
-//ZOID
 
 	// end of list marker
 	{NULL}

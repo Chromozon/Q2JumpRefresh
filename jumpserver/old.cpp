@@ -1,5 +1,242 @@
 // Dumping ground for code that's not needed, but could be useful for reference
 
+// Useful CTF stuff to keep around
+#if 0
+
+void CTFSay_Team(edict_t* who, char* msg)
+{
+	char outmsg[256];
+	char buf[256];
+	int i;
+	char* p;
+	edict_t* cl_ent;
+
+	if (CheckFlood(who))
+		return;
+
+	outmsg[0] = 0;
+
+	if (*msg == '\"') {
+		msg[strlen(msg) - 1] = 0;
+		msg++;
+	}
+
+	for (p = outmsg; *msg && (p - outmsg) < sizeof(outmsg) - 2; msg++) {
+		if (*msg == '%') {
+			switch (*++msg) {
+			case 'l':
+			case 'L':
+				CTFSay_Team_Location(who, buf);
+				if (strlen(buf) + (p - outmsg) < sizeof(outmsg) - 2) {
+					strcpy(p, buf);
+					p += strlen(buf);
+				}
+				break;
+			case 'a':
+			case 'A':
+				CTFSay_Team_Armor(who, buf);
+				if (strlen(buf) + (p - outmsg) < sizeof(outmsg) - 2) {
+					strcpy(p, buf);
+					p += strlen(buf);
+				}
+				break;
+			case 'h':
+			case 'H':
+				CTFSay_Team_Health(who, buf);
+				if (strlen(buf) + (p - outmsg) < sizeof(outmsg) - 2) {
+					strcpy(p, buf);
+					p += strlen(buf);
+				}
+				break;
+			case 't':
+			case 'T':
+				CTFSay_Team_Tech(who, buf);
+				if (strlen(buf) + (p - outmsg) < sizeof(outmsg) - 2) {
+					strcpy(p, buf);
+					p += strlen(buf);
+				}
+				break;
+			case 'w':
+			case 'W':
+				CTFSay_Team_Weapon(who, buf);
+				if (strlen(buf) + (p - outmsg) < sizeof(outmsg) - 2) {
+					strcpy(p, buf);
+					p += strlen(buf);
+				}
+				break;
+
+			case 'n':
+			case 'N':
+				CTFSay_Team_Sight(who, buf);
+				if (strlen(buf) + (p - outmsg) < sizeof(outmsg) - 2) {
+					strcpy(p, buf);
+					p += strlen(buf);
+				}
+				break;
+
+			default:
+				*p++ = *msg;
+			}
+		}
+		else
+			*p++ = *msg;
+	}
+	*p = 0;
+
+	for (i = 0; i < maxclients->value; i++) {
+		cl_ent = g_edicts + 1 + i;
+		if (!cl_ent->inuse)
+			continue;
+		if (cl_ent->client->resp.ctf_team == who->client->resp.ctf_team)
+			gi.cprintf(cl_ent, PRINT_CHAT, "(%s): %s\n",
+				who->client->pers.netname, outmsg);
+	}
+}
+
+/*-----------------------------------------------------------------------*/
+/*QUAKED misc_ctf_banner (1 .5 0) (-4 -64 0) (4 64 248) TEAM2
+The origin is the bottom of the banner.
+The banner is 248 tall.
+*/
+static void misc_ctf_banner_think(edict_t* ent)
+{
+	ent->s.frame = (ent->s.frame + 1) % 16;
+	ent->nextthink = level.time + FRAMETIME;
+}
+
+void SP_misc_ctf_banner(edict_t* ent)
+{
+	ent->movetype = MOVETYPE_NONE;
+	ent->solid = SOLID_NOT;
+	ent->s.modelindex = gi.modelindex("models/ctf/banner/tris.md2");
+	if (ent->spawnflags & 1) // team2
+		ent->s.skinnum = 1;
+
+	ent->s.frame = rand() % 16;
+	gi.linkentity(ent);
+
+	ent->think = misc_ctf_banner_think;
+	ent->nextthink = level.time + FRAMETIME;
+}
+
+/*QUAKED misc_ctf_small_banner (1 .5 0) (-4 -32 0) (4 32 124) TEAM2
+The origin is the bottom of the banner.
+The banner is 124 tall.
+*/
+void SP_misc_ctf_small_banner(edict_t* ent)
+{
+	ent->movetype = MOVETYPE_NONE;
+	ent->solid = SOLID_NOT;
+	ent->s.modelindex = gi.modelindex("models/ctf/banner/small.md2");
+	if (ent->spawnflags & 1) // team2
+		ent->s.skinnum = 1;
+
+	ent->s.frame = rand() % 16;
+	gi.linkentity(ent);
+
+	ent->think = misc_ctf_banner_think;
+	ent->nextthink = level.time + FRAMETIME;
+}
+
+static void old_teleporter_touch(edict_t* self, edict_t* other, cplane_t* plane, csurface_t* surf)
+{
+	edict_t* dest;
+	int			i;
+	vec3_t		forward;
+
+	if (!other->client)
+		return;
+	dest = G_Find(NULL, FOFS(targetname), self->target);
+	if (!dest)
+	{
+		gi.dprintf("Couldn't find destination\n");
+		return;
+	}
+
+	//ZOID
+	CTFPlayerResetGrapple(other);
+	//ZOID
+
+		// unlink to make sure it can't possibly interfere with KillBox
+	gi.unlinkentity(other);
+
+	VectorCopy(dest->s.origin, other->s.origin);
+	VectorCopy(dest->s.origin, other->s.old_origin);
+	//	other->s.origin[2] += 10;
+
+		// clear the velocity and hold them in place briefly
+	VectorClear(other->velocity);
+	other->client->ps.pmove.pm_time = 160 >> 3;		// hold time
+	other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
+
+	// draw the teleport splash at source and on the player
+	self->enemy->s.event = EV_PLAYER_TELEPORT;
+	other->s.event = EV_PLAYER_TELEPORT;
+
+	// set angles
+	for (i = 0; i < 3; i++)
+		other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
+
+	other->s.angles[PITCH] = 0;
+	other->s.angles[YAW] = dest->s.angles[YAW];
+	other->s.angles[ROLL] = 0;
+	VectorCopy(dest->s.angles, other->client->ps.viewangles);
+	VectorCopy(dest->s.angles, other->client->v_angle);
+
+	// give a little forward velocity
+	AngleVectors(other->client->v_angle, forward, NULL, NULL);
+	VectorScale(forward, 200, other->velocity);
+
+	// kill anything at the destination
+	if (!KillBox(other))
+	{
+	}
+
+	gi.linkentity(other);
+}
+
+/*QUAKED trigger_teleport (0.5 0.5 0.5) ?
+Players touching this will be teleported
+*/
+void SP_trigger_teleport(edict_t* ent)
+{
+	edict_t* s;
+	int i;
+
+	if (!ent->target)
+	{
+		gi.dprintf("teleporter without a target.\n");
+		G_FreeEdict(ent);
+		return;
+	}
+
+	ent->svflags |= SVF_NOCLIENT;
+	ent->solid = SOLID_TRIGGER;
+	ent->touch = old_teleporter_touch;
+	gi.setmodel(ent, ent->model);
+	gi.linkentity(ent);
+
+	// noise maker and splash effect dude
+	s = G_Spawn();
+	ent->enemy = s;
+	for (i = 0; i < 3; i++)
+		s->s.origin[i] = ent->mins[i] + (ent->maxs[i] - ent->mins[i]) / 2;
+	s->s.sound = gi.soundindex("world/hum1.wav");
+	gi.linkentity(s);
+
+}
+
+/*QUAKED info_teleport_destination (0.5 0.5 0.5) (-16 -16 -24) (16 16 32)
+Point trigger_teleports at these.
+*/
+void SP_info_teleport_destination(edict_t* ent)
+{
+	ent->s.origin[2] += 16;
+}
+
+#endif
+
+
 #if 0
 
 void ClientBegin(edict_t* ent)

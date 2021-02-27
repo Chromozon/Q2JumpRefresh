@@ -355,9 +355,6 @@ void ExitLevel (void)
 	level.exitintermission = 0;
 	level.intermissiontime = 0;
 
-	if (CTFNextMap())
-		return;
-
 	Com_sprintf (command, sizeof(command), "gamemap \"%s\"\n", level.changemap);
 	gi.AddCommandString (command);
 	ClientEndServerFrames ();

@@ -261,7 +261,6 @@ namespace Jump
         ent->movetype = MOVETYPE_NOCLIP;
         ent->solid = SOLID_NOT;
         ent->svflags |= SVF_NOCLIENT;
-        ent->client->resp.ctf_team = CTF_NOTEAM;
         ent->client->ps.gunindex = 0;
         ent->client->jumpdata->team = TEAM_SPECTATOR;
     }

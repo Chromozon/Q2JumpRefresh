@@ -891,18 +891,18 @@ typedef struct
 	int			enterframe;			// level.framenum the client entered the game
 	int			score;				// frags, etc
 //ZOID
-	int			ctf_team;			// CTF team
-	int			ctf_state;
-	float		ctf_lasthurtcarrier;
-	float		ctf_lastreturnedflag;
-	float		ctf_flagsince;
-	float		ctf_lastfraggedcarrier;
-	qboolean	id_state;
-	float		lastidtime;
-	qboolean	voted; // for elections
-	qboolean	ready;
-	qboolean	admin;
-	struct ghost_s *ghost; // for ghost codes
+	//int			ctf_team;			// CTF team
+	//int			ctf_state;
+	//float		ctf_lasthurtcarrier;
+	//float		ctf_lastreturnedflag;
+	//float		ctf_flagsince;
+	//float		ctf_lastfraggedcarrier;
+	//qboolean	id_state;
+	//float		lastidtime;
+	//qboolean	voted; // for elections
+	//qboolean	ready;
+	//qboolean	admin;
+	//struct ghost_s *ghost; // for ghost codes
 //ZOID
 	vec3_t		cmd_angles;			// angles sent over in the last command
 	int			game_helpchanged;
@@ -1162,10 +1162,6 @@ struct edict_s
 	moveinfo_t		moveinfo;
 	monsterinfo_t	monsterinfo;
 };
-
-//ZOID
-#include "g_ctf.h"
-//ZOID
 
 // Jump
 #include "jump.h"

@@ -80,47 +80,38 @@ namespace Jump
     } scores_menu_t;
 
     // How much disk space is required to store a replay:
-    // 40 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 400 bytes/s
-    // 15 seconds = 6 kB
-    // 1 minute = 24 kB
-    // 5 minutes = 120 kB
-    // 15 minutes = 360 kB
-    // 1 hour = 1.44 MB
-    // 24 hours = 34.56 MB
+    // 64 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 640 bytes/s
+    // 15 seconds = 9.6 kB
+    // 1 minute = 38.4 kB
+    // 5 minutes = 192 kB
+    // 15 minutes = 576 kB
+    // 1 hour = 2.3 MB
+    // 24 hours = 55.3 MB
     //
     // Let's say on average 50 players complete each map, and the time is 2 minutes, and there are 3000 maps
-    // 50 replays * 48 kB/replay * 3000 maps = 7.2 GB
+    // 50 replays * 77 kB/replay * 3000 maps = 11.6 GB
     //
     typedef struct
     {
-        vec3_t pos;         // (12 bytes) player position in the world
-        vec3_t angles;      // (12 bytes) player view angles
-        int32_t key_states; // (4 bytes) active inputs (jump, crouch, left, right, etc.)
-        int32_t fps;        // (4 bytes) current fps
-        int32_t reserved1;  // (4 bytes) reserved bytes for future use (checkpoints, weapons, etc.)
-        int32_t reserved2;  // (4 bytes) reserved bytes for future use
-    } replay_frame_t;
+        vec3_t pos;                 // (byte 0) player position in the world
+        vec3_t angles;              // (byte 12) player view angles
 
-    // Proposed new replay frame structure:
-    //typedef struct
-    //{
-    //    vec3_t pos;         // (12 bytes) player position in the world
-    //    vec3_t angles;      // (12 bytes) player view angles
-    //    int32_t key_states; // (4 bytes) active inputs (jump, crouch, left, right, etc.)
-    //
-    // NEW: FPS changed from 4 bytes to 1 byte, the 3 extra bytes are used for async, checkpoints, and reserved
-    //    uint8_t fps;        // (1 byte) current fps
-    //    uint8_t async;      // (1 byte) async 0 or 1 (can just use a single bit for this)
-    //    uint8_t checkpoints; // (1 byte) number of checkpoints picked up
-    //    uint8_t reserved1;    // (1 byte)
-    //
-    // NEW: reserved1 is used for weapons
-    //    uint16_t weapon_inven; // (2 bytes) picked up weapon bitset (set the bit when a weapon has been picked up, blaster through BFG and HGs)
-    //    uint8_t weapon_equipped;  // (1 byte) enum for current equipped weapon
-    //    uint8_t reserved2;     // (1 byte)
-    //
-    //    int32_t reserved3; // (4 bytes)
-    //} replay_frame_t;
+        int32_t animation_frame;    // (byte 24) animation frame number
+
+        int32_t key_states;         // (byte 28) active inputs (jump, crouch, left, right, etc.)
+
+        int16_t fps;                // (byte 32) current fps
+        int8_t async;               // (byte 34) async 0 or 1
+        int8_t checkpoints;         // (byte 35) number of checkpoints picked up
+
+        uint16_t weapon_inven;      // (byte 36) picked up weapon bitset
+        uint8_t weapon_equipped;    // (byte 38) enum for currently equipped weapon
+        uint8_t reserved1;          // (byte 39)
+
+        uint64_t reserved2;         // (byte 40)
+        uint64_t reserved3;         // (byte 48)
+        uint64_t reserved4;         // (byte 56)
+    } replay_frame_t;
 
     typedef struct
     {

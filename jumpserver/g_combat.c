@@ -392,8 +392,6 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		{
 			if ((int)(dmflags->value) & DF_NO_FRIENDLY_FIRE)
 				damage = 0;
-			else
-				mod |= MOD_FRIENDLY_FIRE;
 		}
 	}
 	meansOfDeath = mod;

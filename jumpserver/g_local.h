@@ -225,9 +225,6 @@ typedef struct
 #define IT_STAY_COOP	8
 #define IT_KEY			16
 #define IT_POWERUP		32
-//ZOID
-#define IT_TECH			64
-//ZOID
 
 // gitem_t->weapmodel for weapons indicates model index
 #define WEAP_BLASTER			1 
@@ -241,7 +238,6 @@ typedef struct
 #define WEAP_HYPERBLASTER		9 
 #define WEAP_RAILGUN			10
 #define WEAP_BFG				11
-#define WEAP_GRAPPLE			12
 
 typedef struct gitem_s
 {
@@ -511,8 +507,6 @@ extern	int	body_armor_index;
 #define MOD_TRIGGER_HURT	31
 #define MOD_HIT				32
 #define MOD_TARGET_BLASTER	33
-#define MOD_GRAPPLE			34
-#define MOD_FRIENDLY_FIRE	0x8000000
 
 extern	int	meansOfDeath;
 
@@ -535,7 +529,6 @@ extern	cvar_t	*skill;
 extern	cvar_t	*fraglimit;
 extern	cvar_t	*timelimit;
 //ZOID
-extern	cvar_t	*capturelimit;
 extern	cvar_t	*instantweap;
 //ZOID
 extern	cvar_t	*password;
@@ -890,20 +883,6 @@ typedef struct
 	client_persistant_t	coop_respawn;	// what to set client->pers to on a respawn
 	int			enterframe;			// level.framenum the client entered the game
 	int			score;				// frags, etc
-//ZOID
-	//int			ctf_team;			// CTF team
-	//int			ctf_state;
-	//float		ctf_lasthurtcarrier;
-	//float		ctf_lastreturnedflag;
-	//float		ctf_flagsince;
-	//float		ctf_lastfraggedcarrier;
-	//qboolean	id_state;
-	//float		lastidtime;
-	//qboolean	voted; // for elections
-	//qboolean	ready;
-	//qboolean	admin;
-	//struct ghost_s *ghost; // for ghost codes
-//ZOID
 	vec3_t		cmd_angles;			// angles sent over in the last command
 	int			game_helpchanged;
 	int			helpchanged;
@@ -996,12 +975,6 @@ struct gclient_s
 	float		respawn_time;		// can respawn when time > this
 
 //ZOID
-	void		*ctf_grapple;		// entity of grapple
-	int			ctf_grapplestate;		// true if pulling
-	float		ctf_grapplereleasetime;	// time of grapple release
-	float		ctf_regentime;		// regen tech
-	float		ctf_techsndtime;
-	float		ctf_lasttechmsg;
 	edict_t		*chase_target;
 	qboolean	update_chase;
 	float		menutime;			// time to update menu

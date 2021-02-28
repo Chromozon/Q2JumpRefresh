@@ -23,7 +23,6 @@ namespace Jump
     static thread_queue<std::shared_ptr<global_cmd_base>> global_cmd_queue;
 
     // Queue of all command response data
-    // TODO: don't really need a thread_queue for this, just need a queue and a simple lock
     static thread_queue<std::shared_ptr<global_cmd_response>> global_cmd_response_queue;
 
     // Main thread that sends commands to the global database service and receives the responses

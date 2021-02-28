@@ -42,7 +42,6 @@ cvar_t	*skill;
 cvar_t	*fraglimit;
 cvar_t	*timelimit;
 //ZOID
-cvar_t	*capturelimit; // TODO remove
 cvar_t	*instantweap;
 //ZOID
 cvar_t	*password;

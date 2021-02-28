@@ -123,7 +123,6 @@ void InitGame()
 	fraglimit = gi.cvar("fraglimit", "0", CVAR_SERVERINFO); // TODO can remove or not call the code which uses this
 	timelimit = gi.cvar("timelimit", "30", CVAR_SERVERINFO);
 //ZOID
-	//capturelimit = gi.cvar ("capturelimit", "0", CVAR_SERVERINFO); // TODO remove
 	instantweap = gi.cvar("instantweap", "0", CVAR_SERVERINFO);
 //ZOID
  	password = gi.cvar("password", "", CVAR_USERINFO);

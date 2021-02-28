@@ -254,23 +254,7 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		LookAtKiller (self, inflictor, attacker);
 		self->client->ps.pmove.pm_type = PM_DEAD;
 		//ClientObituary (self, inflictor, attacker);
-//ZOID
-		// if at start and same team, clear
-		//if (ctf->value && meansOfDeath == MOD_TELEFRAG &&
-		//	self->client->resp.ctf_state < 2 &&
-		//	self->client->resp.ctf_team == attacker->client->resp.ctf_team) {
-		//	attacker->client->resp.score--;
-		//	self->client->resp.ctf_state = 0;
-		//}
-
-		//CTFFragBonuses(self, inflictor, attacker);
-//ZOID
 		//TossClientWeapon (self);
-//ZOID
-		//CTFPlayerResetGrapple(self);
-		//CTFDeadDropFlag(self);
-		//CTFDeadDropTech(self);
-//ZOID
 		if (deathmatch->value && !self->client->showscores)
 			Cmd_Help_f (self);		// show scores
 	}

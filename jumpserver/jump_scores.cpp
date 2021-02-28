@@ -295,12 +295,7 @@ namespace Jump
                 for (size_t i = 0; i < replay_buffer.size(); ++i)
                 {
                     const replay_frame_t& frame = replay_buffer[i];
-                    file.write(reinterpret_cast<const char*>(&frame.pos), sizeof(frame.pos));
-                    file.write(reinterpret_cast<const char*>(&frame.angles), sizeof(frame.angles));
-                    file.write(reinterpret_cast<const char*>(&frame.key_states), sizeof(frame.key_states));
-                    file.write(reinterpret_cast<const char*>(&frame.fps), sizeof(frame.fps));
-                    file.write(reinterpret_cast<const char*>(&frame.reserved1), sizeof(frame.reserved1));
-                    file.write(reinterpret_cast<const char*>(&frame.reserved2), sizeof(frame.reserved2));
+                    file.write(reinterpret_cast<const char*>(&frame), sizeof(frame));
                 }
                 file.flush();
             }
@@ -347,12 +342,7 @@ namespace Jump
         for (size_t i = 0; i < frames; ++i)
         {
             replay_frame_t& frame = replay_buffer[i];
-            file.read(reinterpret_cast<char*>(&frame.pos), sizeof(frame.pos));
-            file.read(reinterpret_cast<char*>(&frame.angles), sizeof(frame.angles));
-            file.read(reinterpret_cast<char*>(&frame.key_states), sizeof(frame.key_states));
-            file.read(reinterpret_cast<char*>(&frame.fps), sizeof(frame.fps));
-            file.read(reinterpret_cast<char*>(&frame.reserved1), sizeof(frame.reserved1));
-            file.read(reinterpret_cast<char*>(&frame.reserved2), sizeof(frame.reserved2));
+            file.read(reinterpret_cast<char*>(&frame), sizeof(frame));
         }
         return true;
     }

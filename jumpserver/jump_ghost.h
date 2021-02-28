@@ -4,7 +4,8 @@
 
 namespace Jump
 {
+    void GhostChangeReplay();
     void GhostRunFrame();
-    void GhostInit();
+    void GhostInit(edict_t* ghost);
     edict_t* GhostInstance();
 }

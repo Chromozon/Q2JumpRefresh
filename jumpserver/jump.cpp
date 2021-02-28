@@ -5,6 +5,7 @@
 #include "jump_utils.h"
 #include "jump_global.h"
 #include "jump_voting.h"
+#include "jump_ghost.h"
 
 namespace Jump
 {
@@ -421,6 +422,7 @@ namespace Jump
             gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (1st completion on the map)\n",
                 ent->client->pers.netname, GetCompletionTimeDisplayString(time_ms).c_str());
             jump_server.fresh_times.insert(username_lower);
+            GhostChangeReplay();
         }
         else
         {
@@ -446,6 +448,7 @@ namespace Jump
                     std::string first_msg = std::string(ent->client->pers.netname) + " has set a 1st place!";
                     gi.bprintf(PRINT_HIGH, "%s\n", GetGreenConsoleText(first_msg).c_str());
                     jump_server.fresh_times.insert(username_lower);
+                    GhostChangeReplay();
                 }
                 else
                 {
@@ -457,6 +460,7 @@ namespace Jump
                     std::string first_msg = std::string(ent->client->pers.netname) + " has set a 1st place!";
                     gi.bprintf(PRINT_HIGH, "%s\n", GetGreenConsoleText(first_msg).c_str());
                     jump_server.fresh_times.insert(username_lower);
+                    GhostChangeReplay();
                 }
             }
             else
@@ -501,10 +505,26 @@ namespace Jump
     void SaveReplayFrame(edict_t* ent)
     {
         replay_frame_t frame = {};
+
         VectorCopy(ent->s.origin, frame.pos);
         VectorCopy(ent->client->v_angle, frame.angles);
+
+        frame.animation_frame = ent->s.frame;
+
         frame.key_states = ent->client->jumpdata->key_states;
-        frame.fps = ent->client->jumpdata->fps;
+
+        frame.fps = static_cast<int16_t>(ent->client->jumpdata->fps);
+        frame.async = static_cast<int8_t>(ent->client->jumpdata->async);
+        frame.checkpoints = 0; // TODO
+        
+        frame.weapon_inven = 0; // TODO
+        frame.weapon_equipped = 0; // TODO
+
+        frame.reserved1 = 0;
+        frame.reserved2 = 0;
+        frame.reserved3 = 0;
+        frame.reserved4 = 0;
+        
         ent->client->jumpdata->replay_recording.push_back(frame);
     }
 
@@ -539,6 +559,8 @@ namespace Jump
 
     void JumpRunFrame()
     {
+        GhostRunFrame();
+
         VoteSystem::OnFrame();
     }
 

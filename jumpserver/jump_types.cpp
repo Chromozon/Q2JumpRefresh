@@ -1,5 +1,6 @@
 
 #include "jump_types.h"
+#include "jump_logger.h"
 #include <iterator>
 
 namespace Jump
@@ -54,39 +55,9 @@ namespace Jump
         std::vector<uint8_t> bytes;
         if (replay_buffer.size() > 0)
         {
-            replay_frame_t temp;
-            size_t framesize =
-                sizeof(temp.pos) +
-                sizeof(temp.angles) +
-                sizeof(temp.key_states) +
-                sizeof(temp.fps) +
-                sizeof(temp.reserved1) +
-                sizeof(temp.reserved2);
-            size_t num_bytes = replay_buffer.size() * framesize;
+            size_t num_bytes = replay_buffer.size() * sizeof(replay_frame_t);
             bytes.resize(num_bytes);
-            for (size_t i = 0; i < replay_buffer.size(); ++i)
-            {
-                int offset = 0;
-                uint8_t* start = &bytes[i * framesize];
-                const replay_frame_t& frame = replay_buffer[i];
-
-                memcpy(start + offset, &frame.pos, sizeof(frame.pos));
-                offset += sizeof(frame.pos);
-
-                memcpy(start + offset, &frame.angles, sizeof(frame.angles));
-                offset += sizeof(frame.angles);
-
-                memcpy(start + offset, &frame.key_states, sizeof(frame.key_states));
-                offset += sizeof(frame.key_states);
-
-                memcpy(start + offset, &frame.fps, sizeof(frame.fps));
-                offset += sizeof(frame.fps);
-
-                memcpy(start + offset, &frame.reserved1, sizeof(frame.reserved1));
-                offset += sizeof(frame.reserved1);
-
-                memcpy(start + offset, &frame.reserved2, sizeof(frame.reserved2));
-            }
+            memcpy(&bytes[0], &replay_buffer[0], num_bytes);
         }
         return bytes;
     }
@@ -95,41 +66,15 @@ namespace Jump
     std::vector<replay_frame_t> DeserializeReplayBuffer(const std::vector<uint8_t>& bytes)
     {
         std::vector<replay_frame_t> replay_buffer;
+        if (bytes.size() % sizeof(replay_frame_t) != 0)
+        {
+            Logger::Error("Invalid size of serialized replay buffer");
+            return replay_buffer;
+        }
         if (bytes.size() > 0)
         {
-            replay_frame_t temp;
-            size_t framesize =
-                sizeof(temp.pos) +
-                sizeof(temp.angles) +
-                sizeof(temp.key_states) +
-                sizeof(temp.fps) +
-                sizeof(temp.reserved1) +
-                sizeof(temp.reserved2);
-            size_t num_frames = bytes.size() / framesize;
-            replay_buffer.resize(num_frames);
-            for (size_t i = 0; i < num_frames; ++i)
-            {
-                const uint8_t* start = &bytes[i * framesize];
-                replay_frame_t& frame = replay_buffer[i];
-                int offset = 0;
-
-                memcpy(&frame.pos, start + offset, sizeof(frame.pos));
-                offset += sizeof(frame.pos);
-
-                memcpy(&frame.angles, start + offset, sizeof(frame.angles));
-                offset += sizeof(frame.angles);
-
-                memcpy(&frame.key_states, start + offset, sizeof(frame.key_states));
-                offset += sizeof(frame.key_states);
-
-                memcpy(&frame.fps, start + offset, sizeof(frame.fps));
-                offset += sizeof(frame.fps);
-
-                memcpy(&frame.reserved1, start + offset, sizeof(frame.reserved1));
-                offset += sizeof(frame.reserved1);
-
-                memcpy(&frame.reserved2, start + offset, sizeof(frame.reserved2));
-            }
+            replay_buffer.resize(bytes.size() / sizeof(replay_frame_t));
+            memcpy(&replay_buffer[0], &bytes[0], bytes.size());
         }
         return replay_buffer;
     }

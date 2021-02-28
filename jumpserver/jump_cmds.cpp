@@ -103,6 +103,8 @@ namespace Jump
         record_data test;
         int size = sizeof(test);
 
+        size = sizeof(replay_frame_t);
+
         //ConvertOldHighscores();
 
         CalculateAllLocalStatistics();

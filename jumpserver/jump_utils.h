@@ -42,6 +42,9 @@ namespace Jump
     // Tries to convert a string to an int.  If the string is an int, returns true, else false.
     bool StringToIntMaybe(const std::string& str, int& num);
 
+    // Tries to convert a string to a float.  If the string is a float, returns true, else false.
+    bool StringToFloatMaybe(const std::string& str, float& num);
+
     // Returns the difference display string between a time and the record time.
     // If the time is better, returns a string "-2.586" as green text.
     // If the time is worse, returns a string "+5.230" as white text.

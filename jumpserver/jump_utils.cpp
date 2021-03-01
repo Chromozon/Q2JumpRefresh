@@ -173,6 +173,20 @@ namespace Jump
         }
     }
 
+    // Tries to convert a string to a float.  If the string is a float, returns true, else false.
+    bool StringToFloatMaybe(const std::string& str, float& num)
+    {
+        try
+        {
+            num = std::stof(str);
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
     // Returns the difference display string between a time and the record time.
     // If the time is better, returns a string "-2.586" as green text.
     // If the time is worse, returns a string "+5.230" as white text.

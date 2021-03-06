@@ -26,6 +26,7 @@ namespace Jump
     void Cmd_Jump_PlayerscoresGlobal(edict_t* ent);
     void Cmd_Jump_PlayermapsGlobal(edict_t* ent);
     void Cmd_Jump_MaptimesGlobal(edict_t* ent);
+    void Cmd_Jump_Race(edict_t* ent);
 
     // Global database cmd responses
     void HandleGlobalCmdResponse(const global_cmd_response& response);

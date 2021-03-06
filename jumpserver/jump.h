@@ -48,4 +48,6 @@ namespace Jump
     void AdvanceSpectatingReplayFrame(edict_t* ent);
 
     void HandleMapCompletion(edict_t* ent);
+
+    void AdvanceRacingSpark(edict_t* ent);
 }

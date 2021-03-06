@@ -214,6 +214,12 @@ namespace Jump
         int key_states; // input actions that are currently active
 
         scores_menu_t scores_menu;
+
+        bool racing;
+        std::vector<replay_frame_t> racing_frames;
+        int racing_framenum;
+        int racing_delay_frames;
+        // TODO: need to store what we are racing so can auto reload if someone sets a better time
     };
 
     class server_data_t

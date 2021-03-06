@@ -305,11 +305,13 @@ namespace Jump
 
         // Clear inventory of all weapons and ammo and change to blaster
         // TODO: simplify the weapon change code
-        char userinfo[MAX_INFO_STRING] = { 0 };
-        memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo));
-        InitClientPersistant(ent->client); // TODO: don't like this, should just set all the vars
-        ClientUserinfoChanged(ent, userinfo); // TODO: dont' need this or the copy from above
+        //char userinfo[MAX_INFO_STRING] = { 0 };
+        //memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo));
+        //InitClientPersistant(ent->client); // TODO: don't like this, should just set all the vars
+        //ClientUserinfoChanged(ent, userinfo); // TODO: dont' need this or the copy from above
+        Jump::AssignTeamSkin(ent);
 
+        // TODO inline
         InitClientForRespawn(ent);
 
         // Move to spawn
@@ -331,6 +333,9 @@ namespace Jump
         ent->s.event = EV_NONE;
         ent->client->ps.pmove.pm_flags = 0;
         ent->client->ps.pmove.pm_time = 0;
+
+        // Reset race
+        ent->client->jumpdata->racing_framenum = 0;
 
         gi.linkentity(ent);
     }
@@ -602,6 +607,59 @@ namespace Jump
                 ent->client->ps.pmove.pm_type = PM_SPECTATOR;
                 ent->client->jumpdata->update_replay_spectating = false;
             }
+        }
+    }
+
+    void AdvanceRacingSpark(edict_t* ent)
+    {
+        // TODO: if racing a time and someone sets a better time, need to update racing frames
+
+        if (ent->client->jumpdata->racing)
+        {          
+            if (ent->client->jumpdata->replay_recording.size() == 0)
+            {
+                // Player has not started the timer yet
+                return;
+            }
+
+            int player_start_framenum = ent->client->jumpdata->racing_delay_frames + 3;
+            if (player_start_framenum > ent->client->jumpdata->replay_recording.size())
+            {
+                // Not time for the race to start yet
+                return;
+            }
+
+            // TODO: this pushes the race frame 1 frame ahead of the player; this might be what we want
+            if (ent->client->jumpdata->racing_framenum < 4)
+            {
+                // The first frame of the race always has to start at 4
+                ent->client->jumpdata->racing_framenum = 4;
+            }
+
+            if (ent->client->jumpdata->racing_framenum >= ent->client->jumpdata->racing_frames.size())
+            {
+                // Race is finished (or race has less than 4 frames)
+                return;
+            }
+
+            // Show the last three race positions
+            gi.WriteByte(svc_temp_entity);
+            gi.WriteByte(TE_BFG_LASER);
+            gi.WritePosition(ent->client->jumpdata->racing_frames[ent->client->jumpdata->racing_framenum - 3].pos);
+            gi.WritePosition(ent->client->jumpdata->racing_frames[ent->client->jumpdata->racing_framenum - 2].pos);
+
+            gi.WriteByte(svc_temp_entity);
+            gi.WriteByte(TE_BFG_LASER);
+            gi.WritePosition(ent->client->jumpdata->racing_frames[ent->client->jumpdata->racing_framenum - 2].pos);
+            gi.WritePosition(ent->client->jumpdata->racing_frames[ent->client->jumpdata->racing_framenum - 1].pos);
+
+            gi.WriteByte(svc_temp_entity);
+            gi.WriteByte(TE_BFG_LASER);
+            gi.WritePosition(ent->client->jumpdata->racing_frames[ent->client->jumpdata->racing_framenum - 1].pos);
+            gi.WritePosition(ent->client->jumpdata->racing_frames[ent->client->jumpdata->racing_framenum].pos);
+
+            gi.unicast(ent, true);
+            ent->client->jumpdata->racing_framenum++;
         }
     }
 }

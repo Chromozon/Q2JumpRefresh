@@ -16,17 +16,17 @@ namespace Jump
     #define STAT_JUMP_AVAILABLE_FOR_USE4    4
     #define STAT_JUMP_AVAILABLE_FOR_USE5    5
     #define STAT_JUMP_AVAILABLE_FOR_USE6    6
-    #define STAT_JUMP_AVAILABLE_FOR_USE7    7
-    #define STAT_JUMP_ASYNC_0               8  // (int) 0 or 1
-    #define STAT_JUMP_ASYNC_1               9  // (int) 0 or 1
-    #define STAT_JUMP_HUD_VOTE_CAST         10 // (configstring) for "Votes: X of X" 
-    #define STAT_JUMP_HUD_VOTE_REMAINING    11 // (configstring) for "X remaining"
-    #define STAT_JUMP_HUD_VOTE_TYPE         12 // (configstring) for short vote description (eg. "Map: ddrace")
+    #define STAT_JUMP_ASYNC_0               7  // (int) 0 or 1
+    #define STAT_JUMP_ASYNC_1               8  // (int) 0 or 1
+    #define STAT_JUMP_HUD_VOTE_CAST         9  // (configstring) for "Votes: X of X" 
+    #define STAT_JUMP_HUD_VOTE_REMAINING    10 // (configstring) for "X remaining"
+    #define STAT_JUMP_HUD_VOTE_TYPE         11 // (configstring) for short vote description (eg. "Map: ddrace")
+    #define STAT_JUMP_HUD_VOTE_INITIATED    12 // (configstring) for "Vote by X"
     // IMPORTANT: DO NOT USE 13, STAT_LAYOUTS IS HARDCODED IN CLIENTS.
-    #define STAT_JUMP_HUD_VOTE_INITIATED    14 // (configstring) for "Vote by X"
-    #define STAT_JUMP_HUD_FOOTER_1          15 // (configstring) set client-specific string for "Team: <team>"
-    #define STAT_JUMP_HUD_FOOTER_2          16 // (configstring) set client-specific string for "Race: n/NOW" or "Replay: n/NOW"
-    #define STAT_JUMP_HUD_FOOTER_3          17 // (configstring) set client-specific string for "Chkpts: n/n"
+    #define STAT_JUMP_HUD_FOOTER_1          14 // (configstring) set client-specific string for "Team: <team>"
+    #define STAT_JUMP_HUD_FOOTER_2          15 // (configstring) set client-specific string for "Race: n/NOW" or "Replay: n/NOW"
+    #define STAT_JUMP_HUD_FOOTER_3          16 // (configstring) set client-specific string for "Chkpts: n/n"
+    #define STAT_JUMP_HUD_FOOTER_4          17 // (configstring) 
     #define STAT_JUMP_CLIENT_TRACE          18 // (configstring) set client-specific string for the name of the player in the crosshairs
     #define STAT_JUMP_SPEED                 19 // (int) speed in units/s
     #define STAT_JUMP_KEY_FORWARD           20 // (bool) visible or not, TODO: can change to those ugly ugly brown pcx
@@ -45,14 +45,16 @@ namespace Jump
     // To enable more, we would need to update the client as well.
 
     // Config strings IDs
-    #define CS_JUMP_KEY_EMPTY 1000
-    #define CS_JUMP_KEY_HUD_FOOTER_1 1001
-    #define CS_JUMP_KEY_HUD_FOOTER_2 1002
-    #define CS_JUMP_KEY_HUD_FOOTER_3 1003
-    #define CS_JUMP_KEY_HUD_VOTE_INITIATED 1004
-    #define CS_JUMP_KEY_HUD_VOTE_TYPE 1005
-    #define CS_JUMP_KEY_HUD_VOTE_CAST 1006
-    #define CS_JUMP_KEY_HUD_VOTE_REMAINING 1007
+    #define CS_JUMP_KEY_EMPTY               (CS_GENERAL + 0)
+    #define CS_JUMP_KEY_HUD_FOOTER_1        (CS_GENERAL + 1)
+    #define CS_JUMP_KEY_HUD_FOOTER_2        (CS_GENERAL + 2)
+    #define CS_JUMP_KEY_HUD_FOOTER_3        (CS_GENERAL + 3)
+    #define CS_JUMP_KEY_HUD_VOTE_INITIATED  (CS_GENERAL + 4)
+    #define CS_JUMP_KEY_HUD_VOTE_TYPE       (CS_GENERAL + 5)
+    #define CS_JUMP_KEY_HUD_VOTE_CAST       (CS_GENERAL + 6)
+    #define CS_JUMP_KEY_HUD_VOTE_REMAINING  (CS_GENERAL + 7)
+    #define CS_JUMP_KEY_HUD_TEAM_EASY       (CS_GENERAL + 8)
+    #define CS_JUMP_KEY_HUD_TEAM_HARD       (CS_GENERAL + 9)
 
     // Config string strings
     #define CS_JUMP_VAL_EMPTY ""

@@ -752,12 +752,12 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
     // Jump
     // We never let the user change their skin.
     // We set the value here so that it stays correct across connects, team changes, etc.
-    Jump::AssignTeamSkin(ent);
+    //Jump::AssignTeamSkin(ent);
 
 	std::string ip = Info_ValueForKey(userinfo, "ip");
 	ent->client->jumpdata->ip = ip.substr(0, ip.find_first_of(':')); // remove port from ip address
 
-	Jump::UpdateLastSeenTime(ent->client->pers.netname);
+	//Jump::UpdateLastSeenTime(ent->client->pers.netname);
     // Jump
 
 //	// set skin
@@ -1252,6 +1252,7 @@ void ClientBeginServerFrame (edict_t *ent)
 
     // Jump
 	Jump::AdvanceSpectatingReplayFrame(ent);
+	Jump::AdvanceRacingSpark(ent);
 	#if 0
     if (ent->client->update_replay)
     {

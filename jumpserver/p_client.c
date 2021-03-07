@@ -255,8 +255,8 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		self->client->ps.pmove.pm_type = PM_DEAD;
 		//ClientObituary (self, inflictor, attacker);
 		//TossClientWeapon (self);
-		if (deathmatch->value && !self->client->showscores)
-			Cmd_Help_f (self);		// show scores
+		//if (deathmatch->value && !self->client->showscores)
+			//Cmd_Help_f (self);		// show scores
 	}
 
 	// remove powerups
@@ -353,30 +353,6 @@ void InitClientPersistant (gclient_t *client)
 	client->pers.max_slugs		= 50;
 
 	client->pers.connected = true;
-}
-
-
-void InitClientResp (gclient_t *client)
-{
-//ZOID
-//	int ctf_team = client->resp.ctf_team;
-//	qboolean id_state = client->resp.id_state;
-//ZOID
-
-	memset (&client->resp, 0, sizeof(client->resp));
-
-//ZOID
-//	client->resp.ctf_team = ctf_team;
-//	client->resp.id_state = id_state;
-//ZOID
-
-	client->resp.enterframe = level.framenum;
-	client->resp.coop_respawn = client->pers;
- 
-//ZOID
-//	if (ctf->value && client->resp.ctf_team < CTF_TEAM1)
-//		CTFAssignTeam(client);
-//ZOID
 }
 
 /*
@@ -511,7 +487,7 @@ void respawn (edict_t *self)
 		if (self->movetype != MOVETYPE_NOCLIP)
 			CopyToBodyQue (self);
 		self->svflags &= ~SVF_NOCLIENT;
-		PutClientInServer (self);
+		//PutClientInServer (self);
 
 		// add a teleportation effect
 		self->s.event = EV_PLAYER_TELEPORT;
@@ -532,162 +508,6 @@ void respawn (edict_t *self)
 //==============================================================
 
 
-/*
-===========
-PutClientInServer
-
-Called when a player connects to a server or respawns in
-a deathmatch.
-============
-*/
-void PutClientInServer (edict_t *ent)
-{
-	vec3_t	mins = {-16, -16, -24};
-	vec3_t	maxs = {16, 16, 32};
-	int		index;
-	vec3_t	spawn_origin, spawn_angles;
-	gclient_t	*client;
-	int		i;
-	client_persistant_t	saved;
-	client_respawn_t	resp;
-
-	// find a spawn point
-	// do it before setting health back up, so farthest
-	// ranging doesn't count this client
-	SelectSpawnPoint (ent, spawn_origin, spawn_angles);
-
-	index = ent-g_edicts-1;
-	client = ent->client;
-
-	// deathmatch wipes most client data every spawn
-	if (deathmatch->value)
-	{
-		char		userinfo[MAX_INFO_STRING];
-
-		resp = client->resp;
-		memcpy (userinfo, client->pers.userinfo, sizeof(userinfo));
-		InitClientPersistant (client);
-		ClientUserinfoChanged (ent, userinfo);
-	}
-	else if (coop->value)
-	{
-		int			n;
-		char		userinfo[MAX_INFO_STRING];
-
-		resp = client->resp;
-		memcpy (userinfo, client->pers.userinfo, sizeof(userinfo));
-		// this is kind of ugly, but it's how we want to handle keys in coop
-		for (n = 0; n < MAX_ITEMS; n++)
-		{
-			if (itemlist[n].flags & IT_KEY)
-				resp.coop_respawn.inventory[n] = client->pers.inventory[n];
-		}
-		client->pers = resp.coop_respawn;
-		ClientUserinfoChanged (ent, userinfo);
-		if (resp.score > client->pers.score)
-			client->pers.score = resp.score;
-	}
-	else
-	{
-		memset (&resp, 0, sizeof(resp));
-	}
-
-	// clear everything but the persistant data
-	saved = client->pers;
-	memset (client, 0, sizeof(*client));
-	client->pers = saved;
-	if (client->pers.health <= 0)
-		InitClientPersistant(client);
-	client->resp = resp;
-
-	// copy some data from the client to the entity
-	FetchClientEntData (ent);
-
-	// clear entity values
-	ent->groundentity = NULL;
-	ent->client = &game.clients[index];
-	ent->takedamage = DAMAGE_AIM;
-	ent->movetype = MOVETYPE_WALK;
-	ent->viewheight = 22;
-	ent->inuse = true;
-	ent->classname = "player";
-	ent->mass = 200;
-	ent->solid = SOLID_BBOX;
-	ent->deadflag = DEAD_NO;
-	ent->air_finished = level.time + 12;
-	ent->clipmask = MASK_PLAYERSOLID;
-	ent->model = "players/male/tris.md2";
-	ent->pain = player_pain;
-	ent->die = player_die;
-	ent->waterlevel = 0;
-	ent->watertype = 0;
-	ent->flags &= ~FL_NO_KNOCKBACK;
-	ent->svflags &= ~SVF_DEADMONSTER;
-
-	VectorCopy (mins, ent->mins);
-	VectorCopy (maxs, ent->maxs);
-	VectorClear (ent->velocity);
-
-	// clear playerstate values
-	memset (&ent->client->ps, 0, sizeof(client->ps));
-
-	client->ps.pmove.origin[0] = spawn_origin[0]*8;
-	client->ps.pmove.origin[1] = spawn_origin[1]*8;
-	client->ps.pmove.origin[2] = spawn_origin[2]*8;
-//ZOID
-	client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
-//ZOID
-
-	if (deathmatch->value && ((int)dmflags->value & DF_FIXED_FOV))
-	{
-		client->ps.fov = 90;
-	}
-	else
-	{
-		client->ps.fov = atoi(Info_ValueForKey(client->pers.userinfo, "fov"));
-		if (client->ps.fov < 1)
-			client->ps.fov = 90;
-		else if (client->ps.fov > 160)
-			client->ps.fov = 160;
-	}
-
-	client->ps.gunindex = gi.modelindex(client->pers.weapon->view_model);
-
-	// clear entity state values
-	ent->s.effects = 0;
-	ent->s.skinnum = ent - g_edicts - 1;
-	ent->s.modelindex = 255;		// will use the skin specified model
-	ent->s.modelindex2 = 255;		// custom gun model
-	// sknum is player num and weapon number
-	// weapon number will be added in changeweapon
-	ent->s.skinnum = ent - g_edicts - 1;
-
-	ent->s.frame = 0;
-	VectorCopy (spawn_origin, ent->s.origin);
-	ent->s.origin[2] += 1;	// make sure off ground
-	VectorCopy (ent->s.origin, ent->s.old_origin);
-
-	// set the delta angle
-	for (i=0 ; i<3 ; i++)
-		client->ps.pmove.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - client->resp.cmd_angles[i]);
-
-	ent->s.angles[PITCH] = 0;
-	ent->s.angles[YAW] = spawn_angles[YAW];
-	ent->s.angles[ROLL] = 0;
-	VectorCopy (ent->s.angles, client->ps.viewangles);
-	VectorCopy (ent->s.angles, client->v_angle);
-
-    // Jump note: KillBox does the telefrag on spawn, so we don't need this in our code!
-	if (!KillBox (ent))
-	{	// could't spawn in?
-	}
-
-	gi.linkentity (ent);
-
-	// force the current weapon up
-	client->newweapon = client->pers.weapon;
-	ChangeWeapon (ent);
-}
 
 
 
@@ -882,7 +702,7 @@ qboolean ClientConnect(edict_t* ent, char* userinfo)
 	// TODO!!!
 	// ClientBegin() is called right after this and basically resets the ent
 
-	ClientUserinfoChanged(ent, userinfo);
+	//ClientUserinfoChanged(ent, userinfo);
 
 	Jump::Logger::Info(va("%s connected", ent->client->pers.netname));
 	return true;
@@ -1236,7 +1056,8 @@ void ClientBeginServerFrame (edict_t *ent)
 			if ( ( client->latched_buttons & buttonMask ) ||
 				(deathmatch->value && ((int)dmflags->value & DF_FORCE_RESPAWN) ))
 			{
-				respawn(ent);
+				//respawn(ent);
+				Jump::SpawnForJumping(ent);
 				client->latched_buttons = 0;
 			}
 		}

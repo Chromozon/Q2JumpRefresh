@@ -509,8 +509,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		else
 			SpawnDamage (te_sparks, point, normal, take);
 
-		//if (!CTFMatchSetup())
-		//	targ->health = targ->health - take;
+		targ->health = targ->health - take;
 			
 		if (targ->health <= 0)
 		{

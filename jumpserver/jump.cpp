@@ -166,23 +166,26 @@ namespace Jump
     {
         // TODO: go through all of the ent structs and set their values to what we want here
 
+        int fov = ent->client->ps.fov;
         memset(&ent->client->ps, 0, sizeof(ent->client->ps));
+        ent->client->ps.fov = fov;
+
         memset(&ent->client->resp, 0, sizeof(ent->client->resp));
         ent->client->resp.enterframe = level.framenum;
-        ent->client->resp.coop_respawn = ent->client->pers; // TODO don't need
 
-        char userinfo[MAX_INFO_STRING];
-        memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo)); // TODO: not sure why we need this here
+        //gitem_t* item;
+        //item = FindItem("Blaster");
+        //ent->client->pers.selected_item = ITEM_INDEX(item);
+        //ent->client->pers.inventory[ent->client->pers.selected_item] = 1;
+        //ent->client->pers.weapon = item;
+        //ent->client->pers.lastweapon = item;
+        ent->client->pers.selected_item = 0;
+        memset(ent->client->pers.inventory, 0, sizeof(ent->client->pers.inventory));
+        ent->client->pers.weapon = NULL;
+        ent->client->pers.lastweapon = NULL;
 
-        gitem_t* item;
-        item = FindItem("Blaster");
-        ent->client->pers.selected_item = ITEM_INDEX(item);
-        ent->client->pers.inventory[ent->client->pers.selected_item] = 1;
-        ent->client->pers.weapon = item;
-        ent->client->pers.lastweapon = item;
-
-        ent->client->pers.health = 500;
-        ent->client->pers.max_health = 500;
+        ent->client->pers.health = 999;
+        ent->client->pers.max_health = 999;
 
         ent->client->pers.max_bullets = 999;
         ent->client->pers.max_shells = 999;
@@ -221,7 +224,8 @@ namespace Jump
         VectorCopy(maxs, ent->maxs);
         VectorClear(ent->velocity);
 
-        ent->client->ps.gunindex = gi.modelindex(ent->client->pers.weapon->view_model);
+        //ent->client->ps.gunindex = gi.modelindex(ent->client->pers.weapon->view_model);
+        ent->client->ps.gunindex = 0;
 
         // clear entity state values
         ent->s.effects = 0;
@@ -231,7 +235,6 @@ namespace Jump
         ent->s.frame = 0;
 
         InitAsSpectator(ent);
-        ClientUserinfoChanged(ent, userinfo);
 
         if (level.intermissiontime || jump_server.level_state == LEVEL_STATE_VOTING)
         {

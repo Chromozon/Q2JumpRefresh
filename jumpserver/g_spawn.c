@@ -550,7 +550,10 @@ void SpawnEntitiesJump(char* mapname, char* entities, char* spawnpoint)
 	strncpy(level.mapname, mapname, sizeof(level.mapname) - 1);
 	strncpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint) - 1);
 
-	// TODO: is this necessary?
+	// g_edicts[0] is always worldspawn
+	// The next g_edicts are the clients
+	// After that, all the map ents
+	// After that, every temporary ent
 	for (int i = 0; i < game.maxclients; i++)
 	{
 		g_edicts[i + 1].client = game.clients + i;

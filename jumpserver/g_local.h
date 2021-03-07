@@ -767,9 +767,7 @@ edict_t	*PlayerTrail_LastSpot (void);
 //
 void respawn (edict_t *ent);
 void BeginIntermission (edict_t *targ);
-void PutClientInServer (edict_t *ent);
 void InitClientPersistant (gclient_t *client);
-void InitClientResp (gclient_t *client);
 void InitBodyQue (void);
 void ClientBeginServerFrame (edict_t *ent);
 void ClientUserinfoChanged (edict_t *ent, char *userinfo);
@@ -880,7 +878,6 @@ typedef struct
 // client data that stays across deathmatch respawns
 typedef struct
 {
-	client_persistant_t	coop_respawn;	// what to set client->pers to on a respawn
 	int			enterframe;			// level.framenum the client entered the game
 	int			score;				// frags, etc
 	vec3_t		cmd_angles;			// angles sent over in the last command
@@ -888,8 +885,7 @@ typedef struct
 	int			helpchanged;
 } client_respawn_t;
 
-// this structure is cleared on each PutClientInServer(),
-// except for 'client->pers'
+// All client data
 struct gclient_s
 {
 	// known to server

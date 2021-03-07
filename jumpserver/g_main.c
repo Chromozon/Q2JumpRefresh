@@ -288,56 +288,7 @@ void EndDMLevel (void)
 	}
 }
 
-/*
-=================
-CheckDMRules
-=================
-*/
-void CheckDMRules (void)
-{
-	int			i;
-	gclient_t	*cl;
 
-	if (level.intermissiontime)
-		return;
-
-	if (!deathmatch->value)
-		return;
-
-//ZOID
-	//if (ctf->value && CTFCheckRules()) {
-	//	EndDMLevel ();
-	//	return;
-	//}
-	//if (CTFInMatch())
-	//	return; // no checking in match mode
-//ZOID
-
-	if (timelimit->value)
-	{
-		if (level.time >= timelimit->value*60)
-		{
-			gi.bprintf (PRINT_HIGH, "Timelimit hit.\n");
-			EndDMLevel ();
-			return;
-		}
-	}
-
-	if (fraglimit->value)
-		for (i=0 ; i<maxclients->value ; i++)
-		{
-			cl = game.clients + i;
-			if (!g_edicts[i+1].inuse)
-				continue;
-
-			if (cl->resp.score >= fraglimit->value)
-			{
-				gi.bprintf (PRINT_HIGH, "Fraglimit hit.\n");
-				EndDMLevel ();
-				return;
-			}
-		}
-}
 
 
 /*
@@ -433,9 +384,6 @@ void G_RunFrame (void)
 
 		G_RunEntity (ent);
 	}
-
-	// see if it is time to end a deathmatch
-	CheckDMRules ();
 
 	// build the playerstate_t structures for all players
 	ClientEndServerFrames ();

@@ -373,9 +373,6 @@ char *ED_NewString (char *string)
 	return newb;
 }
 
-
-
-
 /*
 ===============
 ED_ParseField
@@ -485,7 +482,6 @@ char *ED_ParseEdict (char *data, edict_t *ent)
 	return data;
 }
 
-
 /*
 ================
 G_FindTeams
@@ -538,10 +534,15 @@ void G_FindTeams (void)
 	gi.dprintf ("%i teams with %i entities\n", c, c2);
 }
 
+/*
+==============
+SpawnEntities
 
-
-
-void SpawnEntitiesJump(char* mapname, char* entities, char* spawnpoint)
+Creates a server's entity / program execution context by
+parsing textual entity definitions out of an ent file.
+==============
+*/
+void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 {
 	gi.FreeTags(TAG_LEVEL);
 
@@ -641,263 +642,7 @@ void SpawnEntitiesJump(char* mapname, char* entities, char* spawnpoint)
 	G_FindTeams();
 }
 
-
-
-/*
-==============
-SpawnEntities
-
-Creates a server's entity / program execution context by
-parsing textual entity definitions out of an ent file.
-==============
-*/
-void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
-{
-	SpawnEntitiesJump(mapname, entities, spawnpoint);
-	return;
-
-	edict_t		*ent;
-	int			inhibit;
-	char		*com_token;
-	int			i;
-	float		skill_level;
-
-	skill_level = floor (skill->value);
-	if (skill_level < 0)
-		skill_level = 0;
-	if (skill_level > 3)
-		skill_level = 3;
-	if (skill->value != skill_level)
-		gi.cvar_forceset("skill", va("%f", skill_level));
-
-	SaveClientData ();
-
-	gi.FreeTags (TAG_LEVEL);
-
-	memset (&level, 0, sizeof(level));
-	memset (g_edicts, 0, game.maxentities * sizeof (g_edicts[0]));
-
-	strncpy (level.mapname, mapname, sizeof(level.mapname)-1);
-	strncpy (game.spawnpoint, spawnpoint, sizeof(game.spawnpoint)-1);
-
-	// set client fields on player ents
-	for (i=0 ; i<game.maxclients ; i++)
-		g_edicts[i+1].client = game.clients + i;
-
-	ent = NULL;
-	inhibit = 0;
-
-// parse ents
-	while (1)
-	{
-		// parse the opening brace	
-		com_token = COM_Parse (&entities);
-		if (!entities)
-			break;
-		if (com_token[0] != '{')
-			gi.error ("ED_LoadFromFile: found %s when expecting {",com_token);
-
-		if (!ent)
-			ent = g_edicts;
-		else
-			ent = G_Spawn ();
-		entities = ED_ParseEdict (entities, ent);
-		
-		// yet another map hack
-		if (!stricmp(level.mapname, "command") && !stricmp(ent->classname, "trigger_once") && !stricmp(ent->model, "*27"))
-			ent->spawnflags &= ~SPAWNFLAG_NOT_HARD;
-
-		// remove things (except the world) from different skill levels or deathmatch
-		if (ent != g_edicts)
-		{
-			if (deathmatch->value)
-			{
-				if ( ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH )
-				{
-					G_FreeEdict (ent);	
-					inhibit++;
-					continue;
-				}
-			}
-			else
-			{
-				if ( /* ((coop->value) && (ent->spawnflags & SPAWNFLAG_NOT_COOP)) || */
-					((skill->value == 0) && (ent->spawnflags & SPAWNFLAG_NOT_EASY)) ||
-					((skill->value == 1) && (ent->spawnflags & SPAWNFLAG_NOT_MEDIUM)) ||
-					(((skill->value == 2) || (skill->value == 3)) && (ent->spawnflags & SPAWNFLAG_NOT_HARD))
-					)
-					{
-						G_FreeEdict (ent);	
-						inhibit++;
-						continue;
-					}
-			}
-
-			ent->spawnflags &= ~(SPAWNFLAG_NOT_EASY|SPAWNFLAG_NOT_MEDIUM|SPAWNFLAG_NOT_HARD|SPAWNFLAG_NOT_COOP|SPAWNFLAG_NOT_DEATHMATCH);
-		}
-
-		ED_CallSpawn (ent);
-	}	
-
-	gi.dprintf ("%i entities inhibited\n", inhibit);
-
-	G_FindTeams ();
-
-	PlayerTrail_Init ();
-
-//ZOID
-	//CTFSpawn();
-//ZOID
-}
-
-
 //===================================================================
-
-#if 0
-	// cursor positioning
-	xl <value>
-	xr <value>
-	yb <value>
-	yt <value>
-	xv <value>
-	yv <value>
-
-	// drawing
-	statpic <name>
-	pic <stat>
-	num <fieldwidth> <stat>
-	string <stat>
-
-	// control
-	if <stat>
-	ifeq <stat> <value>
-	ifbit <stat> <value>
-	endif
-
-#endif
-
-char *single_statusbar = 
-"yb	-24 "
-
-// health
-"xv	0 "
-"hnum "
-"xv	50 "
-"pic 0 "
-
-// ammo
-"if 2 "
-"	xv	100 "
-"	anum "
-"	xv	150 "
-"	pic 2 "
-"endif "
-
-// armor
-"if 4 "
-"	xv	200 "
-"	rnum "
-"	xv	250 "
-"	pic 4 "
-"endif "
-
-// selected item
-"if 6 "
-"	xv	296 "
-"	pic 6 "
-"endif "
-
-"yb	-50 "
-
-// picked up item
-"if 7 "
-"	xv	0 "
-"	pic 7 "
-"	xv	26 "
-"	yb	-42 "
-"	stat_string 8 "
-"	yb	-50 "
-"endif "
-
-// timer
-"if 9 "
-"	xv	262 "
-"	num	2	10 "
-"	xv	296 "
-"	pic	9 "
-"endif "
-
-//  help / weapon icon 
-"if 11 "
-"	xv	148 "
-"	pic	11 "
-"endif "
-;
-
-char *dm_statusbar =
-"yb	-24 "
-
-// health
-"xv	0 "
-"hnum "
-"xv	50 "
-"pic 0 "
-
-// ammo
-"if 2 "
-"	xv	100 "
-"	anum "
-"	xv	150 "
-"	pic 2 "
-"endif "
-
-// armor
-"if 4 "
-"	xv	200 "
-"	rnum "
-"	xv	250 "
-"	pic 4 "
-"endif "
-
-// selected item
-"if 6 "
-"	xv	296 "
-"	pic 6 "
-"endif "
-
-"yb	-50 "
-
-// picked up item
-"if 7 "
-"	xv	0 "
-"	pic 7 "
-"	xv	26 "
-"	yb	-42 "
-"	stat_string 8 "
-"	yb	-50 "
-"endif "
-
-// timer
-"if 9 "
-"	xv	246 "
-"	num	2	10 "
-"	xv	296 "
-"	pic	9 "
-"endif "
-
-//  help / weapon icon 
-"if 11 "
-"	xv	148 "
-"	pic	11 "
-"endif "
-
-//  frags
-"xr	-50 "
-"yt 2 "
-"num 3 14"
-;
-
-
 /*QUAKED worldspawn (0 0 0) ?
 
 Only used for the world.
@@ -949,24 +694,6 @@ void SP_worldspawn (edict_t *ent)
 	gi.configstring (CS_CDTRACK, va("%i", ent->sounds) );
 
 	gi.configstring (CS_MAXCLIENTS, va("%i", (int)(maxclients->value) ) );
-
-    // Jump
-    // Removing all CTF HUD stuff for now
-	// status bar program
-#if 0
-	if (deathmatch->value)
-//ZOID
-		if (ctf->value) {
-			gi.configstring (CS_STATUSBAR, ctf_statusbar);
-			CTFPrecache();
-		} else
-//ZOID
-			gi.configstring (CS_STATUSBAR, dm_statusbar);
-	else
-		gi.configstring (CS_STATUSBAR, single_statusbar);
-#endif
-	//---------------
-
 
 	// help icon for statusbar
 	gi.imageindex ("i_help");

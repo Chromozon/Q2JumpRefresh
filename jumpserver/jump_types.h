@@ -191,6 +191,9 @@ namespace Jump
             store_ent = NULL;
             key_states = 0;
             scores_menu = SCORES_MENU_NONE;
+            racing = false;
+            racing_delay_frames = 0;
+            racing_framenum = 0;
         }
 
         std::vector<replay_frame_t> replay_recording;

@@ -83,5 +83,9 @@ namespace Jump
 		ghost->s.skinnum = 0;
 		ghost->s.frame = 0;
 		gi.unlinkentity(ghost);
+
+		ghost_replay.clear();
+		ghost_replay_frame = 0;
+		change_replay = false;
 	}
 }

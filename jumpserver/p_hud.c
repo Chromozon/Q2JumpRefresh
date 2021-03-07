@@ -97,7 +97,7 @@ void BeginIntermission (edict_t *targ)
 			continue;
 		if (client->health <= 0)
 			//respawn(client);
-			Jump::SpawnForJumping(ent);
+			Jump::SpawnForJumping(targ);
 	}
 
 	level.intermissiontime = level.time;

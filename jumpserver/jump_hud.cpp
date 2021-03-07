@@ -6,6 +6,28 @@
 
 namespace Jump
 {
+#if 0
+    // cursor positioning
+    xl <value>
+    xr <value>
+    yb <value>
+    yt <value>
+    xv <value>
+    yv <value>
+
+    // drawing
+    statpic <name>
+    pic <stat>
+    num <fieldwidth> <stat>
+    string <stat>
+
+    // control
+    if <stat>
+    ifeq <stat> <value>
+    ifbit <stat> <value>
+    endif
+#endif
+
     static const char* hud_layout =
         //
         // Note: characters seem to be in units of 8.

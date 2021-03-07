@@ -299,12 +299,61 @@ namespace Jump
 
     void SpawnForJumping(edict_t* ent)
     {
+#if 0
+        ent->groundentity = NULL;
+        ent->client = &game.clients[index];
+        ent->takedamage = DAMAGE_AIM;
+        ent->movetype = MOVETYPE_WALK;
+        ent->viewheight = 22;
+        ent->inuse = true;
+        ent->classname = "player";
+        ent->mass = 200;
+        ent->solid = SOLID_BBOX;
+        ent->deadflag = DEAD_NO;
+        ent->air_finished = level.time + 12;
+        ent->clipmask = MASK_PLAYERSOLID;
+        ent->model = "players/male/tris.md2";
+        ent->pain = player_pain;
+        ent->die = player_die;
+        ent->waterlevel = 0;
+        ent->watertype = 0;
+        ent->flags &= ~FL_NO_KNOCKBACK;
+        ent->svflags &= ~SVF_DEADMONSTER;
+
+        VectorCopy(mins, ent->mins);
+        VectorCopy(maxs, ent->maxs);
+        VectorClear(ent->velocity);
+
+        // clear playerstate values
+        memset(&ent->client->ps, 0, sizeof(client->ps));
+
+        client->ps.pmove.origin[0] = spawn_origin[0] * 8;
+        client->ps.pmove.origin[1] = spawn_origin[1] * 8;
+        client->ps.pmove.origin[2] = spawn_origin[2] * 8;
+        //ZOID
+        client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
+#endif
+
         // Remove spectator flags
         ent->movetype = MOVETYPE_WALK;
         ent->solid = SOLID_BBOX;
         ent->flags = 0;
         ent->svflags = 0;
+        ent->viewheight = 22;
+        ent->mass = 200;
         ent->deadflag = DEAD_NO;
+        ent->takedamage = DAMAGE_YES;
+        
+        // clear entity state values
+        ent->s.effects = 0;
+        ent->s.skinnum = ent - g_edicts - 1;
+        ent->s.modelindex = 255;        // will use the skin specified model
+        ent->s.modelindex2 = 255;       // custom gun model
+        ent->s.frame = 0;
+
+        int gravity = ent->client->ps.pmove.gravity;
+        memset(&ent->client->ps.pmove, 0, sizeof(ent->client->ps.pmove));
+        ent->client->ps.pmove.gravity = gravity;
 
         // Clear inventory of all weapons and ammo and change to blaster
         // TODO: simplify the weapon change code

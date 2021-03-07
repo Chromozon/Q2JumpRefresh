@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Jump
 #include "jump_hud.h"
+#include "jump_ghost.h"
 // Jump
 
 typedef struct
@@ -558,6 +559,8 @@ void SpawnEntitiesJump(char* mapname, char* entities, char* spawnpoint)
 	{
 		g_edicts[i + 1].client = game.clients + i;
 	}
+
+	Jump::GhostInit();
 
 	// TODO: load the ent file for the given mapname if it exists
 

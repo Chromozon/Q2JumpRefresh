@@ -2,12 +2,14 @@
 #include "jump_ghost.h"
 #include "jump_utils.h"
 #include "jump_scores.h"
+#include <cassert>
 
 namespace Jump
 {
 	static std::vector<replay_frame_t> ghost_replay = {};
 	static size_t ghost_replay_frame = 0;
 	static bool change_replay = false;
+	static edict_t* ghost = NULL;
 
 	// Tell the ghost to reload the current replay
 	void GhostChangeReplay()
@@ -18,7 +20,7 @@ namespace Jump
 	// Advance the ghost by one frame
 	void GhostRunFrame()
 	{
-		edict_t* ghost = GhostInstance();
+		assert(ghost != NULL);
 		if (ghost_replay.empty() || change_replay)
 		{
 			// Try to load an available replay
@@ -59,8 +61,9 @@ namespace Jump
 	}
 
 	// Initialize the default values for the ghost
-	void GhostInit(edict_t* ghost)
+	void GhostInit()
 	{
+		ghost = G_Spawn();
 		ghost->svflags = SVF_NOCLIENT;	// hides the ent
 		ghost->movetype = MOVETYPE_NOCLIP;
 		ghost->clipmask = MASK_SOLID;
@@ -80,17 +83,5 @@ namespace Jump
 		ghost->s.skinnum = 0;
 		ghost->s.frame = 0;
 		gi.unlinkentity(ghost);
-	}
-
-	// Get the ghost singleton instance
-	edict_t* GhostInstance()
-	{
-		static edict_t* ghost = NULL;
-		if (ghost == NULL)
-		{
-			ghost = G_Spawn();
-			GhostInit(ghost);
-		}
-		return ghost;
 	}
 }

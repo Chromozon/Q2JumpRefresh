@@ -615,8 +615,6 @@ extern	gitem_t	itemlist[];
 // g_cmds.c
 //
 qboolean CheckFlood(edict_t *ent);
-void Cmd_Help_f (edict_t *ent);
-void Cmd_Score_f (edict_t *ent);
 
 //
 // g_items.c

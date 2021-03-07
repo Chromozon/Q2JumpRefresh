@@ -981,16 +981,6 @@ void ClientCommand (edict_t *ent)
 		//CTFSay_Team(ent, gi.args());
 		return;
 	}
-	if (Q_stricmp (cmd, "score") == 0)
-	{
-		Cmd_Score_f (ent);
-		return;
-	}
-	if (Q_stricmp (cmd, "help") == 0)
-	{
-		Cmd_Help_f (ent);
-		return;
-	}
 
 	if (level.intermissiontime)
 		return;

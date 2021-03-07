@@ -292,6 +292,21 @@ namespace Jump
 
         UpdateTimer(ent);
 
+        // Show the menu if it is open
+        if (ent->client->showscores || ent->client->showhelp)
+        {
+            ent->client->ps.stats[STAT_LAYOUTS] = 1;
+        }
+        else
+        {
+            ent->client->ps.stats[STAT_LAYOUTS] = 0;
+        }
+
+        // TODO: show health if damage is taken
+        //ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
+        //ent->client->ps.stats[STAT_HEALTH] = ent->health;
+        
+
         //if (ent->client->pers.weapon && ent->client->pers.weapon->ammo)
         //#define WEAP_BLASTER			1 
         //#define WEAP_SHOTGUN			2 

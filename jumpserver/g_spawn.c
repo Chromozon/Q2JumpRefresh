@@ -23,6 +23,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Jump
 #include "jump_hud.h"
 #include "jump_ghost.h"
+#include "jump_ents.h"
+#include "jump_utils.h"
 // Jump
 
 typedef struct
@@ -337,6 +339,14 @@ void ED_CallSpawn (edict_t *ent)
 			return;
 		}
 	}
+
+	// Jump
+	if (Jump::SpawnJumpEnt(ent))
+	{
+		return;
+	}
+	// Jump
+
 	gi.dprintf ("%s doesn't have a spawn function\n", ent->classname);
 }
 
@@ -563,7 +573,16 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 
 	Jump::GhostInit();
 
-	// TODO: load the ent file for the given mapname if it exists
+	char* entities_all = entities;
+
+	// Load the ent override file if it exists
+	std::string mapsent_filename = Jump::GetModDir() + "/mapsent/" + level.mapname + ".ent"; // TODO: hardcoded path
+	std::string override_str;
+	if (Jump::ReadFileIntoString(mapsent_filename, override_str))
+	{
+		override_str.append("\0");
+		entities_all = override_str.data();
+	}
 
 	bool first_ent = true;
 	bool has_info_player_start = false;
@@ -575,8 +594,8 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 		edict_t* ent = NULL;
 
 		// Parse the opening brace
-		char* com_token = COM_Parse(&entities);
-		if (!entities)
+		char* com_token = COM_Parse(&entities_all);
+		if (!entities_all)
 		{
 			break;
 		}
@@ -596,7 +615,7 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 		}
 
 		// Parse this data into ent and remove it from the list of entities
-		entities = ED_ParseEdict(entities, ent);
+		entities_all = ED_ParseEdict(entities_all, ent);
 
 		// Keep track of player start so that we can remove other spawns later
 		if (strcmp(ent->classname, "info_player_start") == 0)

@@ -15,7 +15,7 @@
 
 namespace Jump
 {
-    typedef void(*CmdFunction)(edict_t* ent);
+    typedef void (*CmdFunction)(edict_t* ent);
 
     static std::unordered_map<std::string, CmdFunction> CmdTable = {
         { "inven", Cmd_Jump_Inven },

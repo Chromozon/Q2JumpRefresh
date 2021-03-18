@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <fstream>
 #include <time.h>
+#include <sstream>
 
 namespace Jump
 {
@@ -246,6 +247,20 @@ namespace Jump
         buffer.resize(num_bytes);
         file.read(reinterpret_cast<char*>(&buffer[0]), num_bytes);
         return file.eof();
+    }
+
+    // Reads the entire contents of a file into a string.  Returns true on success, false on failure.
+    bool ReadFileIntoString(const std::string& filepath, std::string& buffer)
+    {
+        std::ifstream file(filepath);
+        if (!file.is_open())
+        {
+            return false;
+        }
+        std::ostringstream ss;
+        ss << file.rdbuf();
+        buffer = ss.str();
+        return true;
     }
 
     // Gets the date display string "2020/12/23" from a Unix timestamp (seconds)

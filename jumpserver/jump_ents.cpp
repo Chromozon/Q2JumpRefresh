@@ -35,7 +35,6 @@ namespace Jump
 		VectorSet(ent->maxs, 16, 16, 16);
 		ent->s.modelindex = gi.modelindex("models/jump/smallbox3/tris.md2");
 		gi.linkentity(ent);
-		//level.jumpboxes[0]++;
 	}
 
 	void SP_jumpbox_medium(edict_t* ent)
@@ -48,7 +47,6 @@ namespace Jump
 		VectorSet(ent->maxs, 32, 32, 48);
 		ent->s.modelindex = gi.modelindex("models/jump/mediumbox3/tris.md2");
 		gi.linkentity(ent);
-		//level.jumpboxes[1]++;
 	}
 
 	void SP_jumpbox_large(edict_t* ent)
@@ -61,6 +59,5 @@ namespace Jump
 		VectorSet(ent->maxs, 64, 64, 96);
 		ent->s.modelindex = gi.modelindex("models/jump/largebox3/tris.md2");
 		gi.linkentity(ent);
-		//level.jumpboxes[2]++;
 	}
 }

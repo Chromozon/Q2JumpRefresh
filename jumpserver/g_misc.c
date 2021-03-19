@@ -1798,11 +1798,10 @@ void teleporter_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	dest = G_Find (NULL, FOFS(targetname), self->target);
 	if (!dest)
 	{
-		gi.dprintf ("Couldn't find destination\n");
+		//gi.dprintf ("Couldn't find destination\n");
 		return;
 	}
 
-	// unlink to make sure it can't possibly interfere with KillBox
 	gi.unlinkentity (other);
 
 	VectorCopy (dest->s.origin, other->s.origin);
@@ -1814,10 +1813,6 @@ void teleporter_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	other->client->ps.pmove.pm_time = 160>>3;		// hold time
 	other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
 
-	// draw the teleport splash at source and on the player
-	self->owner->s.event = EV_PLAYER_TELEPORT;
-	other->s.event = EV_PLAYER_TELEPORT;
-
 	// set angles
 	for (i=0 ; i<3 ; i++)
 		other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
@@ -1825,9 +1820,6 @@ void teleporter_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	VectorClear (other->s.angles);
 	VectorClear (other->client->ps.viewangles);
 	VectorClear (other->client->v_angle);
-
-	// kill anything at the destination
-	KillBox (other);
 
 	gi.linkentity (other);
 }
@@ -1882,3 +1874,42 @@ void SP_misc_teleporter_dest (edict_t *ent)
 	gi.linkentity (ent);
 }
 
+/*QUAKED trigger_teleport (0.5 0.5 0.5) ?
+Players touching this will be teleported
+*/
+void SP_trigger_teleport(edict_t* ent)
+{
+	edict_t* s;
+	int i;
+
+	if (!ent->target)
+	{
+		gi.dprintf("teleporter without a target.\n");
+		G_FreeEdict(ent);
+		return;
+	}
+
+	ent->svflags |= SVF_NOCLIENT;
+	ent->solid = SOLID_TRIGGER; // ent->solid = SOLID_BSP; lets you make them not rectangular, but it's buggy
+	ent->touch = teleporter_touch;
+	gi.setmodel(ent, ent->model);
+	gi.linkentity(ent);
+
+	// noise maker and splash effect dude
+	s = G_Spawn();
+	ent->enemy = s;
+	for (i = 0; i < 3; i++)
+	{
+		s->s.origin[i] = ent->mins[i] + (ent->maxs[i] - ent->mins[i]) / 2;
+	}
+	s->s.sound = gi.soundindex("");
+	gi.linkentity(s);
+}
+
+/*QUAKED info_teleport_destination (0.5 0.5 0.5) (-16 -16 -24) (16 16 32)
+Point trigger_teleports at these.
+*/
+void SP_info_teleport_destination(edict_t* ent)
+{
+	ent->s.origin[2] += 16;
+}

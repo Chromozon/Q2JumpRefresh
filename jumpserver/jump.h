@@ -24,8 +24,6 @@ namespace Jump
 
     edict_t* SelectJumpSpawnPoint();
 
-    void ResetJumpTimer(edict_t* ent);
-
     void ClientOnEnterMap(edict_t* ent);
     void InitAsSpectator(edict_t* ent);
 

@@ -1,6 +1,9 @@
 #include "g_local.h"
 #include "jump_voting.h"
 #include "jump_utils.h"
+#include <algorithm>
+#include <random>
+#include <iterator>
 
 //
 // Define vote types here
@@ -42,18 +45,20 @@ namespace Jump
 
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
+            if (stricmp(arguments.c_str(), "random") == 0)
+            {
+                std::random_device rd;
+                int num = rd() % jump_server.maplist.size();
+                auto it = jump_server.maplist.begin();
+                std::advance(it, num);
+                map_name = *it;
+                return true;
+            }
+
             if (jump_server.maplist.find(arguments) != jump_server.maplist.end())
             {
                 map_name = arguments;
                 return true;
-            }
-
-            if (stricmp(arguments.c_str(), "random") == 0)
-            {
-                // TODO: random map change
-                //crandom()
-                //map_name = jump_server.maplist;
-                //return true;
             }
 
             gi.cprintf(caster, PRINT_HIGH, "Map %s does not exist in the map list.\n", arguments.c_str());

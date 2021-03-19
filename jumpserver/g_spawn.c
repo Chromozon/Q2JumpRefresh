@@ -585,8 +585,6 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 	}
 
 	bool first_ent = true;
-	bool has_info_player_start = false;
-	edict_t* first_info_player_deathmatch = NULL;
 
 	// Parse ents one-by-one
 	while (1)
@@ -617,26 +615,6 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 		// Parse this data into ent and remove it from the list of entities
 		entities_all = ED_ParseEdict(entities_all, ent);
 
-		// Keep track of player start so that we can remove other spawns later
-		if (strcmp(ent->classname, "info_player_start") == 0)
-		{
-			has_info_player_start = true;
-		}
-
-		// Only keep the first spawn we find
-		if (strcmp(ent->classname, "info_player_deathmatch") == 0)
-		{
-			if (first_info_player_deathmatch == NULL)
-			{
-				first_info_player_deathmatch = ent;
-			}
-			else
-			{
-				G_FreeEdict(ent);
-				continue;
-			}
-		}
-
 		// Remove entities that we don't need
 		// TODO: add back in the checkpoint ents (but only allow a few of them)
 		if (strstr(ent->classname, "ammo_") != NULL ||
@@ -649,12 +627,6 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 
 		// Spawn the ent
 		ED_CallSpawn(ent);
-	}
-
-	// Remove the deathmatch spawn if we found a player start
-	if (has_info_player_start && first_info_player_deathmatch != NULL)
-	{
-		G_FreeEdict(first_info_player_deathmatch);
 	}
 
 	// Link together ents that go together

@@ -146,12 +146,12 @@ namespace Jump
 
     edict_t* SelectJumpSpawnPoint()
     {
-        edict_t* spot = G_Find(NULL, FOFS(classname), "info_player_start");
+        edict_t* spot = G_Find(NULL, FOFS(classname), "info_player_deathmatch");
         if (spot != NULL)
         {
             return spot;
         }
-        spot = G_Find(NULL, FOFS(classname), "info_player_deathmatch");
+        spot = G_Find(NULL, FOFS(classname), "info_player_start");
         if (spot != NULL)
         {
             return spot;

@@ -100,8 +100,8 @@
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /B /Y "$(OutDir)$(TargetFileName)" "E:\Quake2Dev\jumprefresh";
-copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
+      <Command>copy /B /Y "$(OutDir)$(TargetFileName)" "G:\Quake2Dev\jumprefresh";
+copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
       <Message>Copying binaries to q2 jumprefresh folder</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -127,8 +127,8 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>copy /B /Y "$(OutDir)$(TargetFileName)" "E:\Quake2Dev\jumprefresh";
-copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
+      <Command>copy /B /Y "$(OutDir)$(TargetFileName)" "G:\Quake2Dev\jumprefresh";
+copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
       <Message>Copying binaries to q2 jumprefresh folder</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -170,7 +170,9 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
     <ClCompile Include="jump_ghost.cpp" />
     <ClCompile Include="jump_global.cpp" />
     <ClCompile Include="jump_hud.cpp" />
+    <ClCompile Include="jump_local_database.cpp" />
     <ClCompile Include="jump_menu.cpp" />
+    <ClCompile Include="jump_replays.cpp" />
     <ClCompile Include="jump_scores.cpp" />
     <ClCompile Include="jump_types.cpp" />
     <ClCompile Include="jump_utils.cpp" />
@@ -186,12 +188,27 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "E:\Quake2Dev\jumprefresh";</Command>
     <ClCompile Include="p_view.c" />
     <ClCompile Include="p_weapon.c" />
     <ClCompile Include="q_shared.c" />
+    <ClCompile Include="shell.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="sqlite3.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base64.h" />
     <ClInclude Include="g_chase.h" />
     <ClInclude Include="jump_ents.h" />
     <ClInclude Include="jump_ghost.h" />
+    <ClInclude Include="jump_local_database.h" />
+    <ClInclude Include="jump_replays.h" />
+    <ClInclude Include="sqlite3.h" />
     <ClInclude Include="thread_queue.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="g_local.h" />

@@ -7,6 +7,7 @@
 #include "jump.h"
 #include <time.h>
 #include <sstream>
+#include <chrono>
 
 namespace Jump
 {
@@ -140,13 +141,15 @@ namespace Jump
         std::unordered_map<std::string, std::vector<user_time_record>>& all_local_maptimes)
     {
         all_local_maptimes.clear();
-        //return;
+        return;
 
         std::string scores_dir = GetModPortDir() + '/' + SCORES_DIR;
         std::filesystem::create_directories(scores_dir);
 
         for (const std::string& mapname : maplist)
         {
+            auto start = std::chrono::high_resolution_clock::now();
+
             std::string map_dir = scores_dir + '/' + mapname;
             std::filesystem::create_directories(map_dir);
 
@@ -168,10 +171,21 @@ namespace Jump
                     all_local_maptimes[mapname].push_back(record);
                 }
             }
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            Logger::DebugConsole(va("%ld\n", duration_us.count()));
+
+            auto start2 = std::chrono::high_resolution_clock::now();
+
             std::sort(
                 all_local_maptimes[mapname].begin(),
                 all_local_maptimes[mapname].end(),
                 SortTimeRecordByTime);
+
+            auto end2 = std::chrono::high_resolution_clock::now();
+            auto duration_us2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2);
+            Logger::DebugConsole(va("Sort %ld\n", duration_us2.count()));
         }
         Logger::Info("Loaded all local maptimes");
     }

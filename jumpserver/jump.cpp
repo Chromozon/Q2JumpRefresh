@@ -6,6 +6,7 @@
 #include "jump_global.h"
 #include "jump_voting.h"
 #include "jump_ghost.h"
+#include "jump_local_database.h"
 
 namespace Jump
 {
@@ -612,6 +613,7 @@ namespace Jump
 
         jump_server.global_database_thread = std::thread(ThreadMainGlobal);
         VoteSystem::Init();
+        LocalDatabase::Instance().Init();
     }
 
     void JumpRunFrame()

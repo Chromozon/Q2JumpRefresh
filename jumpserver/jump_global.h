@@ -28,6 +28,22 @@ namespace Jump
         maptimes
     };
 
+
+    class IGlobalCommand
+    {
+    public:
+        virtual void ActionBeforePost() = 0;
+        virtual std::string GetJsonPayload() = 0;
+        virtual void HandleResponse(int status, const std::string& data) = 0;
+    };
+
+    class GlobalCommandPlayertimes : public IGlobalCommand
+    {
+    public:
+
+    };
+
+
     // Interface class which all other global database command classes inherit from
     class global_cmd_base
     {

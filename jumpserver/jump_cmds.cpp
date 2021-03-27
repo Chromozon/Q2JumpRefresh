@@ -248,16 +248,18 @@ namespace Jump
     // TODO: support replay self, replay n, replay, replay <username>
     void Cmd_Jump_Replay(edict_t* ent)
     {
+        bool loaded = false;
+
         if (gi.argc() == 1)
         {
-            // replay now
+            // replay best time
         }
         else
         {
             std::string param = gi.argv(1);
             if (param == "self")
             {
-                LoadReplayFromFile(level.mapname, ent->client->pers.netname, ent->client->jumpdata->replay_spectating);
+                loaded = LoadReplayFromFile(level.mapname, ent->client->pers.netname, ent->client->jumpdata->replay_spectating);
             }
             else if (param == "now")
             {
@@ -277,7 +279,12 @@ namespace Jump
             }
         }
 
-        LoadReplayFromFile(level.mapname, ent->client->pers.netname, ent->client->jumpdata->replay_spectating);
+        loaded = LoadReplayFromFile(level.mapname, ent->client->pers.netname, ent->client->jumpdata->replay_spectating);
+        if (!loaded)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "No replay exists");
+            return;
+        }
 
         // Move client to a spectator
         InitAsSpectator(ent);

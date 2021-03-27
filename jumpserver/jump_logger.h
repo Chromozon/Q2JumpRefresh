@@ -45,6 +45,7 @@ namespace Jump
             const std::string& map_name,
             int64_t map_time_ms);
         static void Activity(const std::string& msg);
+        static void DebugConsole(const std::string& debug);
 
     private:
         Logger() = delete;

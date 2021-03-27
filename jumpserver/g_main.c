@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump.h"
 #include "jump_global.h"
 #include "jump_cmds.h"
+#include "jump_local_database.h"
 
 game_locals_t	game;
 level_locals_t	level;
@@ -110,6 +111,8 @@ void ShutdownGame (void)
 	// Jump
 	Jump::StopThreadMainGlobal();
 	Jump::jump_server.global_database_thread.join();
+
+	Jump::LocalDatabase::Instance().Close();
 	// Jump
 }
 

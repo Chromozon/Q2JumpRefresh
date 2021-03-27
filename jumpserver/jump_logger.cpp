@@ -2,6 +2,9 @@
 #include "g_local.h"
 #include "jump_utils.h"
 #include <filesystem>
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 namespace Jump
 {
@@ -44,6 +47,13 @@ namespace Jump
         {
             server_log_handle << GetCurrentTimeUTC() << '\t' << "DEBUG: " << debug << '\n';
         }
+        #endif
+    }
+
+    void Logger::DebugConsole(const std::string& debug)
+    {
+        #ifdef _WIN32
+        OutputDebugStringA(debug.c_str());
         #endif
     }
 

@@ -2,6 +2,7 @@
 
 #include "sqlite3.h"
 #include <string>
+#include <vector>
 
 namespace Jump
 {
@@ -13,6 +14,8 @@ public:
 
     void Init();
     void Close();
+
+    void MigrateAll();
 private:
     // Disallow
     LocalDatabase() {}
@@ -23,9 +26,21 @@ private:
     void CreateTableUsers();
     void CreateTableMapTimes();
 
-    void AddNewMap(const std::string& mapname);
+    void AddMap(const std::string& mapname);
+    void AddMapList(const std::vector<std::string>& maps);
 
-    sqlite3* m_Handle = nullptr;
+    void AddUserOrUpdateSeen(const std::string& username);
+
+    // Migrate from old highscores
+    void ClearAllTables();
+    void MigrateUsers(const std::string& userFile);
+    void MigrateMaplist(const std::string& maplistFile);
+    void MigrateMapTimes(const std::string& folder);
+    void MigrateMSets(const std::string& folder);
+    void MigrateEnts(const std::string& folder);
+    void MigrateReplays(const std::string& folder);
+
+    sqlite3* m_db = nullptr;
 };
 
 }

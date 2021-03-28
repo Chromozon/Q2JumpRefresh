@@ -74,4 +74,7 @@ namespace Jump
     {
         return N;
     }
+
+    // Trims whitespace from beginning and end of string (in place).
+    void TrimString(std::string& s);
 }

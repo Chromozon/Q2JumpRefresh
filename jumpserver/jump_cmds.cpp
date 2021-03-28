@@ -12,6 +12,7 @@
 #include "jump_voting.h"
 #include <algorithm>
 #include "rapidjson/document.h"
+#include "jump_local_database.h"
 
 namespace Jump
 {
@@ -94,6 +95,8 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        LocalDatabase::Instance().MigrateAll();
+
         typedef struct
         {
             vec3_t		angle;

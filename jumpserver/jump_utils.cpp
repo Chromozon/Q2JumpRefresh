@@ -289,4 +289,18 @@ namespace Jump
         return tmp;
     }
 
+    // Trims whitespace from beginning and end of string (in place).
+    void TrimString(std::string& s)
+    {
+        // Trim left
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }));
+
+        // Trim right
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }).base(), s.end());
+    }
+
 } // namespace Jump

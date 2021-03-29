@@ -8,6 +8,8 @@
 #include <chrono>
 #include <filesystem>
 #include <sstream>
+#include <map>
+#include <array>
 
 namespace Jump
 {
@@ -35,6 +37,21 @@ void LocalDatabase::Init()
     {
         Logger::Error(va("Could not open local sqlite3 database, error: %d", error));
     }
+
+    // We bump up the page_size from the default of 4096 to 8192 because that offers the best performance
+    // for working with large BLOBs.
+    // The cache_size is the maximum amount (in KB) that the database can keep cached in memory.
+    std::string sql = ""
+        "PRAGMA page_size = 8192;"
+        "VACUUM;"
+        "PRAGMA cache_size = -100000;"
+    ;
+    error = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Could not set database performance options, error: %d, %s", error, sqlite3_errmsg(m_db)));
+    }
+
     CreateTableUsers();
     CreateTableMaps();
     CreateTableMapTimes();
@@ -168,6 +185,161 @@ void LocalDatabase::AddMapList(const std::vector<std::string>& maps)
     {
         AddMap(map);
     }
+}
+
+
+// TODO
+
+void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& username, int timeMs, int pmoveTimeMs,
+    std::vector<replay_frame_t>& replay)
+{
+    // I'm not sure if preparing a statement with a blob does a copy immediately or only when executed
+
+    // See if the user already has a maptime for this map
+    // If no time exists
+    //     Push all data to maptime table, completion = 1
+    // else if time exists
+    //     if new time is worse
+    //         increment completions
+    //     else if new time is better
+    //         push all data, completions++
+
+    std::string sql = ""
+        "INSERT OR IGNORE INTO MapTimes (MapId, UserId, TimeMs, Date, Completions) "
+        "VALUES ("
+            "(SELECT MapId FROM Maps WHERE MapName = @mapname),"
+            "(SELECT UserId FROM Users WHERE UserName = @username),"
+            "2147483647,"
+            "none,"
+            "0"
+        ")"
+    ;
+
+    int rows = sqlite3_changes(m_db);
+
+    std::string sql2 = ""
+        "UPDATE MapTimes "
+        "SET "
+            "TimeMs = @timems,"
+            "PMoveTimeMs = @pmovetimems,"
+            "Date = @date,"
+            "Completions = Completions + 1,"
+            "Replay = @replay "
+        "WHERE "
+            "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
+            "AND "
+            "UserId = (SELECT UserId FROM Users WHERE UserName = @username)"
+    ;
+
+    std::string sql3 = ""
+        "UPDATE MapTimes SET Completions = Completions + 1 "
+        "WHERE "
+            "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
+            "AND "
+            "UserId = (SELECT UserId FROM Users WHERE UserName = @username)"
+    ;
+
+}
+
+
+
+
+
+
+
+void LocalDatabase::CalculateAllStatistics(const std::vector<std::string>& maplist)
+{
+    std::map<std::string, std::vector<MapTimesEntry>> allMapTimes; // map of <mapname, sorted list of best times>
+    for (const std::string& mapname : maplist)
+    {
+        std::vector<MapTimesEntry> results;
+        GetMapTimes(results, mapname);
+        allMapTimes.insert(std::make_pair(mapname, results));
+    }
+
+    std::map<int, std::string> allUsers;
+    GetAllUsers(allUsers);
+
+    std::map<int, UserHighscores> allUserHighscores; // map of <userId, highscores>
+    for (const auto& user : allUsers)
+    {
+        allUserHighscores.insert(std::make_pair(user.first, UserHighscores{}));
+    }
+
+    for (const auto& mapTimes : allMapTimes)
+    {
+        for (size_t place = 0; place < mapTimes.second.size() && place < 15; ++place)
+        {
+            int userId = mapTimes.second[place].userId;
+            allUserHighscores[userId].highscores[place]++;
+            allUserHighscores[userId].mapcount++;
+        }
+    }
+}
+
+
+/// <summary>
+/// Gets a list of all userIds and userNames from the database.
+/// </summary>
+/// <param name="users"></param>
+void LocalDatabase::GetAllUsers(std::map<int, std::string>& users)
+{
+    users.clear();
+    const char* sql = "SELECT UserId, UserName FROM Users";
+    sqlite3_stmt* prepared = nullptr;
+    sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int step = sqlite3_step(prepared);
+    while (step == SQLITE_ROW)
+    {
+        std::pair<int, std::string> data;
+        data.first = sqlite3_column_int(prepared, 0);
+        data.second = reinterpret_cast<const char*>(sqlite3_column_text(prepared, 1));
+        users.insert(data);
+        step = sqlite3_step(prepared);
+    }
+    if (step != SQLITE_DONE)
+    {
+        Logger::Error(va("Error querying maptimes: %s", sqlite3_errmsg(m_db)));
+    }
+    sqlite3_finalize(prepared);
+}
+
+/// <summary>
+/// Gets the sorted highscores list for a given map.
+/// </summary>
+/// <param name="results"></param>
+/// <param name="mapname"></param>
+/// <param name="limit"></param>
+/// <param name="offset"></param>
+void LocalDatabase::GetMapTimes(std::vector<MapTimesEntry>& results, const std::string& mapname, int limit, int offset)
+{
+    results.clear();
+    const char* sql = va(""
+        "SELECT UserId, TimeMs, PMoveTimeMs, Date, Completions FROM MapTimes "
+        "WHERE MapId = (SELECT MapId FROM Maps WHERE MapName = \'%s\') "
+        "ORDER BY TimeMs "
+        "LIMIT %d OFFSET %d",
+        mapname.c_str(), limit, offset
+    );
+    sqlite3_stmt* prepared = nullptr;
+    sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int step = sqlite3_step(prepared);
+    while (step == SQLITE_ROW)
+    {
+        MapTimesEntry data;
+        data.userId = sqlite3_column_int(prepared, 0);
+        data.timeMs = sqlite3_column_int(prepared, 1);
+        data.pmoveTimeMs = sqlite3_column_int(prepared, 2);
+        data.date = reinterpret_cast<const char*>(sqlite3_column_text(prepared, 3));
+        data.completions = sqlite3_column_int(prepared, 4);
+        results.push_back(data);
+        step = sqlite3_step(prepared);
+    }
+    if (step != SQLITE_DONE)
+    {
+        Logger::Error(va("Error querying maptimes: %s", sqlite3_errmsg(m_db)));
+    }
+    sqlite3_finalize(prepared);
 }
 
 /// <summary>
@@ -344,6 +516,7 @@ void LocalDatabase::MigrateMapTimes(const std::string& folder)
     }
     Logger::Info(va("Migration: migrated %d maptimes from %s", count, folder.c_str()));
 }
+
 
 void LocalDatabase::MigrateAll()
 {

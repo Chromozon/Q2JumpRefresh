@@ -95,7 +95,24 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        LocalDatabase::Instance().MigrateAll();
+        std::vector<std::string> maplist;
+        for (auto it = jump_server.maplist.begin(); it != jump_server.maplist.end(); ++it)
+        {
+            maplist.push_back(*it);
+        }
+
+        auto start = std::chrono::high_resolution_clock::now();
+
+        LocalDatabase::Instance().CalculateAllStatistics(maplist);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        auto ms = durationMs.count();
+
+        Logger::Info(va("All stats ms: %d", ms));
+
+
+        //LocalDatabase::Instance().MigrateAll();
 
         typedef struct
         {
@@ -111,7 +128,7 @@ namespace Jump
 
         //ConvertOldHighscores();
 
-        CalculateAllLocalStatistics();
+        //CalculateAllLocalStatistics();
 
         int x = 5;
 

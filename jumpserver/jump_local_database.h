@@ -26,6 +26,12 @@ typedef struct MapTimesEntry
     int completions = 0;
 } MapTimesEntry;
 
+typedef struct LastSeenEntry
+{
+    std::string username;
+    std::string lastSeen;
+} LastSeenEntry;
+
 
 class LocalDatabase
 {
@@ -41,13 +47,18 @@ public:
     void AddUserOrUpdateSeen(const std::string& username);
 
     void AddMapTime(const std::string& mapname, const std::string& username, int timeMs, int pmoveTimeMs,
-        std::vector<replay_frame_t>& replay);
+        const std::vector<replay_frame_t>& replay);
 
     void CalculateAllStatistics(const std::vector<std::string>& maplist);
 
     void GetMapTimes(std::vector<MapTimesEntry>& results, const std::string& mapname, int limit = -1, int offset = 0);
+    void GetLastSeen(std::vector<LastSeenEntry>& results, int limit = -1, int offset = 0);
+    int GetMapTime(const std::string& mapname, const std::string& username);
+    bool GetReplayByUser(const std::string& mapname, const std::string& username, std::vector<replay_frame_t>& replay);
+    bool GetReplayByPosition(const std::string& mapname, int position);
 
     void MigrateAll();
+
 private:
     // Disallow
     LocalDatabase() {}
@@ -67,9 +78,10 @@ private:
     void MigrateUsers(const std::string& userFile);
     void MigrateMaplist(const std::string& maplistFile);
     void MigrateMapTimes(const std::string& folder);
-    void MigrateMSets(const std::string& folder);
-    void MigrateEnts(const std::string& folder);
     void MigrateReplays(const std::string& folder);
+    bool UpdateReplay(const std::string& mapname, int userid, const std::vector<replay_frame_t>& replay);
+    bool ConvertOldReplay(const std::string& demoFile, std::vector<replay_frame_t>& newReplay);
+    
 
     sqlite3* m_db = nullptr;
 };

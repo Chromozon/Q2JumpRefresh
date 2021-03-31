@@ -38,19 +38,20 @@ void LocalDatabase::Init()
         Logger::Error(va("Could not open local sqlite3 database, error: %d", error));
     }
 
+    // TODO: can just add these as compiler flags
     // We bump up the page_size from the default of 4096 to 8192 because that offers the best performance
     // for working with large BLOBs.
     // The cache_size is the maximum amount (in KB) that the database can keep cached in memory.
-    std::string sql = ""
-        "PRAGMA page_size = 8192;"
-        "VACUUM;"
-        "PRAGMA cache_size = -100000;"
-    ;
-    error = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr);
-    if (error != SQLITE_OK)
-    {
-        Logger::Error(va("Could not set database performance options, error: %d, %s", error, sqlite3_errmsg(m_db)));
-    }
+    //std::string sql = ""
+    //    "PRAGMA page_size = 8192;"
+    //    "VACUUM;"
+    //    "PRAGMA cache_size = -100000;"
+    //;
+    //error = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr);
+    //if (error != SQLITE_OK)
+    //{
+    //    Logger::Error(va("Could not set database performance options, error: %d, %s", error, sqlite3_errmsg(m_db)));
+    //}
 
     CreateTableUsers();
     CreateTableMaps();
@@ -70,22 +71,16 @@ void LocalDatabase::Close()
 /// </summary>
 void LocalDatabase::CreateTableMaps()
 {
-    std::string sql = ""
+    const char* sql = ""
         "CREATE TABLE IF NOT EXISTS Maps"
         "("
             "MapId INTEGER NOT NULL,"
             "MapName TEXT NOT NULL UNIQUE,"
             "DateAdded TEXT NOT NULL,"
-            "MSet TEXT NULL,"
-            "MSetDateUpdated TEXT NULL,"
-            "MSetUpdatedBy TEXT NULL,"
-            "Ents TEXT NULL,"
-            "EntsDateUpdated TEXT NULL,"
-            "EntsUpdatedBy TEXT NULL,"
             "PRIMARY KEY(MapId AUTOINCREMENT)"
         ")"
     ;
-    int error = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr);
+    int error = sqlite3_exec(m_db, sql, nullptr, nullptr, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Could not create Maps table, error: %d, %s", error, sqlite3_errmsg(m_db)));
@@ -191,7 +186,7 @@ void LocalDatabase::AddMapList(const std::vector<std::string>& maps)
 // TODO
 
 void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& username, int timeMs, int pmoveTimeMs,
-    std::vector<replay_frame_t>& replay)
+    const std::vector<replay_frame_t>& replay)
 {
     // I'm not sure if preparing a statement with a blob does a copy immediately or only when executed
 
@@ -243,10 +238,40 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
 
 
 
+// TODO: move to scores
+int CalculateTotalScore(const std::array<int, 15>& highscores)
+{
+    int totalScore =
+        highscores[0] * 25 +
+        highscores[1] * 20 +
+        highscores[2] * 16 +
+        highscores[3] * 13 +
+        highscores[4] * 11 +
+        highscores[5] * 10 +
+        highscores[6] * 9 +
+        highscores[7] * 8 +
+        highscores[8] * 7 +
+        highscores[9] * 6 +
+        highscores[10] * 5 +
+        highscores[11] * 4 +
+        highscores[12] * 3 +
+        highscores[13] * 2 +
+        highscores[14] * 1;
+    return totalScore;
+}
 
+float CalculatePercentScore(int totalScore, int userMapCount, int serverMapCount)
+{
+    // A user has to complete n number of maps before the percent score is calculated.
+    // This avoids the situation where a user completes only 1 map with a first place and is first on the list forever.
+    if (userMapCount < 50)
+    {
+        return 0.0f;
+    }
+    return (totalScore / (serverMapCount * 25.0)) * 100.0;
+}
 
-
-
+// TODO move to scores file
 void LocalDatabase::CalculateAllStatistics(const std::vector<std::string>& maplist)
 {
     std::map<std::string, std::vector<MapTimesEntry>> allMapTimes; // map of <mapname, sorted list of best times>
@@ -275,6 +300,40 @@ void LocalDatabase::CalculateAllStatistics(const std::vector<std::string>& mapli
             allUserHighscores[userId].mapcount++;
         }
     }
+
+    // Total score and percentage score
+    std::vector<std::pair<int, int>> allTotalScores; // <userId, total score> sorted best to worst
+    std::vector<std::pair<int, float>> allPercentScores; // <userId, percent score> sorted best to worst
+    for (const auto& userHighscores : allUserHighscores)
+    {
+        int totalScore = CalculateTotalScore(userHighscores.second.highscores);
+        allTotalScores.push_back(std::make_pair(userHighscores.first, totalScore));
+
+        int percentScore = CalculatePercentScore(totalScore, userHighscores.second.mapcount, maplist.size());
+        allPercentScores.push_back(std::make_pair(userHighscores.first, percentScore));
+    }
+    std::sort(allTotalScores.begin(), allTotalScores.end(),
+        [](const std::pair<int, int>& left, const std::pair<int, int>& right) -> bool
+    {
+        return left.second > right.second;
+    });
+    std::sort(allPercentScores.begin(), allPercentScores.end(),
+        [](const std::pair<int, float>& left, const std::pair<int, float>& right) -> bool
+    {
+        return left.second > right.second;
+    });
+
+    // Total map completions
+    std::vector<std::pair<int, int>> allCompletions; // <userId, completions> sorted best to worst
+    for (const auto& userHighscores : allUserHighscores)
+    {
+        allCompletions.push_back(std::make_pair(userHighscores.first, userHighscores.second.mapcount));
+    }
+    std::sort(allCompletions.begin(), allCompletions.end(),
+        [](const std::pair<int, int>& left, const std::pair<int, int>& right) -> bool
+    {
+        return left.second > right.second;
+    });
 }
 
 
@@ -340,6 +399,130 @@ void LocalDatabase::GetMapTimes(std::vector<MapTimesEntry>& results, const std::
         Logger::Error(va("Error querying maptimes: %s", sqlite3_errmsg(m_db)));
     }
     sqlite3_finalize(prepared);
+}
+
+/// <summary>
+/// Get the last seen list sorted by most recent.
+/// </summary>
+/// <param name="results"></param>
+/// <param name="limit"></param>
+/// <param name="offset"></param>
+void LocalDatabase::GetLastSeen(std::vector<LastSeenEntry>& results, int limit, int offset)
+{
+    results.clear();
+    const char* sql = va(""
+        "SELECT UserName, LastSeen FROM Users "
+        "WHERE LastSeen IS NOT NULL "
+        "ORDER BY datetime(LastSeen) DESC "
+        "LIMIT %d OFFSET %d",
+        limit, offset
+    );
+    sqlite3_stmt* prepared = nullptr;
+    sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int step = sqlite3_step(prepared);
+    while (step == SQLITE_ROW)
+    {
+        LastSeenEntry data;
+        data.username = reinterpret_cast<const char*>(sqlite3_column_text(prepared, 0));
+        data.lastSeen = reinterpret_cast<const char*>(sqlite3_column_text(prepared, 1));
+        results.push_back(data);
+        step = sqlite3_step(prepared);
+    }
+    if (step != SQLITE_DONE)
+    {
+        Logger::Error(va("Error querying last seen: %s", sqlite3_errmsg(m_db)));
+    }
+    sqlite3_finalize(prepared);
+}
+
+/// <summary>
+/// Gets the maptime (ms) for a given user and map.
+/// </summary>
+/// <param name="mapname"></param>
+/// <param name="username"></param>
+/// <returns>Time in milliseconds, or -1 if not set</returns>
+int LocalDatabase::GetMapTime(const std::string& mapname, const std::string& username)
+{
+    int timeMs = -1;
+    const char* sql = ""
+        "SELECT TimeMs FROM MapTimes "
+        "WHERE "
+        "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
+        "AND "
+        "UserId = (SELECT UserId FROM Users WHERE UserName = @username) "
+    ;
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting maptime, mapname %s, user %s, error: %d, %s",
+            mapname.c_str(), username.c_str(), error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return timeMs;
+    }
+    int index = sqlite3_bind_parameter_index(prepared, "@mapname");
+    sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
+
+    index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        timeMs = sqlite3_column_int(prepared, 0);
+    }
+    sqlite3_finalize(prepared);
+    return timeMs;
+}
+
+/// <summary>
+/// Gets the replay for a given user and map.
+/// </summary>
+/// <param name="mapname"></param>
+/// <param name="username"></param>
+/// <param name="replay"></param>
+/// <returns>True if success and replay exists, false if error or no replay</returns>
+bool LocalDatabase::GetReplayByUser(const std::string& mapname, const std::string& username,
+    std::vector<replay_frame_t>& replay)
+{
+    replay.clear();
+    const char* sql = ""
+        "SELECT Replay FROM MapTimes "
+        "WHERE "
+        "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
+        "AND "
+        "UserId = (SELECT UserId FROM Users WHERE UserName = @username) "
+    ;
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting replay, mapname %s, user %s, error: %d, %s",
+            mapname.c_str(), username.c_str(), error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return false;
+    }
+    int index = sqlite3_bind_parameter_index(prepared, "@mapname");
+    sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
+
+    index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    bool found = false;
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        int bytes = sqlite3_column_bytes(prepared, 0);
+        if (bytes > 0)
+        {
+            int frames = bytes / sizeof(replay_frame_t);
+            replay.resize(frames);
+            memcpy(&replay[0], sqlite3_column_blob(prepared, 0), bytes);
+            found = true;
+        }
+    }
+    sqlite3_finalize(prepared);
+    return found;
 }
 
 /// <summary>
@@ -518,6 +701,165 @@ void LocalDatabase::MigrateMapTimes(const std::string& folder)
 }
 
 
+
+void LocalDatabase::MigrateReplays(const std::string& folder)
+{
+    int count = 0;
+    for (const auto& entry : std::filesystem::directory_iterator(folder))
+    {
+        if (!entry.is_regular_file())
+        {
+            continue;
+        }
+        if (std::filesystem::path(entry).extension() != ".dj3")
+        {
+            continue;
+        }
+        std::string filename = std::filesystem::path(entry).filename().string();
+        size_t extensionPos = filename.rfind(".dj3");
+        size_t separatorPos = filename.rfind("_");
+        if (extensionPos == std::string::npos || separatorPos == std::string::npos)
+        {
+            Logger::Error(va("Migration: invalid demo filename: %s", filename));
+            continue;
+        }
+        std::string mapname = filename.substr(0, separatorPos);
+        int userId = std::stoi(filename.substr(separatorPos + 1, extensionPos - separatorPos));
+        std::vector<replay_frame_t> newReplay;
+        bool converted = ConvertOldReplay(entry.path().string(), newReplay);
+        if (!converted)
+        {
+            Logger::Error(va("Migration: could not convert demo filename: %s", filename));
+            continue;
+        }
+        bool added = UpdateReplay(mapname, userId, newReplay);
+        if (!added)
+        {
+            Logger::Error(va("Migration: could not update demo filename: %s", filename));
+            continue;
+        }
+        count++;
+        Logger::DebugConsole(va("Converted %s, user %d, time %.3f, total (%d)\n",
+            mapname.c_str(), userId, newReplay.size() / 10.0f, count));
+    }
+}
+
+bool LocalDatabase::UpdateReplay(const std::string& mapname, int userid, const std::vector<replay_frame_t>& replay)
+{
+    if (replay.size() == 0)
+    {
+        Logger::Error(va("Invalid replay size for map %s and user %d", mapname.c_str(), userid));
+        return false;
+    }
+
+    const char* blobPtr = reinterpret_cast<const char*>(&replay[0]);
+    int blobBytes = static_cast<int>(replay.size() * sizeof(replay_frame_t));
+
+    const char* sql = va(""
+        "UPDATE MapTimes SET Replay = @replay "
+        "WHERE "
+        "MapId = (SELECT MapId FROM Maps WHERE MapName = \'%s\') "
+        "AND "
+        "UserId = %d",
+        mapname.c_str(), userid);
+
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error updating replay for map %s and user %d, error: %d, %s",
+            mapname.c_str(), userid, error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return false;
+    }
+
+    int index = sqlite3_bind_parameter_index(prepared, "@replay");
+    sqlite3_bind_blob(prepared, index, blobPtr, blobBytes, SQLITE_STATIC);
+
+    sqlite3_step(prepared);
+
+    error = sqlite3_finalize(prepared);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error updating replay for map %s and user %d, error: %d, %s",
+            mapname.c_str(), userid, error, sqlite3_errmsg(m_db)));
+        return false;
+    }
+    return true;
+}
+
+
+
+
+
+/// <summary>
+/// Converts replays from the old .dj3 format to the new format.
+/// </summary>
+/// <param name="demoFile"></param>
+/// <param name="newReplay"></param>
+/// <returns>True on success, false on error</returns>
+bool LocalDatabase::ConvertOldReplay(const std::string& demoFile, std::vector<replay_frame_t>& newReplay)
+{
+    // Old replay [mapname]_[userid].dj3 file is array of:
+    // {
+    //     float32 angle[3];     // 12 bytes
+    //     float32 origin[3];    // 12 bytes
+    //     int32 frame;          // 4 bytes
+    // }
+    // This structure is packed with size 28 bytes.
+    //
+    // The 4 bytes of frame are a combo of fps and bitmask key states:
+    // frame[0] = animation frame
+    // frame[1] = fps
+    // frame[2] = key states
+    // frame[3] = ignored
+    //
+    // Key states bitmask positions:
+    // Up (jump) = 1
+    // Down (crouch) = 2
+    // Left = 4
+    // Right = 8
+    // Forward = 16
+    // Back = 32
+    // Attack = 64
+    //
+    const int OldDemoFileFrameSizeBytes = 28;
+    auto demoFileSize = std::filesystem::file_size(demoFile);
+    if (demoFileSize % OldDemoFileFrameSizeBytes != 0)
+    {
+        Logger::Error(va("Migration: invalid demo file size: %s", demoFile));
+        return false;
+    }
+    size_t numFrames = demoFileSize / OldDemoFileFrameSizeBytes;
+
+    std::ifstream demofile(demoFile, std::ios::binary);
+    if (!demofile.is_open())
+    {
+        Logger::Error(va("Migration: could not open demo file: %s", demoFile));
+        return false;
+    }
+    newReplay.clear();
+    newReplay.reserve(numFrames);
+    for (size_t i = 0; i < numFrames; ++i)
+    {
+        replay_frame_t newFrame = {};
+
+        demofile.read((char*)&newFrame.angles, 12);
+        demofile.read((char*)&newFrame.pos, 12);
+
+        int32_t oldAnimationFrame = 0;
+        demofile.read((char*)&oldAnimationFrame, 4);
+        newFrame.animation_frame = oldAnimationFrame & 255;
+        newFrame.fps = (oldAnimationFrame & (255 << 8)) >> 8;
+        newFrame.key_states = (oldAnimationFrame & (255 << 16)) >> 16;
+        newFrame.checkpoints = (oldAnimationFrame & (255 << 24)) >> 24; // TODO: is this right?
+        newReplay.push_back(newFrame);
+    }
+    return true;
+}
+
+
+
 void LocalDatabase::MigrateAll()
 {
     std::string oldMaplistFile = "G:/Dropbox/Quake2/German_q2jump/german_times_dec_2020/27910/maplist.ini";
@@ -528,31 +870,32 @@ void LocalDatabase::MigrateAll()
     std::string oldMaptimesDir = "G:/Dropbox/Quake2/German_q2jump/german_times_dec_2020/27910";
     std::string oldReplayDir = "E:/Quake2/jump/jumpdemo/";
 
-    auto start = std::chrono::high_resolution_clock::now();
+    PerformanceTimer timer;
 
+    timer.Start();
     ClearAllTables();
+    timer.End();
+    Logger::Info(va("Migration: cleared all tables (%d ms)", timer.DurationMilliseconds()));
 
-    auto step = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(step - start);
-    Logger::Info(va("Migration: cleared all tables (%d ms)", duration.count()));
-
+    timer.Start();
     MigrateMaplist(oldMaplistFile);
+    timer.End();
+    Logger::Info(va("Migration: added maplist (%d ms)", timer.DurationMilliseconds()));
 
-    auto step2 = std::chrono::high_resolution_clock::now();
-    auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(step2 - step);
-    Logger::Info(va("Migration: added maplist (%d ms)", duration2.count()));
-
+    timer.Start();
     MigrateUsers(oldUserFile);
+    timer.End();
+    Logger::Info(va("Migration: added users (%d ms)", timer.DurationMilliseconds()));
 
-    auto step3 = std::chrono::high_resolution_clock::now();
-    auto duration3 = std::chrono::duration_cast<std::chrono::milliseconds>(step3 - step2);
-    Logger::Info(va("Migration: added users (%d ms)", duration3.count()));
-
+    timer.Start();
     MigrateMapTimes(oldMaptimesDir);
+    timer.End();
+    Logger::Info(va("Migration: added maptimes (%d ms)", timer.DurationMilliseconds()));
 
-    auto step4 = std::chrono::high_resolution_clock::now();
-    auto duration4 = std::chrono::duration_cast<std::chrono::milliseconds>(step4 - step3);
-    Logger::Info(va("Migration: added maptimes (%d ms)", duration4.count()));
+    timer.Start();
+    MigrateReplays(oldReplayDir);
+    timer.End();
+    Logger::Info(va("Migration: added maptimes (%d ms)", timer.DurationMilliseconds()));
 }
 
 

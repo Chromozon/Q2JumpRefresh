@@ -40,13 +40,13 @@ namespace Jump
     typedef enum
     {
         KEY_STATE_NONE = 0,
-        KEY_STATE_FORWARD = 1 << 0,
-        KEY_STATE_BACK = 1 << 1,
-        KEY_STATE_LEFT = 1 << 2,
-        KEY_STATE_RIGHT = 1 << 3,
-        KEY_STATE_JUMP = 1 << 4,
-        KEY_STATE_CROUCH = 1 << 5,
-        KEY_STATE_ATTACK = 1 << 6,
+        KEY_STATE_JUMP = 1,
+        KEY_STATE_CROUCH = 2,
+        KEY_STATE_LEFT = 4,
+        KEY_STATE_RIGHT = 8,
+        KEY_STATE_FORWARD = 16,
+        KEY_STATE_BACK = 32,
+        KEY_STATE_ATTACK = 64,
     } key_state_t;
 
     typedef enum
@@ -80,37 +80,30 @@ namespace Jump
     } scores_menu_t;
 
     // How much disk space is required to store a replay:
-    // 64 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 640 bytes/s
-    // 15 seconds = 9.6 kB
-    // 1 minute = 38.4 kB
-    // 5 minutes = 192 kB
-    // 15 minutes = 576 kB
-    // 1 hour = 2.3 MB
-    // 24 hours = 55.3 MB
-    //
-    // Let's say on average 50 players complete each map, and the time is 2 minutes, and there are 3000 maps
-    // 50 replays * 77 kB/replay * 3000 maps = 11.6 GB
+    // 48 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 480 bytes/s
+    // 15 seconds = 7.2 kB
+    // 1 minute = 28.8 kB
+    // 5 minutes = 144 kB
+    // 15 minutes = 432 kB
+    // 1 hour = 1.7 MB
+    // 24 hours = 41.5 MB
     //
     typedef struct
     {
-        vec3_t pos;                 // (byte 0) player position in the world
-        vec3_t angles;              // (byte 12) player view angles
+        vec3_t angles;              // (byte 0-11) player view angles
+        vec3_t pos;                 // (byte 12-23) player position in the world
 
-        int32_t animation_frame;    // (byte 24) animation frame number
+        uint8_t animation_frame;    // (byte 24) animation frame of the player model
+        uint8_t fps;                // (byte 25) fps
+        uint8_t key_states;         // (byte 26) active inputs bitset (jump, crouch, left, right, etc.)
+        uint8_t checkpoints;        // (byte 27) number of checkpoints picked up
 
-        int32_t key_states;         // (byte 28) active inputs (jump, crouch, left, right, etc.)
+        uint8_t async;              // (byte 28) async 0 or 1
+        uint8_t weapon_equipped;    // (byte 29) enum for currently equipped weapon
+        uint16_t weapon_inven;      // (byte 30-31) picked up weapon bitset
 
-        int16_t fps;                // (byte 32) current fps
-        int8_t async;               // (byte 34) async 0 or 1
-        int8_t checkpoints;         // (byte 35) number of checkpoints picked up
-
-        uint16_t weapon_inven;      // (byte 36) picked up weapon bitset
-        uint8_t weapon_equipped;    // (byte 38) enum for currently equipped weapon
-        uint8_t reserved1;          // (byte 39)
-
-        uint64_t reserved2;         // (byte 40)
-        uint64_t reserved3;         // (byte 48)
-        uint64_t reserved4;         // (byte 56)
+        uint64_t reserved1;         // (byte 32-39)
+        uint64_t reserved2;         // (byte 40-47)
     } replay_frame_t;
 
     typedef struct

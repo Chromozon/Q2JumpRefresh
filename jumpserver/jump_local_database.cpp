@@ -38,20 +38,17 @@ void LocalDatabase::Init()
         Logger::Error(va("Could not open local sqlite3 database, error: %d", error));
     }
 
-    // TODO: can just add these as compiler flags
+    // TODO: add page_size as a compiler flag
     // We bump up the page_size from the default of 4096 to 8192 because that offers the best performance
     // for working with large BLOBs.
+
     // The cache_size is the maximum amount (in KB) that the database can keep cached in memory.
-    //std::string sql = ""
-    //    "PRAGMA page_size = 8192;"
-    //    "VACUUM;"
-    //    "PRAGMA cache_size = -100000;"
-    //;
-    //error = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr);
-    //if (error != SQLITE_OK)
-    //{
-    //    Logger::Error(va("Could not set database performance options, error: %d, %s", error, sqlite3_errmsg(m_db)));
-    //}
+    const char* sql = "PRAGMA cache_size = -100000";
+    error = sqlite3_exec(m_db, sql, nullptr, nullptr, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Could not set database performance options, error: %d, %s", error, sqlite3_errmsg(m_db)));
+    }
 
     CreateTableUsers();
     CreateTableMaps();
@@ -182,58 +179,171 @@ void LocalDatabase::AddMapList(const std::vector<std::string>& maps)
     }
 }
 
-
-// TODO
-
+/// <summary>
+/// Adds a new maptime or update the existing record.  If the time is worse, only increment the completions.
+/// </summary>
+/// <param name="mapname"></param>
+/// <param name="username"></param>
+/// <param name="timeMs"></param>
+/// <param name="pmoveTimeMs"></param>
+/// <param name="replay"></param>
 void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& username, int timeMs, int pmoveTimeMs,
     const std::vector<replay_frame_t>& replay)
 {
-    // I'm not sure if preparing a statement with a blob does a copy immediately or only when executed
+    int oldTimeMs = GetMapTime(mapname, username);
+    if (oldTimeMs == -1)
+    {
+        // No time exists, so push all data
+        const char* sql = ""
+            "INSERT INTO MapTimes (MapId, UserId, TimeMs, PMoveTimeMs, Date, Completions, Replay) "
+            "VALUES ("
+            "(SELECT MapId FROM Maps WHERE MapName = @mapname), "
+            "(SELECT UserId FROM Users WHERE UserName = @username), "
+            "@timems, "
+            "@pmovetimems, "
+            "@date, "
+            "1, "
+            "@replay"
+            ")"
+        ;
+        sqlite3_stmt* prepared = nullptr;
+        int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+        if (error != SQLITE_OK)
+        {
+            Logger::Error(va("Error adding maptime for map %s, user %s, timeMs %d, error: %d, %s",
+                mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(m_db)));
+            sqlite3_finalize(prepared);
+            return;
+        }
 
-    // See if the user already has a maptime for this map
-    // If no time exists
-    //     Push all data to maptime table, completion = 1
-    // else if time exists
-    //     if new time is worse
-    //         increment completions
-    //     else if new time is better
-    //         push all data, completions++
+        int index = sqlite3_bind_parameter_index(prepared, "@mapname");
+        sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
 
-    std::string sql = ""
-        "INSERT OR IGNORE INTO MapTimes (MapId, UserId, TimeMs, Date, Completions) "
-        "VALUES ("
-            "(SELECT MapId FROM Maps WHERE MapName = @mapname),"
-            "(SELECT UserId FROM Users WHERE UserName = @username),"
-            "2147483647,"
-            "none,"
-            "0"
-        ")"
-    ;
+        index = sqlite3_bind_parameter_index(prepared, "@username");
+        sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
 
-    int rows = sqlite3_changes(m_db);
+        index = sqlite3_bind_parameter_index(prepared, "@timems");
+        sqlite3_bind_int(prepared, index, timeMs);
 
-    std::string sql2 = ""
-        "UPDATE MapTimes "
-        "SET "
-            "TimeMs = @timems,"
-            "PMoveTimeMs = @pmovetimems,"
-            "Date = @date,"
-            "Completions = Completions + 1,"
-            "Replay = @replay "
-        "WHERE "
-            "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
-            "AND "
-            "UserId = (SELECT UserId FROM Users WHERE UserName = @username)"
-    ;
+        index = sqlite3_bind_parameter_index(prepared, "@pmovetimems");
+        sqlite3_bind_int(prepared, index, pmoveTimeMs);
 
-    std::string sql3 = ""
-        "UPDATE MapTimes SET Completions = Completions + 1 "
-        "WHERE "
-            "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
-            "AND "
-            "UserId = (SELECT UserId FROM Users WHERE UserName = @username)"
-    ;
+        std::string date = GetCurrentTimeUTC();
+        index = sqlite3_bind_parameter_index(prepared, "@date");
+        sqlite3_bind_text(prepared, index, date.c_str(), -1, SQLITE_STATIC);
 
+        const char* blobPtr = reinterpret_cast<const char*>(&replay[0]);
+        int blobBytes = static_cast<int>(replay.size() * sizeof(replay_frame_t));
+        index = sqlite3_bind_parameter_index(prepared, "@replay");
+        sqlite3_bind_blob(prepared, index, blobPtr, blobBytes, SQLITE_STATIC);
+
+        sqlite3_step(prepared);
+
+        error = sqlite3_finalize(prepared);
+        if (error != SQLITE_OK)
+        {
+            Logger::Error(va("Error adding maptime for map %s, user %s, timeMs %d, error: %d, %s",
+                mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(m_db)));
+            return;
+        }
+    }
+    else
+    {
+        if (timeMs < oldTimeMs)
+        {
+            // New best time, so push all data
+            const char* sql = ""
+                "UPDATE MapTimes "
+                "SET "
+                "TimeMs = @timems,"
+                "PMoveTimeMs = @pmovetimems,"
+                "Date = @date,"
+                "Completions = Completions + 1,"
+                "Replay = @replay "
+                "WHERE "
+                "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
+                "AND "
+                "UserId = (SELECT UserId FROM Users WHERE UserName = @username)"
+            ;
+            sqlite3_stmt* prepared = nullptr;
+            int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+            if (error != SQLITE_OK)
+            {
+                Logger::Error(va("Error adding maptime for map %s, user %s, timeMs %d, error: %d, %s",
+                    mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(m_db)));
+                sqlite3_finalize(prepared);
+                return;
+            }
+
+            int index = sqlite3_bind_parameter_index(prepared, "@mapname");
+            sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
+
+            index = sqlite3_bind_parameter_index(prepared, "@username");
+            sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+            index = sqlite3_bind_parameter_index(prepared, "@timems");
+            sqlite3_bind_int(prepared, index, timeMs);
+
+            index = sqlite3_bind_parameter_index(prepared, "@pmovetimems");
+            sqlite3_bind_int(prepared, index, pmoveTimeMs);
+
+            std::string date = GetCurrentTimeUTC();
+            index = sqlite3_bind_parameter_index(prepared, "@date");
+            sqlite3_bind_text(prepared, index, date.c_str(), -1, SQLITE_STATIC);
+
+            const char* blobPtr = reinterpret_cast<const char*>(&replay[0]);
+            int blobBytes = static_cast<int>(replay.size() * sizeof(replay_frame_t));
+            index = sqlite3_bind_parameter_index(prepared, "@replay");
+            sqlite3_bind_blob(prepared, index, blobPtr, blobBytes, SQLITE_STATIC);
+
+            sqlite3_step(prepared);
+
+            error = sqlite3_finalize(prepared);
+            if (error != SQLITE_OK)
+            {
+                Logger::Error(va("Error adding maptime for map %s, user %s, timeMs %d, error: %d, %s",
+                    mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(m_db)));
+                return;
+            }
+        }
+        else
+        {
+            // This time is not better, so just increment the completion count
+            const char* sql = ""
+                "UPDATE MapTimes "
+                "SET Completions = Completions + 1 "
+                "WHERE "
+                "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
+                "AND "
+                "UserId = (SELECT UserId FROM Users WHERE UserName = @username)"
+            ;
+            sqlite3_stmt* prepared = nullptr;
+            int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+            if (error != SQLITE_OK)
+            {
+                Logger::Error(va("Error adding completion for map %s, user %s, error: %d, %s",
+                    mapname.c_str(), username.c_str(), error, sqlite3_errmsg(m_db)));
+                sqlite3_finalize(prepared);
+                return;
+            }
+
+            int index = sqlite3_bind_parameter_index(prepared, "@mapname");
+            sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
+
+            index = sqlite3_bind_parameter_index(prepared, "@username");
+            sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+            sqlite3_step(prepared);
+
+            error = sqlite3_finalize(prepared);
+            if (error != SQLITE_OK)
+            {
+                Logger::Error(va("Error adding completion for map %s, user %s, error: %d, %s",
+                    mapname.c_str(), username.c_str(), error, sqlite3_errmsg(m_db)));
+                return;
+            }
+        }
+    }
 }
 
 
@@ -720,7 +830,7 @@ void LocalDatabase::MigrateReplays(const std::string& folder)
         size_t separatorPos = filename.rfind("_");
         if (extensionPos == std::string::npos || separatorPos == std::string::npos)
         {
-            Logger::Error(va("Migration: invalid demo filename: %s", filename));
+            Logger::Error(va("Migration: invalid demo filename: %s", filename.c_str()));
             continue;
         }
         std::string mapname = filename.substr(0, separatorPos);
@@ -729,13 +839,13 @@ void LocalDatabase::MigrateReplays(const std::string& folder)
         bool converted = ConvertOldReplay(entry.path().string(), newReplay);
         if (!converted)
         {
-            Logger::Error(va("Migration: could not convert demo filename: %s", filename));
+            Logger::Error(va("Migration: could not convert demo filename: %s", filename.c_str()));
             continue;
         }
         bool added = UpdateReplay(mapname, userId, newReplay);
         if (!added)
         {
-            Logger::Error(va("Migration: could not update demo filename: %s", filename));
+            Logger::Error(va("Migration: could not update demo filename: %s", filename.c_str()));
             continue;
         }
         count++;

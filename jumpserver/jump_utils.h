@@ -2,9 +2,47 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
 
 namespace Jump
 {
+    // Performance timer class which can be used to measure execution time.
+    // Usage:
+    //   PerformanceTimer timer;
+    //   timer.Start();
+    //   <code>
+    //   timer.End();
+    //   int ms = timer.DurationMs();
+    //
+    class PerformanceTimer
+    {
+    public:
+        PerformanceTimer() : _start(), _end()
+        {
+        }
+        void Start()
+        {
+            _start = std::chrono::high_resolution_clock::now();
+        }
+        void End()
+        {
+            _end = std::chrono::high_resolution_clock::now();
+        }
+        int DurationMilliseconds()
+        {
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(_end - _start);
+            return static_cast<int>(duration.count());
+        }
+        int DurationSeconds()
+        {
+            auto duration = std::chrono::duration_cast<std::chrono::seconds>(_end - _start);
+            return static_cast<int>(duration.count());
+        }
+    private:
+        std::chrono::time_point<std::chrono::high_resolution_clock> _start;
+        std::chrono::time_point<std::chrono::high_resolution_clock> _end;
+    };
+
     // Returns the path to the mod files relative to the root q2 folder ("jumprefresh")
     std::string GetModDir();
 

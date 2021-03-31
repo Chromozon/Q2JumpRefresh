@@ -337,7 +337,7 @@ namespace Jump
 
         // Remove spectator flags
         ent->movetype = MOVETYPE_WALK;
-        ent->solid = SOLID_BBOX;
+        ent->solid = SOLID_TRIGGER;
         ent->flags = 0;
         ent->svflags = 0;
         ent->viewheight = 22;
@@ -580,8 +580,8 @@ namespace Jump
 
         frame.reserved1 = 0;
         frame.reserved2 = 0;
-        frame.reserved3 = 0;
-        frame.reserved4 = 0;
+        //frame.reserved3 = 0;
+        //frame.reserved4 = 0;
         
         ent->client->jumpdata->replay_recording.push_back(frame);
     }

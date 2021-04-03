@@ -43,6 +43,24 @@ namespace Jump
         std::chrono::time_point<std::chrono::high_resolution_clock> _end;
     };
 
+    // String case insensitive comparison operator to use with STL containers.
+    struct CaseInsensitiveLessCompare
+    {
+        // case-independent (ci) compare_less binary function
+        struct nocase_compare
+        {
+            bool operator() (const unsigned char& c1, const unsigned char& c2) const {
+                return tolower(c1) < tolower(c2);
+            }
+        };
+        bool operator() (const std::string& s1, const std::string& s2) const {
+            return std::lexicographical_compare
+            (s1.begin(), s1.end(),   // source range
+                s2.begin(), s2.end(),   // dest range
+                nocase_compare());  // comparison
+        }
+    };
+
     // Returns the path to the mod files relative to the root q2 folder ("jumprefresh")
     std::string GetModDir();
 

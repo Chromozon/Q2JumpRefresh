@@ -102,6 +102,7 @@ namespace Jump
     // We use the username in file paths, so make sure it doesn't contain any invalid characters or reserved words.
     // NOTE: Q2 allows the username to have special characters that aren't allowed in filenames.
     // This currently only affects a very small number of users, not sure any are active players.
+    // TODO remove
     bool IsUsernameValid(const std::string& username)
     {
         // Empty username

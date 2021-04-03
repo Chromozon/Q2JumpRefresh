@@ -46,7 +46,7 @@ public:
     void AddMapTime(const std::string& mapname, const std::string& username, int timeMs, int pmoveTimeMs,
         const std::vector<replay_frame_t>& replay);
 
-    void AddUser(const std::string& username);
+    int AddUser(const std::string& username);
     void UpdateLastSeen(int userid);
 
     void CalculateAllStatistics(const std::vector<std::string>& maplist);
@@ -58,7 +58,6 @@ public:
     bool GetReplayByPosition(const std::string& mapname, int position, std::vector<replay_frame_t>& replay);
     int GetUserId(const std::string& username);
     int GetMapId(const std::string& mapname);
-    
 
     void MigrateAll();
 

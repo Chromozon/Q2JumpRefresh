@@ -350,7 +350,8 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
 /// Add a new user.
 /// </summary>
 /// <param name="username"></param>
-void LocalDatabase::AddUser(const std::string& username)
+/// <returns>New userid or -1 if error.</returns>
+int LocalDatabase::AddUser(const std::string& username)
 {
     std::string lastSeen = GetCurrentTimeUTC();
     const char* sql = "INSERT INTO Users (UserName, LastSeen) VALUES (@username, @lastseen)";
@@ -361,7 +362,7 @@ void LocalDatabase::AddUser(const std::string& username)
         Logger::Error(va("Error adding new user %s, error: %d, %s",
             username.c_str(), error, sqlite3_errmsg(m_db)));
         sqlite3_finalize(prepared);
-        return;
+        return -1;
     }
 
     int index = sqlite3_bind_parameter_index(prepared, "@username");
@@ -377,7 +378,9 @@ void LocalDatabase::AddUser(const std::string& username)
     {
         Logger::Error(va("Error adding new user %s, error: %d, %s",
             username.c_str(), error, sqlite3_errmsg(m_db)));
+        return -1;
     }
+    return GetUserId(username);
 }
 
 /// <summary>

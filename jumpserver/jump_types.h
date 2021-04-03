@@ -168,53 +168,33 @@ namespace Jump
     class client_data_t
     {
     public:
-        client_data_t()
-        {
-            replay_recording.reserve(10000);
-            replay_spectating_framenum = 0;
-            update_replay_spectating = false;
-            fps = 0;
-            async = 0;
-            team = TEAM_SPECTATOR;
-            timer_pmove_msec = 0;
-            timer_begin = 0;
-            timer_end = 0;
-            timer_paused = true;
-            timer_finished = false;
-            store_ent = NULL;
-            key_states = 0;
-            scores_menu = SCORES_MENU_NONE;
-            racing = false;
-            racing_delay_frames = 0;
-            racing_framenum = 0;
-        }
-
         std::vector<replay_frame_t> replay_recording;
         std::vector<replay_frame_t> replay_spectating;
-        int replay_spectating_framenum;
-        bool update_replay_spectating;
+        int replay_spectating_framenum = 0;
+        bool update_replay_spectating = false;
 
-        int fps;
-        int async;
+        int localUserId = -1;
+        int fps = 0;
+        int async = 0;
         std::string ip;
-        team_t team;
-        int64_t timer_pmove_msec;
-        int64_t timer_begin;
-        int64_t timer_end;
-        bool timer_paused;
-        bool timer_finished;
+        team_t team = TEAM_SPECTATOR;
+        int64_t timer_pmove_msec = 0;
+        int64_t timer_begin = 0;
+        int64_t timer_end = 0;
+        bool timer_paused = true;
+        bool timer_finished = false;
 
         store_buffer_t stores;
-        edict_t* store_ent;
+        edict_t* store_ent = nullptr;
 
-        int key_states; // input actions that are currently active
+        uint8_t key_states = 0; // input actions that are currently active
 
-        scores_menu_t scores_menu;
+        scores_menu_t scores_menu = SCORES_MENU_NONE;
 
-        bool racing;
+        bool racing = false;
         std::vector<replay_frame_t> racing_frames;
-        int racing_framenum;
-        int racing_delay_frames;
+        int racing_framenum = 0;
+        int racing_delay_frames = 0;
         // TODO: need to store what we are racing so can auto reload if someone sets a better time
     };
 
@@ -226,6 +206,7 @@ namespace Jump
             level_state = LEVEL_STATE_FREEPLAY;
             time_added_mins = 0;
             replay_now_time_ms = INT64_MAX;
+            local_map_id = -1;
         }
 
         level_state_t level_state;    // freeplay, voting, or intermission
@@ -268,6 +249,9 @@ namespace Jump
 
         // Thread that talks to the global database
         std::thread global_database_thread;
+
+        // MapId in the local database for the current level
+        int local_map_id;
     };
 
     // Converts a replay buffer into a byte array

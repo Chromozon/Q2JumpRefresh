@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump_scores.h"
 #include "jump_logger.h"
 #include "g_chase.h"
+#include "jump_local_database.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -551,23 +552,31 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 	}
 
 	// Check for valid username
-	s = Info_ValueForKey(userinfo, "name");
-	if (!Jump::IsUsernameValid(s))
+	std::string username = Info_ValueForKey(userinfo, "name");
+	if (username.empty())
 	{
-		gi.cprintf(ent, PRINT_HIGH, "Invalid name.  Cannot use special characters <>:\"/\\|?*.\n");
-		if (!Jump::IsUsernameValid(ent->client->pers.netname))
-		{
-			StuffCmd(ent, "name Player");
-			return;
-		}
-		else
-		{
-			StuffCmd(ent, va("name %s", ent->client->pers.netname));
-			return;
-		}
+		gi.cprintf(ent, PRINT_HIGH, "[Server] Invalid username.\n");
+		gi.AddCommandString(va("kick %d", ent - g_edicts - 1));
+		return;
 	}
 
-	strncpy(ent->client->pers.netname, s, sizeof(ent->client->pers.netname)-1);
+	// If the username has changed, update it
+	std::string oldUsername = ent->client->pers.netname;
+	if (!Jump::StringCompareInsensitive(username, oldUsername))
+	{
+		const int maxUsernameSize = sizeof(ent->client->pers.netname) - 1;
+		strncpy(ent->client->pers.netname, username.c_str(), maxUsernameSize);
+		ent->client->pers.netname[maxUsernameSize] = 0;
+		if (!oldUsername.empty())
+		{
+			Jump::Logger::Activity(va("User changed name from %s to %s", oldUsername.c_str(), username.c_str()));
+		}
+
+		if (!(ent->client->jumpdata->team == Jump::TEAM_SPECTATOR))
+		{
+			Jump::UpdateUserId(ent);
+		}
+	}
 
     // Jump
     // We never let the user change their skin.
@@ -577,7 +586,6 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 	std::string ip = Info_ValueForKey(userinfo, "ip");
 	ent->client->jumpdata->ip = ip.substr(0, ip.find_first_of(':')); // remove port from ip address
 
-	//Jump::UpdateLastSeenTime(ent->client->pers.netname);
     // Jump
 
 //	// set skin

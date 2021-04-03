@@ -88,6 +88,21 @@ namespace Jump
         return count;
     }
 
+    void UpdateUserId(edict_t* ent)
+    {
+        int userId = LocalDatabase::Instance().GetUserId(ent->client->pers.netname);
+        if (userId == -1)
+        {
+            userId = LocalDatabase::Instance().AddUser(ent->client->pers.netname);
+        }
+        ent->client->jumpdata->localUserId = userId;
+        if (userId == -1)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "[Server] Could not create user. Times will not be saved.\n");
+            Jump::Logger::Warning(va("Could not create userId for user %s", ent->client->pers.netname));
+        }
+    }
+
     void JoinTeam(edict_t* ent, team_t team)
     {
         ent->client->jumpdata->team = team;
@@ -113,12 +128,14 @@ namespace Jump
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd)
     {
         PMenu_Close(ent);
+        UpdateUserId(ent);
         JoinTeam(ent, TEAM_EASY);
     }
 
     void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd)
     {
         PMenu_Close(ent);
+        UpdateUserId(ent);
         JoinTeam(ent, TEAM_HARD);
     }
 
@@ -567,12 +584,12 @@ namespace Jump
         VectorCopy(ent->s.origin, frame.pos);
         VectorCopy(ent->client->v_angle, frame.angles);
 
-        frame.animation_frame = ent->s.frame;
+        frame.animation_frame = static_cast<uint8_t>(ent->s.frame);
 
         frame.key_states = ent->client->jumpdata->key_states;
 
-        frame.fps = static_cast<int16_t>(ent->client->jumpdata->fps);
-        frame.async = static_cast<int8_t>(ent->client->jumpdata->async);
+        frame.fps = static_cast<uint8_t>(ent->client->jumpdata->fps);
+        frame.async = static_cast<uint8_t>(ent->client->jumpdata->async);
         frame.checkpoints = 0; // TODO
         
         frame.weapon_inven = 0; // TODO
@@ -580,9 +597,7 @@ namespace Jump
 
         frame.reserved1 = 0;
         frame.reserved2 = 0;
-        //frame.reserved3 = 0;
-        //frame.reserved4 = 0;
-        
+
         ent->client->jumpdata->replay_recording.push_back(frame);
     }
 

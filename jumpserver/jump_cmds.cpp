@@ -95,6 +95,17 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        LocalDatabase::Instance().AddUser("atestname!!");
+        //int size2 = sizeof(replay_frame_t);
+        //return;
+        //std::vector<replay_frame_t> replay;
+        //std::string file = "E:/Downloads/jump/jump/jumpdemo/slipmap23_250.dj3";
+        //LocalDatabase::Instance().ConvertOldReplay(file, replay);
+
+        //std::string folder = "E:/Downloads/jump/jump/jumpdemo";
+        //LocalDatabase::Instance().MigrateReplays(folder);
+        return;
+
         std::vector<std::string> maplist;
         for (auto it = jump_server.maplist.begin(); it != jump_server.maplist.end(); ++it)
         {

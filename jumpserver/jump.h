@@ -15,6 +15,7 @@ namespace Jump
 
     int CountPlayersOnTeam(team_t team);
 
+    void UpdateUserId(edict_t* ent);
     void JoinTeam(edict_t* ent, team_t team);
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd);
     void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd);

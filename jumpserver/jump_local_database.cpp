@@ -346,6 +346,71 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
     }
 }
 
+/// <summary>
+/// Add a new user.
+/// </summary>
+/// <param name="username"></param>
+void LocalDatabase::AddUser(const std::string& username)
+{
+    std::string lastSeen = GetCurrentTimeUTC();
+    const char* sql = "INSERT INTO Users (UserName, LastSeen) VALUES (@username, @lastseen)";
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error adding new user %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return;
+    }
+
+    int index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    index = sqlite3_bind_parameter_index(prepared, "@lastseen");
+    sqlite3_bind_text(prepared, index, lastSeen.c_str(), -1, SQLITE_STATIC);
+
+    sqlite3_step(prepared);
+
+    error = sqlite3_finalize(prepared);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error adding new user %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(m_db)));
+    }
+}
+
+/// <summary>
+/// Updates the last seen time to the current time.
+/// </summary>
+/// <param name="userid"></param>
+void LocalDatabase::UpdateLastSeen(int userid)
+{
+    std::string lastSeen = GetCurrentTimeUTC();
+    const char* sql = va("UPDATE Users SET LastSeen = @lastseen WHERE UserId = %d", userid);
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error updating last seen, userid %d, error: %d, %s",
+            userid, error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return;
+    }
+
+    int index = sqlite3_bind_parameter_index(prepared, "@lastseen");
+    sqlite3_bind_text(prepared, index, lastSeen.c_str(), -1, SQLITE_STATIC);
+
+    sqlite3_step(prepared);
+
+    error = sqlite3_finalize(prepared);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error updating last seen, userid %d, error: %d, %s",
+            userid, error, sqlite3_errmsg(m_db)));
+    }
+}
+
 
 
 // TODO: move to scores
@@ -445,7 +510,6 @@ void LocalDatabase::CalculateAllStatistics(const std::vector<std::string>& mapli
         return left.second > right.second;
     });
 }
-
 
 /// <summary>
 /// Gets a list of all userIds and userNames from the database.
@@ -591,33 +655,93 @@ int LocalDatabase::GetMapTime(const std::string& mapname, const std::string& use
 /// <param name="mapname"></param>
 /// <param name="username"></param>
 /// <param name="replay"></param>
-/// <returns>True if success and replay exists, false if error or no replay</returns>
+/// <returns>True if success and replay exists, false if error or no replay.</returns>
 bool LocalDatabase::GetReplayByUser(const std::string& mapname, const std::string& username,
     std::vector<replay_frame_t>& replay)
 {
     replay.clear();
-    const char* sql = ""
-        "SELECT Replay FROM MapTimes "
-        "WHERE "
-        "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
-        "AND "
-        "UserId = (SELECT UserId FROM Users WHERE UserName = @username) "
-    ;
+    int mapId = GetMapId(mapname);
+    if (mapId == -1)
+    {
+        return false;
+    }
+    int userId = GetUserId(username);
+    if (userId == -1)
+    {
+        return false;
+    }
+    return GetReplay(mapId, userId, replay);
+}
+
+/// <summary>
+/// Gets the replay for a given map and position on the highscores list.
+/// </summary>
+/// <param name="mapname"></param>
+/// <param name="position"></param>
+/// <param name="replay"></param>
+/// <returns>True if success and replay exists, false if error or no replay.</returns>
+bool LocalDatabase::GetReplayByPosition(const std::string& mapname, int position, std::vector<replay_frame_t>& replay)
+{
+    replay.clear();
+    if (position < 1)
+    {
+        return false;
+    }
+    int mapId = GetMapId(mapname);
+    if (mapId == -1)
+    {
+        return false;
+    }
+    const char* sql = va(""
+        "SELECT UserId FROM MapTimes "
+        "WHERE MapId = %d "
+        "ORDER BY TimeMs "
+        "LIMIT 1 OFFSET %d",
+        mapId, position - 1
+    );
     sqlite3_stmt* prepared = nullptr;
     int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
-        Logger::Error(va("Error getting replay, mapname %s, user %s, error: %d, %s",
-            mapname.c_str(), username.c_str(), error, sqlite3_errmsg(m_db)));
+        Logger::Error(va("Error getting replay, mapname %s, position %d, error: %d, %s",
+            mapname.c_str(), position, error, sqlite3_errmsg(m_db)));
         sqlite3_finalize(prepared);
         return false;
     }
-    int index = sqlite3_bind_parameter_index(prepared, "@mapname");
-    sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
+    int userId = -1;
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        userId = sqlite3_column_int(prepared, 0);
+    }
+    sqlite3_finalize(prepared);
+    if (userId == -1)
+    {
+        return false;
+    }
+    return GetReplay(mapId, userId, replay);
+}
 
-    index = sqlite3_bind_parameter_index(prepared, "@username");
-    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
-
+/// <summary>
+/// Gets the replay given the mapId and userId.
+/// </summary>
+/// <param name="mapId"></param>
+/// <param name="userId"></param>
+/// <param name="replay"></param>
+/// <returns>True on success, false on error or replay not exists.</returns>
+bool LocalDatabase::GetReplay(int mapId, int userId, std::vector<replay_frame_t>& replay)
+{
+    replay.clear();
+    const char* sql = va("SELECT Replay FROM MapTimes WHERE MapId = %d AND UserId = %d", mapId, userId);
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting replay, mapId %d, userId %d, error: %d, %s",
+            mapId, userId, error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return false;
+    }
     bool found = false;
     int step = sqlite3_step(prepared);
     if (step == SQLITE_ROW)
@@ -633,6 +757,64 @@ bool LocalDatabase::GetReplayByUser(const std::string& mapname, const std::strin
     }
     sqlite3_finalize(prepared);
     return found;
+}
+
+/// <summary>
+/// Gets the userid of a user.  Returns -1 if not found.
+/// </summary>
+/// <param name="username"></param>
+/// <returns>UserId or -1 if not found</returns>
+int LocalDatabase::GetUserId(const std::string& username)
+{
+    int id = -1;
+    const char* sql = "SELECT UserId FROM Users WHERE UserName = @username";
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting userid, user %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return id;
+    }
+    int index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        id = sqlite3_column_int(prepared, 0);
+    }
+    sqlite3_finalize(prepared);
+    return id;
+}
+
+/// <summary>
+/// Gets the mapid of a map.  Returns -1 if not found.
+/// </summary>
+/// <param name="username"></param>
+/// <returns>MapId or -1 if not found</returns>
+int LocalDatabase::GetMapId(const std::string& mapname)
+{
+    int id = -1;
+    const char* sql = "SELECT MapId FROM Maps WHERE MapName = @mapname";
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting mapid, map %s, error: %d, %s",
+            mapname.c_str(), error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return id;
+    }
+    int index = sqlite3_bind_parameter_index(prepared, "@mapname");
+    sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        id = sqlite3_column_int(prepared, 0);
+    }
+    sqlite3_finalize(prepared);
+    return id;
 }
 
 /// <summary>
@@ -810,8 +992,10 @@ void LocalDatabase::MigrateMapTimes(const std::string& folder)
     Logger::Info(va("Migration: migrated %d maptimes from %s", count, folder.c_str()));
 }
 
-
-
+/// <summary>
+/// Migrate all of the old .dj3 files into the database.
+/// </summary>
+/// <param name="folder"></param>
 void LocalDatabase::MigrateReplays(const std::string& folder)
 {
     int count = 0;
@@ -842,7 +1026,7 @@ void LocalDatabase::MigrateReplays(const std::string& folder)
             Logger::Error(va("Migration: could not convert demo filename: %s", filename.c_str()));
             continue;
         }
-        bool added = UpdateReplay(mapname, userId, newReplay);
+        bool added = MigrateReplay(mapname, userId, newReplay);
         if (!added)
         {
             Logger::Error(va("Migration: could not update demo filename: %s", filename.c_str()));
@@ -854,7 +1038,14 @@ void LocalDatabase::MigrateReplays(const std::string& folder)
     }
 }
 
-bool LocalDatabase::UpdateReplay(const std::string& mapname, int userid, const std::vector<replay_frame_t>& replay)
+/// <summary>
+/// Updates the maptime record with the migrated replay data.
+/// </summary>
+/// <param name="mapname"></param>
+/// <param name="userid"></param>
+/// <param name="replay"></param>
+/// <returns>True on success, false on error</returns>
+bool LocalDatabase::MigrateReplay(const std::string& mapname, int userid, const std::vector<replay_frame_t>& replay)
 {
     if (replay.size() == 0)
     {
@@ -897,10 +1088,6 @@ bool LocalDatabase::UpdateReplay(const std::string& mapname, int userid, const s
     }
     return true;
 }
-
-
-
-
 
 /// <summary>
 /// Converts replays from the old .dj3 format to the new format.

@@ -26,6 +26,7 @@ std::vector<std::pair<int, int>> LocalScores::_allMapCounts;
 
 /// <summary>
 /// Loads the list of server maps from the maplist.ini file and update the local database.
+/// Verifies that the server has all of the bsp files in the maplist.
 /// </summary>
 void LocalScores::LoadMaplist()
 {
@@ -106,8 +107,12 @@ void LocalScores::CalculateAllStatistics()
             else
             {
                 _allUserHighscores[userId].highscores[place]++;
-                _allUserHighscores[userId].mapcount++;
             }
+        }
+        for (auto i = 0; i < mapTimes.second.size(); ++i)
+        {
+            int userId = mapTimes.second[i].userId;
+            _allUserHighscores[userId].mapcount++;
         }
     }
 
@@ -119,7 +124,7 @@ void LocalScores::CalculateAllStatistics()
         int totalScore = CalculateTotalScore(userHighscores.second.highscores);
         _allTotalScores.push_back(std::make_pair(userHighscores.first, totalScore));
 
-        int percentScore = CalculatePercentScore(totalScore, userHighscores.second.mapcount, _maplist.size());
+        float percentScore = CalculatePercentScore(totalScore, userHighscores.second.mapcount);
         _allPercentScores.push_back(std::make_pair(userHighscores.first, percentScore));
     }
     std::sort(_allTotalScores.begin(), _allTotalScores.end(),
@@ -179,9 +184,8 @@ int LocalScores::CalculateTotalScore(const std::array<int, 15>& highscores)
 /// </summary>
 /// <param name="totalScore"></param>
 /// <param name="userMapCount"></param>
-/// <param name="serverMapCount"></param>
 /// <returns></returns>
-float LocalScores::CalculatePercentScore(int totalScore, int userMapCount, int serverMapCount)
+float LocalScores::CalculatePercentScore(int totalScore, int userMapCount)
 {
     // A user has to complete n number of maps before the percent score is calculated.
     // This avoids the situation where a user completes only 1 map with a first place and is first on the list forever.
@@ -189,7 +193,299 @@ float LocalScores::CalculatePercentScore(int totalScore, int userMapCount, int s
     {
         return 0.0f;
     }
-    return (totalScore / (serverMapCount * 25.0f)) * 100.0f;
+    float percentScore = (totalScore / (userMapCount * 25.0f)) * 100.0f;
+    return percentScore;
+}
+
+/// <summary>
+/// Print the playertimes to the client console.
+/// </summary>
+/// <param name="ent"></param>
+void LocalScores::PrintPlayerTimes(edict_t* ent)
+{
+    int page = 1;
+    if (gi.argc() > 1)
+    {
+        StringToIntMaybe(gi.argv(1), page);
+    }
+    if (page < 1)
+    {
+        page = 1;
+    }
+    size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
+    if (index_start >= _allUserHighscores.size())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "There are no playertimes for this page.\n");
+        return;
+    }
+    size_t index_end = std::min<size_t>(
+        _allUserHighscores.size() - 1,
+        (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
+
+    // Point info
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+    gi.cprintf(ent, PRINT_HIGH, "Point Values: 1-15: 25,20,16,13,11,10,9,8,7,6,5,4,3,2,1\n");
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+
+    // Header row
+    std::string header = GetGreenConsoleText(
+        "No. Name            1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th Score");
+    gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
+
+    for (size_t i = index_start; i <= index_end; ++i)
+    {
+        int userId = _allTotalScores[i].first;
+        int totalScore = _allTotalScores[i].second;
+        const char* username = _allUsers[userId].c_str();
+
+        gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %5d\n",
+            static_cast<int>(i + 1),
+            username,
+            _allUserHighscores[userId].highscores[0],
+            _allUserHighscores[userId].highscores[1],
+            _allUserHighscores[userId].highscores[2],
+            _allUserHighscores[userId].highscores[3],
+            _allUserHighscores[userId].highscores[4],
+            _allUserHighscores[userId].highscores[5],
+            _allUserHighscores[userId].highscores[6],
+            _allUserHighscores[userId].highscores[7],
+            _allUserHighscores[userId].highscores[8],
+            _allUserHighscores[userId].highscores[9],
+            _allUserHighscores[userId].highscores[10],
+            _allUserHighscores[userId].highscores[11],
+            _allUserHighscores[userId].highscores[12],
+            _allUserHighscores[userId].highscores[13],
+            _allUserHighscores[userId].highscores[14],
+            totalScore
+        );
+    }
+
+    // Footer
+    int totalPages = (_allUserHighscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
+    gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use playertimes <page>\n",
+        page, totalPages, static_cast<int>(_allUserHighscores.size()));
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+}
+
+/// <summary>
+/// Print the playerscores to the client console.
+/// </summary>
+/// <param name="ent"></param>
+void LocalScores::PrintPlayerScores(edict_t* ent)
+{
+    int page = 1;
+    if (gi.argc() > 1)
+    {
+        StringToIntMaybe(gi.argv(1), page);
+    }
+    if (page < 1)
+    {
+        page = 1;
+    }
+    size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
+    if (index_start >= _allUserHighscores.size())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "There are no playerscores for this page.\n");
+        return;
+    }
+    size_t index_end = std::min<size_t>(
+        _allUserHighscores.size() - 1,
+        (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
+
+    // Point info
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+    gi.cprintf(ent, PRINT_HIGH, "Point Values: 1-15: 25,20,16,13,11,10,9,8,7,6,5,4,3,2,1\n");
+    gi.cprintf(ent, PRINT_HIGH, "Score = (Your score) / (Potential score if 1st on all your completed maps\n");
+    gi.cprintf(ent, PRINT_HIGH, "Ex: 5 maps completed || 3 1st's, 2 3rd's = 107 pts || 5 1st's = 125 pts || 107/125 = 85.6%%\n");
+    gi.cprintf(ent, PRINT_HIGH, "NOTE: Playerscore are only calculated for users with at least 50 maps completed\n");
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+
+    // Header row
+    std::string header = GetGreenConsoleText(
+        "No. Name            1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th Score");
+    gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
+
+    for (size_t i = index_start; i <= index_end; ++i)
+    {
+        int userId = _allTotalScores[i].first;
+        float percentScore = _allPercentScores[i].second;
+        const char* username = _allUsers[userId].c_str();
+
+        gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %2.1f%%\n",
+            static_cast<int>(i + 1),
+            username,
+            _allUserHighscores[userId].highscores[0],
+            _allUserHighscores[userId].highscores[1],
+            _allUserHighscores[userId].highscores[2],
+            _allUserHighscores[userId].highscores[3],
+            _allUserHighscores[userId].highscores[4],
+            _allUserHighscores[userId].highscores[5],
+            _allUserHighscores[userId].highscores[6],
+            _allUserHighscores[userId].highscores[7],
+            _allUserHighscores[userId].highscores[8],
+            _allUserHighscores[userId].highscores[9],
+            _allUserHighscores[userId].highscores[10],
+            _allUserHighscores[userId].highscores[11],
+            _allUserHighscores[userId].highscores[12],
+            _allUserHighscores[userId].highscores[13],
+            _allUserHighscores[userId].highscores[14],
+            percentScore
+        );
+    }
+
+    // Footer
+    int total_pages = (_allUserHighscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
+    gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use playerscores <page>\n",
+        page, total_pages, static_cast<int>(_allUserHighscores.size()));
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+}
+
+/// <summary>
+/// Print the playermaps to the client console.
+/// </summary>
+/// <param name="ent"></param>
+void LocalScores::PrintPlayerMaps(edict_t* ent)
+{
+    int page = 1;
+    if (gi.argc() > 1)
+    {
+        StringToIntMaybe(gi.argv(1), page);
+    }
+    if (page < 1)
+    {
+        page = 1;
+    }
+    size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
+    if (index_start >= _allMapCounts.size())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "There are no playermaps for this page.\n");
+        return;
+    }
+    size_t index_end = std::min<size_t>(
+        _allMapCounts.size() - 1,
+        (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
+
+    // Header
+    gi.cprintf(ent, PRINT_HIGH, "--------------------------------------\n");
+    std::string header = GetGreenConsoleText("No. Name            Maps     %\n");
+    gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
+
+    for (size_t i = index_start; i <= index_end; ++i)
+    {
+        int userId = _allMapCounts[i].first;
+        int mapCount = _allMapCounts[i].second;
+        float percentDone = (static_cast<float>(mapCount) / _maplist.size()) * 100.0f;
+        const char* username = _allUsers[userId].c_str();
+        gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %4d  %2.1f\n", i, username, mapCount, percentDone);
+    }
+
+    // Footer
+    int total_pages = (_allMapCounts.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
+    gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use playermaps <page>\n",
+        page, total_pages, static_cast<int>(_allMapCounts.size()));
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+}
+
+/// <summary>
+/// Print the maptimes to the client console.
+/// </summary>
+/// <param name="ent"></param>
+void LocalScores::PrintMapTimes(edict_t* ent)
+{
+    std::string mapname = level.mapname;
+    if (gi.argc() >= 2)
+    {
+        mapname = gi.argv(1);
+    }
+
+    const auto& entry = _allMapTimes.find(mapname);
+    if (entry == _allMapTimes.end())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "Invalid map.  Use maptimes <map> <page>.\n");
+        return;
+    }
+
+    const auto& times = entry->second;
+    if (times.empty())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "No times for %s\n", mapname.c_str());
+        return;
+    }
+
+    int page = 1;
+    if (gi.argc() >= 3)
+    {
+        StringToIntMaybe(gi.argv(2), page);
+    }
+    if (page < 1)
+    {
+        page = 1;
+    }
+    size_t index_start = (page - 1) * MAX_HIGHSCORES;
+    if (index_start >= times.size())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "There are no maptimes for this page.\n");
+        return;
+    }
+    size_t index_end = std::min<size_t>(
+        times.size() - 1,
+        (page * MAX_HIGHSCORES) - 1);
+
+    // Header
+    gi.cprintf(ent, PRINT_HIGH, "--------------------------------------------------------\n");
+    gi.cprintf(ent, PRINT_HIGH, "Best Times for %s\n", mapname.c_str());
+    std::string header = "No. Name             Date                           Time";
+    header = GetGreenConsoleText(header);
+    gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
+
+    int bestTime = times[0].timeMs;
+
+    for (size_t i = index_start; i <= index_end; ++i)
+    {
+        int userId = times[i].userId;
+        const char* username = _allUsers[userId].c_str();
+
+        std::string date = times[i].date.substr(0, times[i].date.find_first_of(' '));
+
+        std::string timeStr = GetCompletionTimeDisplayString(times[i].timeMs);
+
+        int timeDiff = times[i].timeMs - bestTime;
+        std::string timeDiffStr = "0.000";
+        if (timeDiff > 0)
+        {
+            timeDiffStr = GetCompletionTimeDisplayString(timeDiff);
+            timeDiffStr.insert(0, "-");   // This should be +, but it looks ugly
+        }
+
+        gi.cprintf(ent, PRINT_HIGH, "%-3d %-16s %s %12s %11s\n",
+            i + 1, username, date.c_str(), timeDiffStr.c_str(), timeStr.c_str());
+    }
+
+    int userId = ent->client->jumpdata->localUserId;
+    bool completed = false;
+    for (const auto& time : times)
+    {
+        if (time.userId == userId)
+        {
+            completed = true;
+            break;
+        }
+    }
+
+    // Footer
+    int total_pages = (times.size() / MAX_HIGHSCORES) + 1;
+    gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use maptimes <map> <page>\n",
+        page, total_pages, static_cast<int>(times.size()));
+    gi.cprintf(ent, PRINT_HIGH, "--------------------------------------------------------\n");
+    if (completed)
+    {
+        gi.cprintf(ent, PRINT_HIGH, "You have completed this map\n");
+    }
+    else
+    {
+        gi.cprintf(ent, PRINT_HIGH, "You have NOT completed this map\n");
+    }
+    gi.cprintf(ent, PRINT_HIGH, "--------------------------------------------------------\n");
 }
 
 

@@ -15,10 +15,15 @@ public:
     static void LoadMaplist();
     static void CalculateAllStatistics();
 
+    static void PrintPlayerTimes(edict_t* ent);
+    static void PrintPlayerScores(edict_t* ent);
+    static void PrintPlayerMaps(edict_t* ent);
+    static void PrintMapTimes(edict_t* ent);
+
 private:
     // Helper functions
     static int CalculateTotalScore(const std::array<int, 15>& highscores);
-    static float CalculatePercentScore(int totalScore, int userMapCount, int serverMapCount);
+    static float CalculatePercentScore(int totalScore, int userMapCount);
 
     // Statistics cache (reloaded between levels)
     static std::vector<std::string> _maplist;

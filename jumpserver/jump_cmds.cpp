@@ -34,6 +34,7 @@ namespace Jump
         { "help2", Cmd_Jump_Score2 },
         { "playertimes", Cmd_Jump_Playertimes },
         { "playerscores", Cmd_Jump_Playerscores },
+        { "playermaps", Cmd_Jump_Playermaps },
         { "!seen", Cmd_Jump_Seen },
         { "playertimesglobal", Cmd_Jump_PlayertimesGlobal },
         { "playerscoresglobal", Cmd_Jump_PlayerscoresGlobal} ,
@@ -58,7 +59,6 @@ namespace Jump
         { "showtimes", Cmd_Jump_Void },
         { "timevote", Cmd_Jump_Void },
         { "maplist", Cmd_Jump_Void },
-        { "playermaps", Cmd_Jump_Void },
         { "globaltimes", Cmd_Jump_Void },
         { "globalmaps", Cmd_Jump_Void },
         { "globalscores", Cmd_Jump_Void },
@@ -95,7 +95,7 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        LocalDatabase::Instance().AddUser("atestname!!");
+        //LocalDatabase::Instance().AddUser("atestname!!");
         //int size2 = sizeof(replay_frame_t);
         //return;
         //std::vector<replay_frame_t> replay;
@@ -104,7 +104,7 @@ namespace Jump
 
         //std::string folder = "E:/Downloads/jump/jump/jumpdemo";
         //LocalDatabase::Instance().MigrateReplays(folder);
-        return;
+        //return;
 
         std::vector<std::string> maplist;
         for (auto it = jump_server.maplist.begin(); it != jump_server.maplist.end(); ++it)
@@ -114,13 +114,16 @@ namespace Jump
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        LocalDatabase::Instance().CalculateAllStatistics(maplist);
+        //LocalDatabase::Instance().CalculateAllStatistics(maplist);
+        LocalScores::CalculateAllStatistics();
 
         auto end = std::chrono::high_resolution_clock::now();
         auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         auto ms = durationMs.count();
 
+        gi.cprintf(ent, PRINT_HIGH, "Calculated statistics in %d ms\n", (int)ms);
         Logger::Info(va("All stats ms: %d", ms));
+        return;
 
 
         //LocalDatabase::Instance().MigrateAll();
@@ -284,17 +287,25 @@ namespace Jump
         if (gi.argc() == 1)
         {
             // replay best time
+            loaded = LocalDatabase::Instance().GetReplayByPosition(
+                level.mapname, 1, ent->client->jumpdata->replay_spectating);
         }
         else
         {
             std::string param = gi.argv(1);
             if (param == "self")
             {
-                loaded = LoadReplayFromFile(level.mapname, ent->client->pers.netname, ent->client->jumpdata->replay_spectating);
+                loaded = LocalDatabase::Instance().GetReplayByUser(
+                    level.mapname, ent->client->pers.netname, ent->client->jumpdata->replay_spectating);
             }
             else if (param == "now")
             {
                 // replay now
+                if (!jump_server.replay_now_recording.empty())
+                {
+                    ent->client->jumpdata->replay_spectating = jump_server.replay_now_recording;
+                    loaded = true;
+                }
             }
             else
             {
@@ -302,19 +313,28 @@ namespace Jump
                 if (StringToIntMaybe(param, num) && num >= 1 && num <= 15)
                 {
                     // replay n (1-15)
+                    loaded = LocalDatabase::Instance().GetReplayByPosition(
+                        level.mapname, num, ent->client->jumpdata->replay_spectating);
                 }
                 else
                 {
                     // replay <username>
+                    std::string username = param;
+                    loaded = LocalDatabase::Instance().GetReplayByUser(
+                        level.mapname, username, ent->client->jumpdata->replay_spectating);
                 }
             }
         }
 
-        loaded = LoadReplayFromFile(level.mapname, ent->client->pers.netname, ent->client->jumpdata->replay_spectating);
         if (!loaded)
         {
-            gi.cprintf(ent, PRINT_HIGH, "No replay exists");
+            gi.cprintf(ent, PRINT_HIGH, "No replay exists\n");
             return;
+        }
+        else
+        {
+            // TODO
+            // Replaying <username> with a time of <nnn> seconds.
         }
 
         // Move client to a spectator
@@ -332,63 +352,7 @@ namespace Jump
 
     void Cmd_Jump_Maptimes(edict_t* player)
     {
-        std::string mapname = level.mapname;
-        if (gi.argc() >= 2)
-        {
-            mapname = gi.argv(1);
-        }
-
-        std::vector<user_time_record> highscores;
-        int players = 0;
-        int completions = 0;
-        if (!GetHighscoresForMap(mapname, highscores, players, completions))
-        {
-            gi.cprintf(player, PRINT_HIGH, "Invalid map.\n");
-            return;
-        }
-        if (highscores.size() == 0)
-        {
-            gi.cprintf(player, PRINT_HIGH, "No times for %s\n", mapname.c_str());
-            return;
-        }
-
-        gi.cprintf(player, PRINT_HIGH, "--------------------------------------------------------\n");
-        gi.cprintf(player, PRINT_HIGH, "Best Times for %s\n", mapname.c_str());
-
-        std::string header = "No. Name             Date                           Time";
-        header = GetGreenConsoleText(header);
-        gi.cprintf(player, PRINT_HIGH, "%s\n", header.c_str());
-
-        int64_t best_time = highscores[0].time_ms;
-
-        for (size_t i = 0; i < highscores.size(); ++i)
-        {
-            std::string username = RemoveFileExtension(RemovePathFromFilename(highscores[i].filepath));
-            std::string date = highscores[i].date.substr(0, highscores[i].date.find_first_of(' '));
-            std::string time = GetCompletionTimeDisplayString(highscores[i].time_ms);
-
-            int64_t time_diff = highscores[i].time_ms - best_time;
-            std::string time_diff_str = "0.000";
-            if (time_diff > 0)
-            {
-                time_diff_str = GetCompletionTimeDisplayString(time_diff);
-                time_diff_str.insert(0, "-");   // This should be +, but it looks ugly
-            }
-
-            gi.cprintf(player, PRINT_HIGH, "%-3d %-16s %s %12s %11s\n",
-                i + 1, username.c_str(), date.c_str(), time_diff_str.c_str(), time.c_str());
-        }
-
-        bool completed = HasUserCompletedMap(mapname, player->client->pers.netname);
-        if (completed)
-        {
-            gi.cprintf(player, PRINT_HIGH, "You have completed this map\n");
-        }
-        else
-        {
-            gi.cprintf(player, PRINT_HIGH, "You have NOT completed this map\n");
-        }
-        gi.cprintf(player, PRINT_HIGH, "--------------------------------------------------------\n");
+        LocalScores::PrintMapTimes(player);
     }
 
     void Cmd_Jump_Score(edict_t* ent)
@@ -458,144 +422,17 @@ namespace Jump
 
     void Cmd_Jump_Playertimes(edict_t* ent)
     {
-        assert(MAX_HIGHSCORES == 15); // a reminder to change this function if we change this value
-
-        int page = 1;
-        if (gi.argc() > 1)
-        {
-            StringToIntMaybe(gi.argv(1), page);
-        }
-        if (page < 1)
-        {
-            page = 1;
-        }
-        size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
-        if (index_start >= jump_server.all_local_highscores.size())
-        {
-            gi.cprintf(ent, PRINT_HIGH, "There are no playertimes for this page.\n");
-            return;
-        }
-
-        // Point info
-        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
-        gi.cprintf(ent, PRINT_HIGH, "Point Values: 1-15: 25,20,16,13,11,10,9,8,7,6,5,4,3,2,1\n");
-        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
-
-        // Header row
-        std::string header = GetGreenConsoleText(
-            "No. Name            1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th Score");
-        gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
-
-        // TODO: players that are currently in the server should show up as green
-
-        // TODO: go from username key to actual username
-
-        size_t index_end = std::min<size_t>(
-            jump_server.all_local_highscores.size() - 1,
-            (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
-
-        for (size_t i = index_start; i <= index_end; ++i)
-        {
-            int total_score = CalculateScore(jump_server.all_local_highscores[i].second);
-            gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %5d\n",
-                static_cast<int>(i + 1),
-                jump_server.all_local_highscores[i].first.c_str(),
-                jump_server.all_local_highscores[i].second.highscore_counts[0],
-                jump_server.all_local_highscores[i].second.highscore_counts[1],
-                jump_server.all_local_highscores[i].second.highscore_counts[2],
-                jump_server.all_local_highscores[i].second.highscore_counts[3],
-                jump_server.all_local_highscores[i].second.highscore_counts[4],
-                jump_server.all_local_highscores[i].second.highscore_counts[5],
-                jump_server.all_local_highscores[i].second.highscore_counts[6],
-                jump_server.all_local_highscores[i].second.highscore_counts[7],
-                jump_server.all_local_highscores[i].second.highscore_counts[8],
-                jump_server.all_local_highscores[i].second.highscore_counts[9],
-                jump_server.all_local_highscores[i].second.highscore_counts[10],
-                jump_server.all_local_highscores[i].second.highscore_counts[11],
-                jump_server.all_local_highscores[i].second.highscore_counts[12],
-                jump_server.all_local_highscores[i].second.highscore_counts[13],
-                jump_server.all_local_highscores[i].second.highscore_counts[14],
-                total_score
-            );
-        }
-
-        // Footer
-        int total_pages = (jump_server.all_local_highscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
-        gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use playertimes <page>\n",
-            page, total_pages, static_cast<int>(jump_server.all_local_highscores.size()));
-        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+        LocalScores::PrintPlayerTimes(ent);
     }
 
     void Cmd_Jump_Playerscores(edict_t* ent)
     {
-        assert(MAX_HIGHSCORES == 15); // a reminder to change this function if we change this value
+        LocalScores::PrintPlayerScores(ent);
+    }
 
-        int page = 1;
-        if (gi.argc() > 1)
-        {
-            StringToIntMaybe(gi.argv(1), page);
-        }
-        if (page < 1)
-        {
-            page = 1;
-        }
-        size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
-        if (index_start >= jump_server.all_local_mapscores.size())
-        {
-            gi.cprintf(ent, PRINT_HIGH, "There are no playerscores for this page.\n");
-            return;
-        }
-
-        // Point info
-        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
-        gi.cprintf(ent, PRINT_HIGH, "Point Values: 1-15: 25,20,16,13,11,10,9,8,7,6,5,4,3,2,1\n");
-        gi.cprintf(ent, PRINT_HIGH, "Score = (Your score) / (Potential score if 1st on all your completed maps\n");
-        gi.cprintf(ent, PRINT_HIGH, "Ex: 5 maps completed || 3 1st's, 2 3rd's = 107 pts || 5 1st's = 125 pts || 107/125 = 85.6%%\n");
-        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
-
-        // Header row
-        std::string header = GetGreenConsoleText(
-            "No. Name            1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th Score");
-        gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
-
-        // TODO: players that are currently in the server should show up as green
-
-        // TODO: go from username key to actual username
-
-        size_t index_end = std::min<size_t>(
-            jump_server.all_local_mapscores.size() - 1,
-            (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
-
-        for (size_t i = index_start; i <= index_end; ++i)
-        {
-            float percent_score = CalculatePercentScore(jump_server.all_local_mapscores[i].second);
-            gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %3d %3d %3d %3d %3d %3d %3d %3d %3d %4d %4d %4d %4d %4d %4d %2.1f%%\n",
-                static_cast<int>(i + 1),
-                jump_server.all_local_mapscores[i].first.c_str(),
-                jump_server.all_local_mapscores[i].second.highscore_counts[0],
-                jump_server.all_local_mapscores[i].second.highscore_counts[1],
-                jump_server.all_local_mapscores[i].second.highscore_counts[2],
-                jump_server.all_local_mapscores[i].second.highscore_counts[3],
-                jump_server.all_local_mapscores[i].second.highscore_counts[4],
-                jump_server.all_local_mapscores[i].second.highscore_counts[5],
-                jump_server.all_local_mapscores[i].second.highscore_counts[6],
-                jump_server.all_local_mapscores[i].second.highscore_counts[7],
-                jump_server.all_local_mapscores[i].second.highscore_counts[8],
-                jump_server.all_local_mapscores[i].second.highscore_counts[9],
-                jump_server.all_local_mapscores[i].second.highscore_counts[10],
-                jump_server.all_local_mapscores[i].second.highscore_counts[11],
-                jump_server.all_local_mapscores[i].second.highscore_counts[12],
-                jump_server.all_local_mapscores[i].second.highscore_counts[13],
-                jump_server.all_local_mapscores[i].second.highscore_counts[14],
-                percent_score
-            );
-        }
-
-        // Footer
-        int total_pages = (jump_server.all_local_mapscores.size() / CONSOLE_HIGHSCORES_COUNT_PER_PAGE) + 1;
-        gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d users). Use playerscores <page>\n",
-            page, total_pages, static_cast<int>(jump_server.all_local_mapscores.size()));
-        gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+    void Cmd_Jump_Playermaps(edict_t* ent)
+    {
+        LocalScores::PrintPlayerMaps(ent);
     }
 
     void Cmd_Jump_Seen(edict_t* ent)

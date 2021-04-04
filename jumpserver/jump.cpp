@@ -252,6 +252,9 @@ namespace Jump
         ent->s.modelindex2 = 255;       // custom gun model
         ent->s.frame = 0;
 
+        // TODO: jumpdata init
+        ent->client->jumpdata->update_replay_spectating = false;
+
         InitAsSpectator(ent);
 
         if (level.intermissiontime || jump_server.level_state == LEVEL_STATE_VOTING)
@@ -621,14 +624,14 @@ namespace Jump
 
     void JumpInitGame()
     {
-        LoadLocalMapList(jump_server.maplist);
-        LoadAllLocalMaptimes(jump_server.maplist, jump_server.all_local_maptimes);
-        CalculateAllLocalStatistics();
-        LoadLastSeenTimes();
-
+        LocalDatabase::Instance().Init();
+        LocalScores::LoadMaplist();
+        //LoadLocalMapList(jump_server.maplist);
+        //LoadAllLocalMaptimes(jump_server.maplist, jump_server.all_local_maptimes);
+        //CalculateAllLocalStatistics();
+        //LoadLastSeenTimes();
         jump_server.global_database_thread = std::thread(ThreadMainGlobal);
         VoteSystem::Init();
-        LocalDatabase::Instance().Init();
     }
 
     void JumpRunFrame()

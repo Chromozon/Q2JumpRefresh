@@ -21,6 +21,7 @@ namespace Jump
     void Cmd_Jump_Score2(edict_t* ent);
     void Cmd_Jump_Playertimes(edict_t* ent);
     void Cmd_Jump_Playerscores(edict_t* ent);
+    void Cmd_Jump_Playermaps(edict_t* ent);
     void Cmd_Jump_Seen(edict_t* ent);
     void Cmd_Jump_PlayertimesGlobal(edict_t* ent);
     void Cmd_Jump_PlayerscoresGlobal(edict_t* ent);

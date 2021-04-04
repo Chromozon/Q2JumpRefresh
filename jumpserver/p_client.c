@@ -567,10 +567,7 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 		const int maxUsernameSize = sizeof(ent->client->pers.netname) - 1;
 		strncpy(ent->client->pers.netname, username.c_str(), maxUsernameSize);
 		ent->client->pers.netname[maxUsernameSize] = 0;
-		if (!oldUsername.empty())
-		{
-			Jump::Logger::Activity(va("User changed name from %s to %s", oldUsername.c_str(), username.c_str()));
-		}
+		Jump::Logger::Activity(va("User changed name from \"%s\" to \"%s\"", oldUsername.c_str(), username.c_str()));
 
 		if (!(ent->client->jumpdata->team == Jump::TEAM_SPECTATOR))
 		{
@@ -712,7 +709,7 @@ qboolean ClientConnect(edict_t* ent, char* userinfo)
 
 	//ClientUserinfoChanged(ent, userinfo);
 
-	Jump::Logger::Info(va("%s connected", ent->client->pers.netname));
+	Jump::Logger::Info(va("User \"%s\" connected", ent->client->pers.netname));
 	return true;
 }
 

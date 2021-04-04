@@ -69,6 +69,33 @@ void LocalScores::LoadMaplist()
 }
 
 /// <summary>
+/// Picks a random map from the maplist.
+/// </summary>
+/// <returns>Mapname or emtpy string if invalid.</returns>
+std::string LocalScores::GetRandomMap()
+{
+    std::string mapname;
+    if (_maplist.empty())
+    {
+        return mapname;
+    }
+    srand(time(0));
+    int n = rand() % _maplist.size();
+    return _maplist[n];
+}
+
+/// <summary>
+/// Checks to see if the given map is in the loaded maplist.
+/// </summary>
+/// <param name="mapname"></param>
+/// <returns>True if in maplist</returns>
+bool LocalScores::IsMapInMaplist(const std::string& mapname)
+{
+    auto it = std::find(_maplist.begin(), _maplist.end(), mapname);
+    return it != _maplist.end();
+}
+
+/// <summary>
 /// Calculate all local statistics (playertimes, playermaps, playerscores, maptimes).
 /// </summary>
 /// <param name="maplist"></param>

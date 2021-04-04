@@ -13,6 +13,8 @@ class LocalScores
 {
 public:
     static void LoadMaplist();
+    static std::string GetRandomMap();
+    static bool IsMapInMaplist(const std::string& mapname);
     static void CalculateAllStatistics();
 
     static void PrintPlayerTimes(edict_t* ent);

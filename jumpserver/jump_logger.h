@@ -35,6 +35,7 @@ namespace Jump
     class Logger
     {
     public:
+        static void Fatal(const std::string& fatal);
         static void Error(const std::string& error);
         static void Warning(const std::string& warning);
         static void Info(const std::string& info);

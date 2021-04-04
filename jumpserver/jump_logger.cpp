@@ -2,6 +2,7 @@
 #include "g_local.h"
 #include "jump_utils.h"
 #include <filesystem>
+#include <sstream>
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -12,14 +13,28 @@ namespace Jump
     static std::ofstream completions_log_handle;
     static std::ofstream activity_log_handle;
 
+    void Logger::Fatal(const std::string& fatal)
+    {
+        if (GetServerLogHandle())
+        {
+            std::stringstream ss;
+            ss << GetCurrentTimeUTC() << '\t' << "FATAL: " << fatal << '\n';
+            server_log_handle << ss.str();
+            server_log_handle.flush();
+            DebugConsole(ss.str());
+            gi.error("FATAL: %s", ss.str().c_str());
+        }
+    }
+
     void Logger::Error(const std::string& error)
     {
         if (GetServerLogHandle())
         {
-            server_log_handle << GetCurrentTimeUTC() << '\t' << "ERROR: " << error << '\n';
+            std::stringstream ss;
+            ss << GetCurrentTimeUTC() << '\t' << "ERROR: " << error << '\n';
+            server_log_handle << ss.str();
             server_log_handle.flush();
-            // TODO: can call gi.error("%s\n", msg); to also print to server console
-            // gi.error shuts down server
+            DebugConsole(ss.str());
         }
     }
 
@@ -27,8 +42,11 @@ namespace Jump
     {
         if (GetServerLogHandle())
         {
-            server_log_handle << GetCurrentTimeUTC() << '\t' << "WARNING: " << warning << '\n';
+            std::stringstream ss;
+            ss << GetCurrentTimeUTC() << '\t' << "WARNING: " << warning << '\n';
+            server_log_handle << ss.str();
             server_log_handle.flush();
+            DebugConsole(ss.str());
         }
     }
 
@@ -36,7 +54,10 @@ namespace Jump
     {
         if (GetServerLogHandle())
         {
-            server_log_handle << GetCurrentTimeUTC() << '\t' << "INFO: " << info << '\n';
+            std::stringstream ss;
+            ss << GetCurrentTimeUTC() << '\t' << "INFO: " << info << '\n';
+            server_log_handle << ss.str();
+            DebugConsole(ss.str());
         }
     }
 
@@ -45,7 +66,10 @@ namespace Jump
         #ifdef _DEBUG
         if (GetServerLogHandle())
         {
-            server_log_handle << GetCurrentTimeUTC() << '\t' << "DEBUG: " << debug << '\n';
+            std::stringstream ss;
+            ss << GetCurrentTimeUTC() << '\t' << "DEBUG: " << debug << '\n';
+            server_log_handle << ss.str();
+            DebugConsole(ss.str());
         }
         #endif
     }
@@ -75,6 +99,7 @@ namespace Jump
                 map_time_ms % 1000);
             completions_log_handle << buffer;
             completions_log_handle.flush();
+            DebugConsole(buffer);
         }
     }
 
@@ -82,7 +107,10 @@ namespace Jump
     {
         if (GetActivityLogHandle())
         {
-            activity_log_handle << GetCurrentTimeUTC() << '\t' << msg << '\n';
+            std::stringstream ss;
+            ss << GetCurrentTimeUTC() << '\t' << msg << '\n';
+            activity_log_handle << ss.str();
+            DebugConsole(ss.str());
         }
     }
 

@@ -6,86 +6,78 @@
 
 namespace Jump
 {
-	static std::vector<replay_frame_t> ghost_replay = {};
-	static size_t ghost_replay_frame = 0;
-	static bool change_replay = false;
-	static edict_t* ghost = NULL;
 
-	// Tell the ghost to reload the current replay
-	void GhostChangeReplay()
+/// <summary>
+/// Define the private variables
+/// </summary>
+std::vector<replay_frame_t> GhostReplay::_replay;
+size_t GhostReplay::_replayFrame = 0;
+edict_t* GhostReplay::_ghost = nullptr;
+
+/// <summary>
+/// Creates a new entity for the ghost.  Does not load the replay data.
+/// </summary>
+void GhostReplay::Init()
+{
+	_ghost = G_Spawn();
+	_ghost->svflags = SVF_NOCLIENT;	// hides the ent
+	_ghost->movetype = MOVETYPE_NOCLIP;
+	_ghost->clipmask = MASK_SOLID;
+	_ghost->solid = SOLID_NOT;
+	VectorClear(_ghost->mins);
+	VectorClear(_ghost->maxs);
+	VectorClear(_ghost->s.angles);
+	VectorClear(_ghost->s.old_origin);
+	VectorClear(_ghost->s.origin);
+	_ghost->dmg = 0;
+	_ghost->classname = "ghost";
+
+	_ghost->s.modelindex = gi.modelindex("players/ghost/penguin.md2");
+	_ghost->s.modelindex2 = 0;
+	_ghost->s.modelindex3 = 0;
+	_ghost->s.modelindex4 = 0;
+	_ghost->s.skinnum = 0;
+	_ghost->s.frame = 0;
+	gi.unlinkentity(_ghost);
+
+	_replay.clear();
+	_replayFrame = 0;
+}
+
+/// <summary>
+/// Loads the top time replay data for the ghost.
+/// </summary>
+void GhostReplay::LoadReplay()
+{
+	LocalDatabase::Instance().GetReplayByPosition(level.mapname, 1, _replay);
+	_replayFrame = 0;
+}
+
+/// <summary>
+/// Advances the ghost position by one frame.
+/// </summary>
+void GhostReplay::RunFrame()
+{
+	assert(_ghost != NULL);
+	if (_replay.empty())
 	{
-		change_replay = true;
+		gi.unlinkentity(_ghost);
+		return;
 	}
 
-	// Advance the ghost by one frame
-	void GhostRunFrame()
+	if (_replayFrame >= _replay.size())
 	{
-		assert(ghost != NULL);
-		if (ghost_replay.empty() || change_replay)
-		{
-			// Try to load an available replay
-			// TODO: optimize this so that it doesn't run every frame if there is no replay
-			std::vector<user_time_record> highscores = {};
-			int players = 0;
-			int completions = 0;
-			if (GetHighscoresForMap(level.mapname, highscores, players, completions))
-			{
-				if (!highscores.empty())
-				{
-					LoadReplayFromFile(level.mapname, highscores[0].username_key, ghost_replay);
-					ghost_replay_frame = 0;
-					change_replay = false;
-				}
-			}
-
-			if (ghost_replay.empty())
-			{
-				gi.unlinkentity(ghost);
-				return;
-			}
-		}
-
-		if (ghost_replay_frame >= ghost_replay.size())
-		{
-			ghost_replay_frame = 0;
-		}
-
-		VectorCopy(ghost_replay[ghost_replay_frame].pos, ghost->s.origin);
-		VectorCopy(ghost_replay[ghost_replay_frame].pos, ghost->s.old_origin);
-		VectorCopy(ghost_replay[ghost_replay_frame].angles, ghost->s.angles);
-		ghost->s.frame = ghost_replay[ghost_replay_frame].animation_frame;
-		ghost->svflags = SVF_PROJECTILE;
-		gi.linkentity(ghost);
-
-		ghost_replay_frame++;
+		_replayFrame = 0;
 	}
 
-	// Initialize the default values for the ghost
-	void GhostInit()
-	{
-		ghost = G_Spawn();
-		ghost->svflags = SVF_NOCLIENT;	// hides the ent
-		ghost->movetype = MOVETYPE_NOCLIP;
-		ghost->clipmask = MASK_SOLID;
-		ghost->solid = SOLID_NOT;
-		VectorClear(ghost->mins);
-		VectorClear(ghost->maxs);
-		VectorClear(ghost->s.angles);
-		VectorClear(ghost->s.old_origin);
-		VectorClear(ghost->s.origin);
-		ghost->dmg = 0;
-		ghost->classname = "ghost";
+	VectorCopy(_replay[_replayFrame].pos, _ghost->s.origin);
+	VectorCopy(_replay[_replayFrame].pos, _ghost->s.old_origin);
+	VectorCopy(_replay[_replayFrame].angles, _ghost->s.angles);
+	_ghost->s.frame = _replay[_replayFrame].animation_frame;
+	_ghost->svflags = SVF_PROJECTILE;
+	gi.linkentity(_ghost);
 
-		ghost->s.modelindex = gi.modelindex("players/ghost/penguin.md2");
-		ghost->s.modelindex2 = 0;
-		ghost->s.modelindex3 = 0;
-		ghost->s.modelindex4 = 0;
-		ghost->s.skinnum = 0;
-		ghost->s.frame = 0;
-		gi.unlinkentity(ghost);
+	_replayFrame++;
+}
 
-		ghost_replay.clear();
-		ghost_replay_frame = 0;
-		change_replay = false;
-	}
 }

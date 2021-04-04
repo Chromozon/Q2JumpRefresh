@@ -652,21 +652,6 @@ namespace Jump
             //   Green "Now racing replay 1: Goblin"
             //   White "Other options: race delay <num>, race off, race now, race <demonumber>"
             //   Load replay data in client
-
-            std::vector<user_time_record> highscores = {};
-            int players = 0;
-            int completions = 0;
-            if (GetHighscoresForMap(level.mapname, highscores, players, completions))
-            {
-                if (!highscores.empty())
-                {
-                    LoadReplayFromFile(level.mapname, highscores[0].username_key, ent->client->jumpdata->racing_frames);
-                    ent->client->jumpdata->racing = true;
-                    ent->client->jumpdata->racing_delay_frames = 0;
-                    ent->client->jumpdata->racing_framenum = 0;
-                    gi.cprintf(ent, PRINT_HIGH, va("Now racing replay 1: %s", highscores[0].username_key.c_str()));
-                }
-            }
         }
 
         if (gi.argc() == 2)

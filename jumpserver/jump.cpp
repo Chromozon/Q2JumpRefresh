@@ -500,7 +500,7 @@ namespace Jump
             gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (1st completion on the map)\n",
                 ent->client->pers.netname, GetCompletionTimeDisplayString(time_ms).c_str());
             jump_server.fresh_times.insert(username_lower);
-            GhostChangeReplay();
+            //GhostChangeReplay();
         }
         else
         {
@@ -526,7 +526,7 @@ namespace Jump
                     std::string first_msg = std::string(ent->client->pers.netname) + " has set a 1st place!";
                     gi.bprintf(PRINT_HIGH, "%s\n", GetGreenConsoleText(first_msg).c_str());
                     jump_server.fresh_times.insert(username_lower);
-                    GhostChangeReplay();
+                    //GhostChangeReplay();
                 }
                 else
                 {
@@ -538,7 +538,7 @@ namespace Jump
                     std::string first_msg = std::string(ent->client->pers.netname) + " has set a 1st place!";
                     gi.bprintf(PRINT_HIGH, "%s\n", GetGreenConsoleText(first_msg).c_str());
                     jump_server.fresh_times.insert(username_lower);
-                    GhostChangeReplay();
+                    //GhostChangeReplay();
                 }
             }
             else
@@ -570,7 +570,7 @@ namespace Jump
         // TODO: we might need to push another replay frame here, could be cutting out the last one
 
         Logger::Completion(ent->client->pers.netname, ent->client->jumpdata->ip, level.mapname, time_ms);
-        SaveMapCompletion(level.mapname, ent->client->pers.netname, time_ms, ent->client->jumpdata->replay_recording);
+        //SaveMapCompletion(level.mapname, ent->client->pers.netname, time_ms, ent->client->jumpdata->replay_recording);
 
         if (time_ms < jump_server.replay_now_time_ms)
         {
@@ -636,7 +636,7 @@ namespace Jump
 
     void JumpRunFrame()
     {
-        GhostRunFrame();
+        GhostReplay::RunFrame();
 
         VoteSystem::OnFrame();
     }

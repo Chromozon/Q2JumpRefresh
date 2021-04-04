@@ -12,7 +12,7 @@ namespace Jump
 		std::vector<user_time_record> highscores;
 		int players = 0;
 		int total_completions = 0;
-		GetHighscoresForMap(level.mapname, highscores, players, total_completions);
+		//GetHighscoresForMap(level.mapname, highscores, players, total_completions);
 
 		// Sideways arrow symbol
 		char symbol_arrow = 13;

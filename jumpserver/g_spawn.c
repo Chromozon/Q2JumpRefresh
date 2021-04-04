@@ -580,7 +580,8 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 		g_edicts[i + 1].client = game.clients + i;
 	}
 
-	Jump::GhostInit();
+	Jump::GhostReplay::Init();
+	Jump::GhostReplay::LoadReplay();
 
 	char* entities_all = entities;
 

@@ -8,9 +8,199 @@
 #include <time.h>
 #include <sstream>
 #include <chrono>
+#include "jump_local_database.h"
 
 namespace Jump
 {
+
+/// <summary>
+/// Define the cache private variables.
+/// </summary>
+std::vector<std::string> LocalScores::_maplist;
+std::map<std::string, std::vector<MapTimesEntry>> LocalScores::_allMapTimes;
+std::map<int, std::string> LocalScores::_allUsers;
+std::map<int, UserHighscores> LocalScores::_allUserHighscores;
+std::vector<std::pair<int, int>> LocalScores::_allTotalScores;
+std::vector<std::pair<int, float>> LocalScores::_allPercentScores;
+std::vector<std::pair<int, int>> LocalScores::_allMapCounts;
+
+/// <summary>
+/// Loads the list of server maps from the maplist.ini file and update the local database.
+/// </summary>
+void LocalScores::LoadMaplist()
+{
+    _maplist.clear();
+    std::string path = GetModPortDir() + "/maplist.ini";
+    std::ifstream file(path);
+    if (!file.is_open())
+    {
+        Logger::Error(va("Could not open maplist %s, times will not be saved.", path.c_str()));
+        return;
+    }
+    std::vector<std::string> filesNotFound;
+    std::string line;
+    while (std::getline(file, line))
+    {
+        if (line.empty() || line[0] == '[' || line[0] == '#')
+        {
+            continue;
+        }
+        TrimString(line);
+        if (!line.empty())
+        {
+            std::string mapfile = GetModDir() + "/maps/" + line + ".bsp";
+            if (std::filesystem::exists(mapfile))
+            {
+                _maplist.push_back(line);
+            }
+            else
+            {
+                filesNotFound.push_back(line);
+            }
+        }
+    }
+    LocalDatabase::Instance().AddMapList(_maplist);
+    Logger::Info(va("Loaded %d maps from maplist \"%s\"", static_cast<int>(_maplist.size()), path.c_str()));
+    for (const std::string& mapname : filesNotFound)
+    {
+        Logger::Warning("Server does not have bsp file: " + mapname);
+    }
+}
+
+/// <summary>
+/// Calculate all local statistics (playertimes, playermaps, playerscores, maptimes).
+/// </summary>
+/// <param name="maplist"></param>
+void LocalScores::CalculateAllStatistics()
+{
+    // Load the times for all maps sorted by best to worst time.
+    _allMapTimes.clear();
+    for (const std::string& mapname : _maplist)
+    {
+        std::vector<MapTimesEntry> results;
+        LocalDatabase::Instance().GetMapTimes(results, mapname);
+        _allMapTimes.insert(std::make_pair(mapname, results));
+    }
+
+    // Get a list of all local userIds and usernames.
+    _allUsers.clear();
+    LocalDatabase::Instance().GetAllUsers(_allUsers);
+
+    // Calculate the top 15 counts and total maps completed for each user.
+    _allUserHighscores.clear();
+    for (const auto& user : _allUsers)
+    {
+        int userId = user.first;
+        _allUserHighscores.insert(std::make_pair(userId, UserHighscores{}));
+    }
+    for (const auto& mapTimes : _allMapTimes)
+    {
+        for (size_t place = 0; place < mapTimes.second.size() && place < 15; ++place)
+        {
+            int userId = mapTimes.second[place].userId;
+            if (_allUserHighscores.find(userId) == _allUserHighscores.end())
+            {
+                Logger::Warning(va("Maptime exists for a map %s, userId %d that is not in the Users list",
+                    mapTimes.first.c_str(), userId));
+            }
+            else
+            {
+                _allUserHighscores[userId].highscores[place]++;
+                _allUserHighscores[userId].mapcount++;
+            }
+        }
+    }
+
+    // Calculate total score and percentage score for all users and sort them best to worst.
+    _allTotalScores.clear();
+    _allPercentScores.clear();
+    for (const auto& userHighscores : _allUserHighscores)
+    {
+        int totalScore = CalculateTotalScore(userHighscores.second.highscores);
+        _allTotalScores.push_back(std::make_pair(userHighscores.first, totalScore));
+
+        int percentScore = CalculatePercentScore(totalScore, userHighscores.second.mapcount, _maplist.size());
+        _allPercentScores.push_back(std::make_pair(userHighscores.first, percentScore));
+    }
+    std::sort(_allTotalScores.begin(), _allTotalScores.end(),
+        [](const std::pair<int, int>& left, const std::pair<int, int>& right) -> bool
+    {
+        return left.second > right.second;
+    });
+    std::sort(_allPercentScores.begin(), _allPercentScores.end(),
+        [](const std::pair<int, float>& left, const std::pair<int, float>& right) -> bool
+    {
+        return left.second > right.second;
+    });
+
+    // Create a sorted list of total map completions.
+    _allMapCounts.clear();
+    for (const auto& userHighscores : _allUserHighscores)
+    {
+        int userId = userHighscores.first;
+        _allMapCounts.push_back(std::make_pair(userId, userHighscores.second.mapcount));
+    }
+    std::sort(_allMapCounts.begin(), _allMapCounts.end(),
+        [](const std::pair<int, int>& left, const std::pair<int, int>& right) -> bool
+    {
+        return left.second > right.second;
+    });
+}
+
+/// <summary>
+/// Calculates the total score for a user based on how many first places, second places, etc. that they have.
+/// </summary>
+/// <param name="highscores"></param>
+/// <returns></returns>
+int LocalScores::CalculateTotalScore(const std::array<int, 15>& highscores)
+{
+    int totalScore =
+        highscores[0] * 25 +
+        highscores[1] * 20 +
+        highscores[2] * 16 +
+        highscores[3] * 13 +
+        highscores[4] * 11 +
+        highscores[5] * 10 +
+        highscores[6] * 9 +
+        highscores[7] * 8 +
+        highscores[8] * 7 +
+        highscores[9] * 6 +
+        highscores[10] * 5 +
+        highscores[11] * 4 +
+        highscores[12] * 3 +
+        highscores[13] * 2 +
+        highscores[14] * 1;
+    return totalScore;
+}
+
+/// <summary>
+/// Calculates the percent score for a user.  
+/// This is how close a user is to being first in every map they have completed.
+/// </summary>
+/// <param name="totalScore"></param>
+/// <param name="userMapCount"></param>
+/// <param name="serverMapCount"></param>
+/// <returns></returns>
+float LocalScores::CalculatePercentScore(int totalScore, int userMapCount, int serverMapCount)
+{
+    // A user has to complete n number of maps before the percent score is calculated.
+    // This avoids the situation where a user completes only 1 map with a first place and is first on the list forever.
+    if (userMapCount < 50)
+    {
+        return 0.0f;
+    }
+    return (totalScore / (serverMapCount * 25.0f)) * 100.0f;
+}
+
+
+
+
+
+
+
+
+
+
     void SaveMapCompletion(
         const std::string& mapname,
         const std::string& username,

@@ -225,6 +225,24 @@ float LocalScores::CalculatePercentScore(int totalScore, int userMapCount)
 }
 
 /// <summary>
+/// Gets how many players have completed a given map.
+/// </summary>
+/// <param name="mapname"></param>
+/// <returns>Total players, 0 if no completions, -1 if map does not exist.</returns>
+int LocalScores::GetTotalTimesForMap(const std::string& mapname)
+{
+    auto it = _allMapTimes.find(mapname);
+    if (it == _allMapTimes.end())
+    {
+        return -1;
+    }
+    else
+    {
+        return static_cast<int>(it->second.size());
+    }
+}
+
+/// <summary>
 /// Print the playertimes to the client console.
 /// </summary>
 /// <param name="ent"></param>

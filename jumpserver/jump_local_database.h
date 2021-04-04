@@ -55,10 +55,13 @@ public:
     void GetMapTimes(std::vector<MapTimesEntry>& results, const std::string& mapname, int limit = -1, int offset = 0);
     void GetLastSeen(std::vector<LastSeenEntry>& results, int limit = -1, int offset = 0);
     int GetMapTime(const std::string& mapname, const std::string& username);
-    bool GetReplayByUser(const std::string& mapname, const std::string& username, std::vector<replay_frame_t>& replay);
-    bool GetReplayByPosition(const std::string& mapname, int position, std::vector<replay_frame_t>& replay);
+    bool GetReplayByUser(const std::string& mapname, const std::string& username,
+        std::vector<replay_frame_t>& replay, int& timeMs);
+    bool GetReplayByPosition(const std::string& mapname, int position,
+        std::vector<replay_frame_t>& replay, int& timeMs, std::string& userName);
     int GetUserId(const std::string& username);
     int GetMapId(const std::string& mapname);
+    std::string GetUserName(int userId);
 
     void MigrateAll();
 
@@ -74,7 +77,7 @@ private:
     void CreateTableMapTimes();
 
     // Misc helpers
-    bool GetReplay(int mapId, int userId, std::vector<replay_frame_t>& replay);
+    bool GetReplay(int mapId, int userId, std::vector<replay_frame_t>& replay, int& timeMs);
 
     // Migrate from old highscores
     void ClearAllTables();

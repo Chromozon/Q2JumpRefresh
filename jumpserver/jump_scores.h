@@ -16,6 +16,7 @@ public:
     static std::string GetRandomMap();
     static bool IsMapInMaplist(const std::string& mapname);
     static void CalculateAllStatistics();
+    static int GetTotalTimesForMap(const std::string& mapname);
 
     static void PrintPlayerTimes(edict_t* ent);
     static void PrintPlayerScores(edict_t* ent);

@@ -678,6 +678,7 @@ namespace Jump
                 ent->client->ps.pmove.pm_flags = 0;
                 ent->client->ps.pmove.pm_type = PM_SPECTATOR;
                 ent->client->jumpdata->update_replay_spectating = false;
+                ent->client->jumpdata->replay_spectating_framenum = 0;
             }
         }
     }

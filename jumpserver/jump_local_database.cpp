@@ -684,9 +684,10 @@ int LocalDatabase::GetMapTime(const std::string& mapname, const std::string& use
 /// <param name="mapname"></param>
 /// <param name="username"></param>
 /// <param name="replay"></param>
+/// <param name="timeMs"></param>
 /// <returns>True if success and replay exists, false if error or no replay.</returns>
 bool LocalDatabase::GetReplayByUser(const std::string& mapname, const std::string& username,
-    std::vector<replay_frame_t>& replay)
+    std::vector<replay_frame_t>& replay, int& timeMs)
 {
     replay.clear();
     int mapId = GetMapId(mapname);
@@ -699,7 +700,7 @@ bool LocalDatabase::GetReplayByUser(const std::string& mapname, const std::strin
     {
         return false;
     }
-    return GetReplay(mapId, userId, replay);
+    return GetReplay(mapId, userId, replay, timeMs);
 }
 
 /// <summary>
@@ -708,8 +709,11 @@ bool LocalDatabase::GetReplayByUser(const std::string& mapname, const std::strin
 /// <param name="mapname"></param>
 /// <param name="position"></param>
 /// <param name="replay"></param>
+/// <param name="timeMs"></param>
+/// <param name="userName"></param>
 /// <returns>True if success and replay exists, false if error or no replay.</returns>
-bool LocalDatabase::GetReplayByPosition(const std::string& mapname, int position, std::vector<replay_frame_t>& replay)
+bool LocalDatabase::GetReplayByPosition(const std::string& mapname, int position,
+    std::vector<replay_frame_t>& replay, int& timeMs, std::string& userName)
 {
     replay.clear();
     if (position < 1)
@@ -748,20 +752,23 @@ bool LocalDatabase::GetReplayByPosition(const std::string& mapname, int position
     {
         return false;
     }
-    return GetReplay(mapId, userId, replay);
+    userName = GetUserName(userId);
+    return GetReplay(mapId, userId, replay, timeMs);
 }
 
 /// <summary>
-/// Gets the replay given the mapId and userId.
+/// Gets the replay and timeMs given the mapId and userId.
 /// </summary>
 /// <param name="mapId"></param>
 /// <param name="userId"></param>
 /// <param name="replay"></param>
+/// <param name="timeMs"></param>
 /// <returns>True on success, false on error or replay not exists.</returns>
-bool LocalDatabase::GetReplay(int mapId, int userId, std::vector<replay_frame_t>& replay)
+bool LocalDatabase::GetReplay(int mapId, int userId, std::vector<replay_frame_t>& replay, int& timeMs)
 {
     replay.clear();
-    const char* sql = va("SELECT Replay FROM MapTimes WHERE MapId = %d AND UserId = %d", mapId, userId);
+    timeMs = 0;
+    const char* sql = va("SELECT Replay, TimeMs FROM MapTimes WHERE MapId = %d AND UserId = %d", mapId, userId);
     sqlite3_stmt* prepared = nullptr;
     int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
@@ -783,6 +790,7 @@ bool LocalDatabase::GetReplay(int mapId, int userId, std::vector<replay_frame_t>
             memcpy(&replay[0], sqlite3_column_blob(prepared, 0), bytes);
             found = true;
         }
+        timeMs = sqlite3_column_int(prepared, 1);
     }
     sqlite3_finalize(prepared);
     return found;
@@ -844,6 +852,33 @@ int LocalDatabase::GetMapId(const std::string& mapname)
     }
     sqlite3_finalize(prepared);
     return id;
+}
+
+/// <summary>
+/// Gets the username given the userId.
+/// </summary>
+/// <param name="userId"></param>
+/// <returns>Username or empty string if invalid.</returns>
+std::string LocalDatabase::GetUserName(int userId)
+{
+    std::string username;
+    const char* sql = va("SELECT UserName FROM Users WHERE UserId = %d", userId);
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting username, userId %d, error: %d, %s",
+            userId, error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return username;
+    }
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        username = reinterpret_cast<const char*>(sqlite3_column_text(prepared, 0));
+    }
+    sqlite3_finalize(prepared);
+    return username;
 }
 
 /// <summary>

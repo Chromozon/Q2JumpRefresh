@@ -283,20 +283,24 @@ namespace Jump
     void Cmd_Jump_Replay(edict_t* ent)
     {
         bool loaded = false;
+        int timeMs = 0;
+        std::string username;
 
         if (gi.argc() == 1)
         {
             // replay best time
             loaded = LocalDatabase::Instance().GetReplayByPosition(
-                level.mapname, 1, ent->client->jumpdata->replay_spectating);
+                level.mapname, 1, ent->client->jumpdata->replay_spectating, timeMs, username);
         }
         else
         {
             std::string param = gi.argv(1);
             if (param == "self")
             {
+                // replay self
+                username = ent->client->pers.netname;
                 loaded = LocalDatabase::Instance().GetReplayByUser(
-                    level.mapname, ent->client->pers.netname, ent->client->jumpdata->replay_spectating);
+                    level.mapname, username, ent->client->jumpdata->replay_spectating, timeMs);
             }
             else if (param == "now")
             {
@@ -304,24 +308,27 @@ namespace Jump
                 if (!jump_server.replay_now_recording.empty())
                 {
                     ent->client->jumpdata->replay_spectating = jump_server.replay_now_recording;
+                    timeMs = jump_server.replay_now_time_ms;
+                    username = jump_server.replay_now_username;
                     loaded = true;
                 }
             }
             else
             {
                 int num = 0;
-                if (StringToIntMaybe(param, num) && num >= 1 && num <= 15)
+                int completions = LocalScores::GetTotalTimesForMap(level.mapname);
+                if (StringToIntMaybe(param, num) && num >= 1 && num <= completions)
                 {
-                    // replay n (1-15)
+                    // replay n
                     loaded = LocalDatabase::Instance().GetReplayByPosition(
-                        level.mapname, num, ent->client->jumpdata->replay_spectating);
+                        level.mapname, num, ent->client->jumpdata->replay_spectating, timeMs, username);
                 }
                 else
                 {
                     // replay <username>
-                    std::string username = param;
+                    username = param;
                     loaded = LocalDatabase::Instance().GetReplayByUser(
-                        level.mapname, username, ent->client->jumpdata->replay_spectating);
+                        level.mapname, username, ent->client->jumpdata->replay_spectating, timeMs);
                 }
             }
         }
@@ -333,8 +340,8 @@ namespace Jump
         }
         else
         {
-            // TODO
-            // Replaying <username> with a time of <nnn> seconds.
+            std::string timeStr = GetCompletionTimeDisplayString(timeMs);
+            gi.cprintf(ent, PRINT_HIGH, "Replaying %s who finished in %s seconds.\n", username.c_str(), timeStr.c_str());
         }
 
         // Move client to a spectator

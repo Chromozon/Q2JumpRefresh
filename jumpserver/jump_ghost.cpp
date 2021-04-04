@@ -49,7 +49,9 @@ void GhostReplay::Init()
 /// </summary>
 void GhostReplay::LoadReplay()
 {
-	LocalDatabase::Instance().GetReplayByPosition(level.mapname, 1, _replay);
+	int timeMs = 0;
+	std::string username;
+	LocalDatabase::Instance().GetReplayByPosition(level.mapname, 1, _replay, timeMs, username);
 	_replayFrame = 0;
 }
 

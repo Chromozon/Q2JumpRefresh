@@ -51,6 +51,7 @@ public:
 
     void CalculateAllStatistics(const std::vector<std::string>& maplist);
 
+    void GetAllUsers(std::map<int, std::string>& users);
     void GetMapTimes(std::vector<MapTimesEntry>& results, const std::string& mapname, int limit = -1, int offset = 0);
     void GetLastSeen(std::vector<LastSeenEntry>& results, int limit = -1, int offset = 0);
     int GetMapTime(const std::string& mapname, const std::string& username);
@@ -73,7 +74,6 @@ private:
     void CreateTableMapTimes();
 
     // Misc helpers
-    void GetAllUsers(std::map<int, std::string>& users);
     bool GetReplay(int mapId, int userId, std::vector<replay_frame_t>& replay);
 
     // Migrate from old highscores
@@ -85,11 +85,7 @@ private:
     bool MigrateReplay(const std::string& mapname, int userid, const std::vector<replay_frame_t>& replay);
     bool ConvertOldReplay(const std::string& demoFile, std::vector<replay_frame_t>& newReplay);
     
-
     sqlite3* m_db = nullptr;
-
-    // TODO: when a user first logs in or when they change their name,
-    // look up their user id and store it to their client ent
 };
 
 }

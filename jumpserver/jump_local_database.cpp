@@ -10,6 +10,7 @@
 #include <sstream>
 #include <map>
 #include <array>
+#include <set>
 
 namespace Jump
 {
@@ -173,9 +174,34 @@ void LocalDatabase::AddMap(const std::string& mapname)
 /// <param name="maps"></param>
 void LocalDatabase::AddMapList(const std::vector<std::string>& maps)
 {
+    std::set<std::string> currentMaps;
+    const char* sql = "SELECT MapName FROM Maps";
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error adding maplist, error: %d, %s", error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+        return;
+    }
+    int step = sqlite3_step(prepared);
+    while (step == SQLITE_ROW)
+    {
+        std::string data = reinterpret_cast<const char*>(sqlite3_column_text(prepared, 0));
+        currentMaps.insert(data);
+        step = sqlite3_step(prepared);
+    }
+    if (step != SQLITE_DONE)
+    {
+        Logger::Error(va("Error adding maplist: %s", sqlite3_errmsg(m_db)));
+    }
+    sqlite3_finalize(prepared);
     for (const std::string& map : maps)
     {
-        AddMap(map);
+        if (currentMaps.find(map) == currentMaps.end())
+        {
+            AddMap(map);
+        }
     }
 }
 

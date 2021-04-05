@@ -133,4 +133,7 @@ namespace Jump
 
     // Trims whitespace from beginning and end of string (in place).
     void TrimString(std::string& s);
+
+    // Shortens a date (with time optional) string to the European format of MM/DD/YY.
+    std::string GetEuropeanShortDate(const std::string& datetime);
 }

@@ -304,4 +304,16 @@ namespace Jump
         }).base(), s.end());
     }
 
+    // Shortens a date (with time optional) string to the European format of MM/DD/YY.
+    std::string GetEuropeanShortDate(const std::string& datetime)
+    {
+        std::string date = datetime.substr(0, datetime.find_first_of(' '));
+        std::tm tm;
+        std::istringstream ss(date);
+        ss >> std::get_time(&tm, "%Y-%m-%d");
+        char buffer[16] = {};
+        strftime(buffer, sizeof(buffer), "%d/%m/%y", &tm);
+        return buffer;
+    }
+
 } // namespace Jump

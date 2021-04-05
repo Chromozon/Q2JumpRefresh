@@ -23,6 +23,8 @@ public:
     static void PrintPlayerMaps(edict_t* ent);
     static void PrintMapTimes(edict_t* ent);
 
+    static void ShowBestTimesScoreboard(edict_t* ent);
+
 private:
     // Helper functions
     static int CalculateTotalScore(const std::array<int, 15>& highscores);

@@ -533,4 +533,110 @@ void LocalScores::PrintMapTimes(edict_t* ent)
     gi.cprintf(ent, PRINT_HIGH, "--------------------------------------------------------\n");
 }
 
+/// <summary>
+/// Show the top 15 best times for the given map in the HUD.
+/// Dev note: We could cache this scoreboard and only update when changes happen.  However, performance testing
+/// has shown that this takes < 0 ms to recalculate every time, so no need to do that until we see a slowdown here.
+/// </summary>
+/// <param name="ent"></param>
+void LocalScores::ShowBestTimesScoreboard(edict_t* ent)
+{
+    const std::vector<MapTimesEntry>* maptimes = nullptr;
+    int totalPlayers = 0;
+    int totalCompletions = 0;
+
+    auto it = _allMapTimes.find(level.mapname);
+    if (it == _allMapTimes.end())
+    {
+        Logger::Warning(va("Cannot find times for a map \"%s\" that is not in the maplist", level.mapname));
+    }
+    else
+    {
+        maptimes = &(it->second);
+    }
+
+    if (maptimes != nullptr)
+    {
+        totalPlayers = maptimes->size();
+        for (size_t i = 0; i < maptimes->size(); ++i)
+        {
+            totalCompletions += maptimes->at(i).completions;
+        }
+    }
+
+    // Sideways arrow symbol
+    char symbol_arrow = 13;
+
+    std::stringstream ss;
+    ss << "xv 0 yv 0 string2 \"No   Player                       Date \" ";
+
+    for (int i = 0; i < MAX_HIGHSCORES; ++i)
+    {
+        if ((maptimes != nullptr) && (i < maptimes->size()))
+        {
+            const MapTimesEntry& entry = maptimes->at(i);
+
+            std::string username = _allUsers.find(entry.userId)->second;
+            std::string timeStr = GetCompletionTimeDisplayString(entry.timeMs);
+            std::string dateStr = GetEuropeanShortDate(entry.date);
+
+            // Position the text vertically, make it a white string
+            ss << "yv " << (i * 10) + 16 << " string \"";
+
+            // Show the highscore number
+            ss << std::setw(2) << std::right << i + 1;
+
+            // Show the arrow symbol (indicates a replay is available for this time)
+            // We don't really need this because we will always have a replay available, but people are used to it.
+            ss << symbol_arrow;
+
+            // Show the fresh time symbol or not
+            bool isFreshTime = jump_server.fresh_times.find(AsciiToLower(username)) != jump_server.fresh_times.end();
+            if (isFreshTime)
+            {
+                ss << " *";
+            }
+            else
+            {
+                ss << "  ";
+            }
+
+            // Show the username
+            ss << std::setw(16) << std::left << username;
+
+            // Show the completion time
+            ss << std::setw(11) << std::right << timeStr;
+
+            // Show the date of completion
+            ss << "  " << dateStr << "\" ";
+        }
+        else
+        {
+            // No time set for this position yet
+            ss << "yv " << (i * 10) + 16 << " string \"" << std::setw(2) << i + 1 << " \" ";
+        }
+    }
+
+    if (totalPlayers == 1)
+    {
+        ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << totalPlayers;
+        ss << " player completed map " << totalCompletions << " times\" ";
+    }
+    else
+    {
+        ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << totalPlayers;
+        ss << " players completed map " << totalCompletions << " times\" ";
+    }
+
+    gi.WriteByte(svc_layout);
+    size_t byteCount = ss.str().size();
+    if (byteCount >= 1024)
+    {
+        Logger::Error(va("ShowBestTimesScoreboard HUD message too big, %d bytes", (int)byteCount));
+    }
+    gi.WriteString(const_cast<char*>(ss.str().c_str()));
+    gi.unicast(ent, true);
+}
+
+
 } // namespace Jump

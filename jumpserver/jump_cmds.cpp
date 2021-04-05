@@ -95,6 +95,7 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        std::string testDate = GetEuropeanShortDate("2020-12-23");
         //LocalDatabase::Instance().AddUser("atestname!!");
         //int size2 = sizeof(replay_frame_t);
         //return;
@@ -279,7 +280,6 @@ namespace Jump
         }
     }
 
-    // TODO: support replay self, replay n, replay, replay <username>
     void Cmd_Jump_Replay(edict_t* ent)
     {
         bool loaded = false;

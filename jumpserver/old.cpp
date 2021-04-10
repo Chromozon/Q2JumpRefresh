@@ -1556,5 +1556,37 @@ void Cmd_Score_f(edict_t* ent)
 	DeathmatchScoreboard(ent);
 }
 
+void GhostReplay::SpawnLaser()
+{
+	_ghostBeam = G_Spawn();
+
+	_ghostBeam->movetype = MOVETYPE_NONE;
+	_ghostBeam->solid = SOLID_NOT;
+	_ghostBeam->s.modelindex = 1;
+	_ghostBeam->s.renderfx = RF_TRANSLUCENT | RF_BEAM;
+	_ghostBeam->s.skinnum = 0xdcdddedf;
+	_ghostBeam->s.frame = 4; // or 16 for wider beam
+	VectorSet(_ghostBeam->mins, -8, -8, -8);
+	VectorSet(_ghostBeam->maxs, 8, 8, 8);
+	VectorClear(_ghostBeam->s.old_origin);
+	VectorClear(_ghostBeam->s.origin);
+	_ghostBeam->spawnflags |= 0x80000001;
+	_ghostBeam->svflags &= ~SVF_NOCLIENT;
+	_ghostBeam->think = LaserThink;
+	gi.linkentity(_ghostBeam);
+	LaserThink(_ghostBeam);
+}
+
+void GhostReplay::LaserThink(edict_t* ent)
+{
+	if (_replayFrame >= 2 && _replayFrame < _replay.size())
+	{
+		VectorCopy(_replay[_replayFrame].pos, _ghostBeam->s.origin);
+		VectorCopy(_replay[_replayFrame - 2].pos, _ghostBeam->s.old_origin);
+		gi.linkentity(_ghostBeam);
+	}
+	_ghostBeam->nextthink = level.time + FRAMETIME;
+}
+
 
 #endif

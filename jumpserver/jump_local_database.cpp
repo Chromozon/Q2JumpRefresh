@@ -16,14 +16,9 @@ namespace Jump
 {
 
 /// <summary>
-/// Singleton instance.
+/// Private variables
 /// </summary>
-/// <returns></returns>
-LocalDatabase& LocalDatabase::Instance()
-{
-    static LocalDatabase instance;
-    return instance;
-}
+sqlite3* LocalDatabase::_db = nullptr;
 
 /// <summary>
 /// Opens the connection to the database.  Creates the initial tables.
@@ -33,7 +28,7 @@ void LocalDatabase::Init()
     std::string dbname = "local_db.sqlite3";
     std::string dbpath = GetModPortDir() + "/" + dbname;
 
-    int error = sqlite3_open(dbpath.c_str(), &m_db);
+    int error = sqlite3_open(dbpath.c_str(), &_db);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Could not open local sqlite3 database, error: %d", error));
@@ -45,10 +40,10 @@ void LocalDatabase::Init()
 
     // The cache_size is the maximum amount (in KB) that the database can keep cached in memory.
     const char* sql = "PRAGMA cache_size = -100000";
-    error = sqlite3_exec(m_db, sql, nullptr, nullptr, nullptr);
+    error = sqlite3_exec(_db, sql, nullptr, nullptr, nullptr);
     if (error != SQLITE_OK)
     {
-        Logger::Error(va("Could not set database performance options, error: %d, %s", error, sqlite3_errmsg(m_db)));
+        Logger::Error(va("Could not set database performance options, error: %d, %s", error, sqlite3_errmsg(_db)));
     }
 
     CreateTableUsers();
@@ -61,7 +56,7 @@ void LocalDatabase::Init()
 /// </summary>
 void LocalDatabase::Close()
 {
-    sqlite3_close(m_db);
+    sqlite3_close(_db);
 }
 
 /// <summary>
@@ -78,10 +73,10 @@ void LocalDatabase::CreateTableMaps()
             "PRIMARY KEY(MapId AUTOINCREMENT)"
         ")"
     ;
-    int error = sqlite3_exec(m_db, sql, nullptr, nullptr, nullptr);
+    int error = sqlite3_exec(_db, sql, nullptr, nullptr, nullptr);
     if (error != SQLITE_OK)
     {
-        Logger::Error(va("Could not create Maps table, error: %d, %s", error, sqlite3_errmsg(m_db)));
+        Logger::Error(va("Could not create Maps table, error: %d, %s", error, sqlite3_errmsg(_db)));
     }
 }
 
@@ -99,10 +94,10 @@ void LocalDatabase::CreateTableUsers()
             "PRIMARY KEY(UserId AUTOINCREMENT)"
         ")"
     ;
-    int error = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr);
+    int error = sqlite3_exec(_db, sql.c_str(), nullptr, nullptr, nullptr);
     if (error != SQLITE_OK)
     {
-        Logger::Error(va("Could not create Users table, error: %d, %s", error, sqlite3_errmsg(m_db)));
+        Logger::Error(va("Could not create Users table, error: %d, %s", error, sqlite3_errmsg(_db)));
     }
 }
 
@@ -124,10 +119,10 @@ void LocalDatabase::CreateTableMapTimes()
             "PRIMARY KEY(MapId, UserId)"
         ")"
     ;
-    int error = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr);
+    int error = sqlite3_exec(_db, sql.c_str(), nullptr, nullptr, nullptr);
     if (error != SQLITE_OK)
     {
-        Logger::Error(va("Could not create MapTimes table, error: %d, %s", error, sqlite3_errmsg(m_db)));
+        Logger::Error(va("Could not create MapTimes table, error: %d, %s", error, sqlite3_errmsg(_db)));
     }
 }
 
@@ -144,10 +139,10 @@ void LocalDatabase::AddMap(const std::string& mapname)
     std::string dateadded = GetCurrentTimeUTC();
     sqlite3_stmt* prepared = nullptr;
 
-    int error = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql.c_str(), -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
-        Logger::Error(va("Error adding new map, error: %d, %s", error, sqlite3_errmsg(m_db)));
+        Logger::Error(va("Error adding new map, error: %d, %s", error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return;
     }
@@ -163,7 +158,7 @@ void LocalDatabase::AddMap(const std::string& mapname)
     error = sqlite3_finalize(prepared);
     if (error != SQLITE_OK)
     {
-        Logger::Error(va("Error adding new map, error: %d, %s", error, sqlite3_errmsg(m_db)));
+        Logger::Error(va("Error adding new map, error: %d, %s", error, sqlite3_errmsg(_db)));
         return;
     }
 }
@@ -177,10 +172,10 @@ void LocalDatabase::AddMapList(const std::vector<std::string>& maps)
     std::set<std::string> currentMaps;
     const char* sql = "SELECT MapName FROM Maps";
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
-        Logger::Error(va("Error adding maplist, error: %d, %s", error, sqlite3_errmsg(m_db)));
+        Logger::Error(va("Error adding maplist, error: %d, %s", error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return;
     }
@@ -193,7 +188,7 @@ void LocalDatabase::AddMapList(const std::vector<std::string>& maps)
     }
     if (step != SQLITE_DONE)
     {
-        Logger::Error(va("Error adding maplist: %s", sqlite3_errmsg(m_db)));
+        Logger::Error(va("Error adding maplist: %s", sqlite3_errmsg(_db)));
     }
     sqlite3_finalize(prepared);
     for (const std::string& map : maps)
@@ -233,11 +228,11 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
             ")"
         ;
         sqlite3_stmt* prepared = nullptr;
-        int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+        int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
         if (error != SQLITE_OK)
         {
             Logger::Error(va("Error adding maptime for map %s, user %s, timeMs %d, error: %d, %s",
-                mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(m_db)));
+                mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(_db)));
             sqlite3_finalize(prepared);
             return;
         }
@@ -269,7 +264,7 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
         if (error != SQLITE_OK)
         {
             Logger::Error(va("Error adding maptime for map %s, user %s, timeMs %d, error: %d, %s",
-                mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(m_db)));
+                mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(_db)));
             return;
         }
     }
@@ -292,11 +287,11 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
                 "UserId = (SELECT UserId FROM Users WHERE UserName = @username)"
             ;
             sqlite3_stmt* prepared = nullptr;
-            int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+            int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
             if (error != SQLITE_OK)
             {
                 Logger::Error(va("Error adding maptime for map %s, user %s, timeMs %d, error: %d, %s",
-                    mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(m_db)));
+                    mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(_db)));
                 sqlite3_finalize(prepared);
                 return;
             }
@@ -328,7 +323,7 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
             if (error != SQLITE_OK)
             {
                 Logger::Error(va("Error adding maptime for map %s, user %s, timeMs %d, error: %d, %s",
-                    mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(m_db)));
+                    mapname.c_str(), username.c_str(), timeMs, error, sqlite3_errmsg(_db)));
                 return;
             }
         }
@@ -344,11 +339,11 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
                 "UserId = (SELECT UserId FROM Users WHERE UserName = @username)"
             ;
             sqlite3_stmt* prepared = nullptr;
-            int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+            int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
             if (error != SQLITE_OK)
             {
                 Logger::Error(va("Error adding completion for map %s, user %s, error: %d, %s",
-                    mapname.c_str(), username.c_str(), error, sqlite3_errmsg(m_db)));
+                    mapname.c_str(), username.c_str(), error, sqlite3_errmsg(_db)));
                 sqlite3_finalize(prepared);
                 return;
             }
@@ -365,7 +360,7 @@ void LocalDatabase::AddMapTime(const std::string& mapname, const std::string& us
             if (error != SQLITE_OK)
             {
                 Logger::Error(va("Error adding completion for map %s, user %s, error: %d, %s",
-                    mapname.c_str(), username.c_str(), error, sqlite3_errmsg(m_db)));
+                    mapname.c_str(), username.c_str(), error, sqlite3_errmsg(_db)));
                 return;
             }
         }
@@ -382,11 +377,11 @@ int LocalDatabase::AddUser(const std::string& username)
     std::string lastSeen = GetCurrentTimeUTC();
     const char* sql = "INSERT INTO Users (UserName, LastSeen) VALUES (@username, @lastseen)";
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error adding new user %s, error: %d, %s",
-            username.c_str(), error, sqlite3_errmsg(m_db)));
+            username.c_str(), error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return -1;
     }
@@ -403,7 +398,7 @@ int LocalDatabase::AddUser(const std::string& username)
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error adding new user %s, error: %d, %s",
-            username.c_str(), error, sqlite3_errmsg(m_db)));
+            username.c_str(), error, sqlite3_errmsg(_db)));
         return -1;
     }
     return GetUserId(username);
@@ -418,11 +413,11 @@ void LocalDatabase::UpdateLastSeen(int userid)
     std::string lastSeen = GetCurrentTimeUTC();
     const char* sql = va("UPDATE Users SET LastSeen = @lastseen WHERE UserId = %d", userid);
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error updating last seen, userid %d, error: %d, %s",
-            userid, error, sqlite3_errmsg(m_db)));
+            userid, error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return;
     }
@@ -436,7 +431,7 @@ void LocalDatabase::UpdateLastSeen(int userid)
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error updating last seen, userid %d, error: %d, %s",
-            userid, error, sqlite3_errmsg(m_db)));
+            userid, error, sqlite3_errmsg(_db)));
     }
 }
 
@@ -549,7 +544,7 @@ void LocalDatabase::GetAllUsers(std::map<int, std::string>& users)
     users.clear();
     const char* sql = "SELECT UserId, UserName FROM Users";
     sqlite3_stmt* prepared = nullptr;
-    sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     int step = sqlite3_step(prepared);
     while (step == SQLITE_ROW)
     {
@@ -561,7 +556,7 @@ void LocalDatabase::GetAllUsers(std::map<int, std::string>& users)
     }
     if (step != SQLITE_DONE)
     {
-        Logger::Error(va("Error querying maptimes: %s", sqlite3_errmsg(m_db)));
+        Logger::Error(va("Error querying maptimes: %s", sqlite3_errmsg(_db)));
     }
     sqlite3_finalize(prepared);
 }
@@ -584,7 +579,7 @@ void LocalDatabase::GetMapTimes(std::vector<MapTimesEntry>& results, const std::
         mapname.c_str(), limit, offset
     );
     sqlite3_stmt* prepared = nullptr;
-    sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     int step = sqlite3_step(prepared);
     while (step == SQLITE_ROW)
     {
@@ -599,7 +594,7 @@ void LocalDatabase::GetMapTimes(std::vector<MapTimesEntry>& results, const std::
     }
     if (step != SQLITE_DONE)
     {
-        Logger::Error(va("Error querying maptimes: %s", sqlite3_errmsg(m_db)));
+        Logger::Error(va("Error querying maptimes: %s", sqlite3_errmsg(_db)));
     }
     sqlite3_finalize(prepared);
 }
@@ -621,7 +616,7 @@ void LocalDatabase::GetLastSeen(std::vector<LastSeenEntry>& results, int limit, 
         limit, offset
     );
     sqlite3_stmt* prepared = nullptr;
-    sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     int step = sqlite3_step(prepared);
     while (step == SQLITE_ROW)
     {
@@ -633,7 +628,7 @@ void LocalDatabase::GetLastSeen(std::vector<LastSeenEntry>& results, int limit, 
     }
     if (step != SQLITE_DONE)
     {
-        Logger::Error(va("Error querying last seen: %s", sqlite3_errmsg(m_db)));
+        Logger::Error(va("Error querying last seen: %s", sqlite3_errmsg(_db)));
     }
     sqlite3_finalize(prepared);
 }
@@ -655,11 +650,11 @@ int LocalDatabase::GetMapTime(const std::string& mapname, const std::string& use
         "UserId = (SELECT UserId FROM Users WHERE UserName = @username) "
     ;
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error getting maptime, mapname %s, user %s, error: %d, %s",
-            mapname.c_str(), username.c_str(), error, sqlite3_errmsg(m_db)));
+            mapname.c_str(), username.c_str(), error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return timeMs;
     }
@@ -733,11 +728,11 @@ bool LocalDatabase::GetReplayByPosition(const std::string& mapname, int position
         mapId, position - 1
     );
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error getting replay, mapname %s, position %d, error: %d, %s",
-            mapname.c_str(), position, error, sqlite3_errmsg(m_db)));
+            mapname.c_str(), position, error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return false;
     }
@@ -770,11 +765,11 @@ bool LocalDatabase::GetReplay(int mapId, int userId, std::vector<replay_frame_t>
     timeMs = 0;
     const char* sql = va("SELECT Replay, TimeMs FROM MapTimes WHERE MapId = %d AND UserId = %d", mapId, userId);
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error getting replay, mapId %d, userId %d, error: %d, %s",
-            mapId, userId, error, sqlite3_errmsg(m_db)));
+            mapId, userId, error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return false;
     }
@@ -806,11 +801,11 @@ int LocalDatabase::GetUserId(const std::string& username)
     int id = -1;
     const char* sql = "SELECT UserId FROM Users WHERE UserName = @username";
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error getting userid, user %s, error: %d, %s",
-            username.c_str(), error, sqlite3_errmsg(m_db)));
+            username.c_str(), error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return id;
     }
@@ -835,11 +830,11 @@ int LocalDatabase::GetMapId(const std::string& mapname)
     int id = -1;
     const char* sql = "SELECT MapId FROM Maps WHERE MapName = @mapname";
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error getting mapid, map %s, error: %d, %s",
-            mapname.c_str(), error, sqlite3_errmsg(m_db)));
+            mapname.c_str(), error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return id;
     }
@@ -864,11 +859,11 @@ std::string LocalDatabase::GetUserName(int userId)
     std::string username;
     const char* sql = va("SELECT UserName FROM Users WHERE UserId = %d", userId);
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error getting username, userId %d, error: %d, %s",
-            userId, error, sqlite3_errmsg(m_db)));
+            userId, error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return username;
     }
@@ -896,11 +891,11 @@ void LocalDatabase::GetTotalCompletions(const std::string& mapname, int& totalPl
         "WHERE MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
     ;
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error getting total map completions, mapname %s, error: %d, %s",
-            mapname.c_str(), error, sqlite3_errmsg(m_db)));
+            mapname.c_str(), error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
     }
     int index = sqlite3_bind_parameter_index(prepared, "@mapname");
@@ -929,10 +924,10 @@ void LocalDatabase::ClearAllTables()
     for (const std::string& table : tables)
     {
         std::string sql = "DELETE FROM " + table;
-        int error = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr);
+        int error = sqlite3_exec(_db, sql.c_str(), nullptr, nullptr, nullptr);
         if (error != SQLITE_OK)
         {
-            Logger::Error(va("Could not clear %s table, error: %d, %s", table.c_str(), error, sqlite3_errmsg(m_db)));
+            Logger::Error(va("Could not clear %s table, error: %d, %s", table.c_str(), error, sqlite3_errmsg(_db)));
         }
     }
 }
@@ -967,10 +962,10 @@ void LocalDatabase::MigrateUsers(const std::string& userFile)
             "VALUES (@userid, @username)";
 
         sqlite3_stmt* prepared = nullptr;
-        int error = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &prepared, nullptr);
+        int error = sqlite3_prepare_v2(_db, sql.c_str(), -1, &prepared, nullptr);
         if (error != SQLITE_OK)
         {
-            Logger::Error(va("Error adding user %s, error: %d, %s", username.c_str(), error, sqlite3_errmsg(m_db)));
+            Logger::Error(va("Error adding user %s, error: %d, %s", username.c_str(), error, sqlite3_errmsg(_db)));
             sqlite3_finalize(prepared);
             continue;
         }
@@ -986,7 +981,7 @@ void LocalDatabase::MigrateUsers(const std::string& userFile)
         error = sqlite3_finalize(prepared);
         if (error != SQLITE_OK)
         {
-            Logger::Error(va("Error adding user %s, error: %d, %s", username.c_str(), error, sqlite3_errmsg(m_db)));
+            Logger::Error(va("Error adding user %s, error: %d, %s", username.c_str(), error, sqlite3_errmsg(_db)));
             continue;
         }
         count++;
@@ -1077,7 +1072,7 @@ void LocalDatabase::MigrateMapTimes(const std::string& folder)
                     dateBuffer,
                     completions
                 );
-                int error = sqlite3_exec(m_db, sql, nullptr, nullptr, nullptr);
+                int error = sqlite3_exec(_db, sql, nullptr, nullptr, nullptr);
                 if (error != SQLITE_OK)
                 {
                     Logger::Error(va("Migration: could not add maptime, map %s, userid %d", mapname.c_str(), userid));
@@ -1163,11 +1158,11 @@ bool LocalDatabase::MigrateReplay(const std::string& mapname, int userid, const 
         mapname.c_str(), userid);
 
     sqlite3_stmt* prepared = nullptr;
-    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error updating replay for map %s and user %d, error: %d, %s",
-            mapname.c_str(), userid, error, sqlite3_errmsg(m_db)));
+            mapname.c_str(), userid, error, sqlite3_errmsg(_db)));
         sqlite3_finalize(prepared);
         return false;
     }
@@ -1181,7 +1176,7 @@ bool LocalDatabase::MigrateReplay(const std::string& mapname, int userid, const 
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Error updating replay for map %s and user %d, error: %d, %s",
-            mapname.c_str(), userid, error, sqlite3_errmsg(m_db)));
+            mapname.c_str(), userid, error, sqlite3_errmsg(_db)));
         return false;
     }
     return true;

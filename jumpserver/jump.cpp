@@ -90,10 +90,11 @@ namespace Jump
 
     void UpdateUserId(edict_t* ent)
     {
-        int userId = LocalDatabase::Instance().GetUserId(ent->client->pers.netname);
+        int userId = LocalDatabase::GetUserId(ent->client->pers.netname);
         if (userId == -1)
         {
-            userId = LocalDatabase::Instance().AddUser(ent->client->pers.netname);
+            // TODO: update the username userid cache in LocalScores
+            userId = LocalDatabase::AddUser(ent->client->pers.netname);
         }
         ent->client->jumpdata->localUserId = userId;
         if (userId == -1)
@@ -490,12 +491,12 @@ namespace Jump
             return;
         }
 
-        int userBestTimeMs = LocalDatabase::Instance().GetMapTime(level.mapname, ent->client->pers.netname);
+        int userBestTimeMs = LocalDatabase::GetMapTime(level.mapname, ent->client->pers.netname);
 
         std::vector<MapTimesEntry> bestTimeEntry;
-        LocalDatabase::Instance().GetMapTimes(bestTimeEntry, level.mapname, 1, 0);
+        LocalDatabase::GetMapTimes(bestTimeEntry, level.mapname, 1, 0);
 
-        LocalDatabase::Instance().AddMapTime(level.mapname, ent->client->pers.netname,
+        LocalDatabase::AddMapTime(level.mapname, ent->client->pers.netname,
             timeMs, pmoveTimeMs, ent->client->jumpdata->replay_recording);
 
         if (bestTimeEntry.empty())
@@ -560,6 +561,10 @@ namespace Jump
             jump_server.replay_now_recording = ent->client->jumpdata->replay_recording;
         }
         Logger::Completion(ent->client->pers.netname, ent->client->jumpdata->ip, level.mapname, timeMs);
+
+        // TODO: need to automatically update the replays of anyone racing
+        // The could be the first race replay or whatever else position they are racing
+        // People usually only race the first place replay
     }
 
     void SaveReplayFrame(edict_t* ent)
@@ -606,7 +611,7 @@ namespace Jump
 
     void JumpInitGame()
     {
-        LocalDatabase::Instance().Init();
+        LocalDatabase::Init();
         LocalScores::LoadMaplist();
         //LoadLocalMapList(jump_server.maplist);
         //LoadAllLocalMaptimes(jump_server.maplist, jump_server.all_local_maptimes);
@@ -716,5 +721,14 @@ namespace Jump
             gi.unicast(ent, true);
             ent->client->jumpdata->racing_framenum++;
         }
+    }
+
+    void DoStuffOnMapChange()
+    {
+        jump_server.replay_now_recording.clear();
+        jump_server.replay_now_time_ms = 0;
+        jump_server.replay_now_username.clear();
+
+        jump_server.fresh_times.clear();
     }
 }

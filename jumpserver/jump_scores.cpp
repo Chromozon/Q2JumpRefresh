@@ -60,7 +60,7 @@ void LocalScores::LoadMaplist()
             }
         }
     }
-    LocalDatabase::Instance().AddMapList(_maplist);
+    LocalDatabase::AddMapList(_maplist);
     Logger::Info(va("Loaded %d maps from maplist \"%s\"", static_cast<int>(_maplist.size()), path.c_str()));
     for (const std::string& mapname : filesNotFound)
     {
@@ -106,13 +106,13 @@ void LocalScores::CalculateAllStatistics()
     for (const std::string& mapname : _maplist)
     {
         std::vector<MapTimesEntry> results;
-        LocalDatabase::Instance().GetMapTimes(results, mapname);
+        LocalDatabase::GetMapTimes(results, mapname);
         _allMapTimes.insert(std::make_pair(mapname, results));
     }
 
     // Get a list of all local userIds and usernames.
     _allUsers.clear();
-    LocalDatabase::Instance().GetAllUsers(_allUsers);
+    LocalDatabase::GetAllUsers(_allUsers);
 
     // Calculate the top 15 counts and total maps completed for each user.
     _allUserHighscores.clear();
@@ -240,6 +240,22 @@ int LocalScores::GetTotalTimesForMap(const std::string& mapname)
     {
         return static_cast<int>(it->second.size());
     }
+}
+
+/// <summary>
+/// Gets the username given the userid.
+/// </summary>
+/// <param name="userId"></param>
+/// <returns>Username or empty string if not found</returns>
+std::string LocalScores::GetUserName(int userId)
+{
+    std::string username;
+    auto it = _allUsers.find(userId);
+    if (it != _allUsers.end())
+    {
+        username = it->second;
+    }
+    return username;
 }
 
 /// <summary>
@@ -532,92 +548,5 @@ void LocalScores::PrintMapTimes(edict_t* ent)
     }
     gi.cprintf(ent, PRINT_HIGH, "--------------------------------------------------------\n");
 }
-
-/// <summary>
-/// Show the top 15 best times for the given map in the HUD.
-/// </summary>
-/// <param name="ent"></param>
-void LocalScores::ShowBestTimesScoreboard(edict_t* ent)
-{
-    std::vector<MapTimesEntry> maptimes;
-    int totalPlayers = 0;
-    int totalCompletions = 0;
-    LocalDatabase::Instance().GetTotalCompletions(level.mapname, totalPlayers, totalCompletions);
-    LocalDatabase::Instance().GetMapTimes(maptimes, level.mapname, 15, 0);
-
-    // Sideways arrow symbol
-    char symbol_arrow = 13;
-
-    std::stringstream ss;
-    ss << "xv 0 yv 0 string2 \"No   Player                       Date \" ";
-
-    for (int i = 0; i < MAX_HIGHSCORES; ++i)
-    {
-        if (i < maptimes.size())
-        {
-            const MapTimesEntry& entry = maptimes[i];
-
-            std::string username = _allUsers.find(entry.userId)->second;
-            std::string timeStr = GetCompletionTimeDisplayString(entry.timeMs);
-            std::string dateStr = GetEuropeanShortDate(entry.date);
-
-            // Position the text vertically, make it a white string
-            ss << "yv " << (i * 10) + 16 << " string \"";
-
-            // Show the highscore number
-            ss << std::setw(2) << std::right << i + 1;
-
-            // Show the arrow symbol (indicates a replay is available for this time)
-            // We don't really need this because we will always have a replay available, but people are used to it.
-            ss << symbol_arrow;
-
-            // Show the fresh time symbol or not
-            bool isFreshTime = jump_server.fresh_times.find(AsciiToLower(username)) != jump_server.fresh_times.end();
-            if (isFreshTime)
-            {
-                ss << " *";
-            }
-            else
-            {
-                ss << "  ";
-            }
-
-            // Show the username
-            ss << std::setw(16) << std::left << username;
-
-            // Show the completion time
-            ss << std::setw(11) << std::right << timeStr;
-
-            // Show the date of completion
-            ss << "  " << dateStr << "\" ";
-        }
-        else
-        {
-            // No time set for this position yet
-            ss << "yv " << (i * 10) + 16 << " string \"" << std::setw(2) << i + 1 << " \" ";
-        }
-    }
-
-    if (totalPlayers == 1)
-    {
-        ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << totalPlayers;
-        ss << " player completed map " << totalCompletions << " times\" ";
-    }
-    else
-    {
-        ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << totalPlayers;
-        ss << " players completed map " << totalCompletions << " times\" ";
-    }
-
-    gi.WriteByte(svc_layout);
-    size_t byteCount = ss.str().size();
-    if (byteCount >= 1024)
-    {
-        Logger::Error(va("ShowBestTimesScoreboard HUD message too big, %d bytes", (int)byteCount));
-    }
-    gi.WriteString(const_cast<char*>(ss.str().c_str()));
-    gi.unicast(ent, true);
-}
-
 
 } // namespace Jump

@@ -23,6 +23,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump_global.h"
 #include "jump_cmds.h"
 #include "jump_local_database.h"
+#include "jump_utils.h"
+#include "jump_logger.h"
 
 game_locals_t	game;
 level_locals_t	level;
@@ -112,7 +114,7 @@ void ShutdownGame (void)
 	Jump::StopThreadMainGlobal();
 	Jump::jump_server.global_database_thread.join();
 
-	Jump::LocalDatabase::Instance().Close();
+	Jump::LocalDatabase::Close();
 	// Jump
 }
 
@@ -334,6 +336,8 @@ Advances the world by 0.1 seconds
 */
 void G_RunFrame (void)
 {
+	Jump::PerformanceTimer timer;
+	timer.Start();
 	int		i;
 	edict_t	*ent;
 
@@ -398,5 +402,8 @@ void G_RunFrame (void)
 		Jump::HandleGlobalCmdResponse(*response);
 	}
 	// Jump
+
+	timer.End();
+	//Jump::Logger::DebugConsole(va("Server frame time: %d ms\n", timer.DurationMilliseconds()));
 }
 

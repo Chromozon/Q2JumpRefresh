@@ -8,13 +8,93 @@
 
 namespace Jump
 {
-    void BestTimesScoreboardMessage(edict_t* client)
+	/// <summary>
+	/// Show the top 15 best times for the given map in the HUD.
+	/// </summary>
+	/// <param name="ent"></param>
+	void ShowBestTimesScoreboard(edict_t* ent)
 	{
-		PerformanceTimer timer;
-		timer.Start();
-		LocalScores::ShowBestTimesScoreboard(client);
-		timer.End();
-		Logger::DebugConsole(va("Scoreboard time: %d ms\n", timer.DurationMilliseconds()));
+		std::vector<MapTimesEntry> maptimes;
+		int totalPlayers = 0;
+		int totalCompletions = 0;
+		LocalDatabase::GetTotalCompletions(level.mapname, totalPlayers, totalCompletions);
+		LocalDatabase::GetMapTimes(maptimes, level.mapname, 15, 0);
+
+		// Sideways arrow symbol
+		char symbol_arrow = 13;
+
+		std::stringstream ss;
+		ss << "xv 0 yv 0 string2 \"No   Player                       Date \" ";
+
+		for (int i = 0; i < MAX_HIGHSCORES; ++i)
+		{
+			if (i < maptimes.size())
+			{
+				const MapTimesEntry& entry = maptimes[i];
+
+				std::string username = LocalScores::GetUserName(entry.userId);
+				std::string timeStr = GetCompletionTimeDisplayString(entry.timeMs);
+				std::string dateStr = GetEuropeanShortDate(entry.date);
+
+				// Position the text vertically, make it a white string
+				ss << "yv " << (i * 10) + 16 << " string \"";
+
+				// Show the highscore number
+				ss << std::setw(2) << std::right << i + 1;
+
+				// Show the arrow symbol (indicates a replay is available for this time)
+				// We don't really need this because we will always have a replay available, but people are used to it.
+				ss << symbol_arrow;
+
+				// Show the fresh time symbol or not
+				bool isFreshTime = jump_server.fresh_times.find(AsciiToLower(username)) != jump_server.fresh_times.end();
+				if (isFreshTime)
+				{
+					ss << " *";
+				}
+				else
+				{
+					ss << "  ";
+				}
+
+				// Show the username
+				ss << std::setw(16) << std::left << username;
+
+				// Show the completion time
+				ss << std::setw(11) << std::right << timeStr;
+
+				// Show the date of completion
+				ss << "  " << dateStr << "\" ";
+			}
+			else
+			{
+				// No time set for this position yet
+				ss << "yv " << (i * 10) + 16 << " string \"" << std::setw(2) << i + 1 << " \" ";
+			}
+		}
+
+		if (totalPlayers == 1)
+		{
+			ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << totalPlayers;
+			ss << " player completed map " << totalCompletions << " times\" ";
+		}
+		else
+		{
+			ss << "yv " << (MAX_HIGHSCORES * 10) + 24 << " string \"    " << totalPlayers;
+			ss << " players completed map " << totalCompletions << " times\" ";
+		}
+
+		size_t byteCount = ss.str().size();
+		if (byteCount >= 1024)
+		{
+			Logger::Error(va("ShowBestTimesScoreboard HUD message too big, %d bytes", (int)byteCount));
+		}
+		else
+		{
+			gi.WriteByte(svc_layout);
+			gi.WriteString(const_cast<char*>(ss.str().c_str()));
+			gi.unicast(ent, true);
+		}
 	}
 
 	void ActiveClientsScoreboardMessage(edict_t* ent)

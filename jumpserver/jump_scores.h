@@ -17,13 +17,12 @@ public:
     static bool IsMapInMaplist(const std::string& mapname);
     static void CalculateAllStatistics();
     static int GetTotalTimesForMap(const std::string& mapname);
+    static std::string GetUserName(int userId);
 
     static void PrintPlayerTimes(edict_t* ent);
     static void PrintPlayerScores(edict_t* ent);
     static void PrintPlayerMaps(edict_t* ent);
     static void PrintMapTimes(edict_t* ent);
-
-    static void ShowBestTimesScoreboard(edict_t* ent);
 
 private:
     // Helper functions

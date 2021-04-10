@@ -564,7 +564,7 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 	strncpy(level.mapname, mapname, sizeof(level.mapname) - 1);
 	strncpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint) - 1);
 
-	Jump::jump_server.local_map_id = Jump::LocalDatabase::Instance().GetMapId(mapname);
+	Jump::jump_server.local_map_id = Jump::LocalDatabase::GetMapId(mapname);
 	if (Jump::jump_server.local_map_id == -1)
 	{
 		Jump::Logger::Warning(va("Map %s is not in the maplist, times will not be saved", mapname));

@@ -96,15 +96,15 @@ namespace Jump
     void Cmd_Jump_Test(edict_t* ent)
     {
         std::string testDate = GetEuropeanShortDate("2020-12-23");
-        //LocalDatabase::Instance().AddUser("atestname!!");
+        //LocalDatabase::AddUser("atestname!!");
         //int size2 = sizeof(replay_frame_t);
         //return;
         //std::vector<replay_frame_t> replay;
         //std::string file = "E:/Downloads/jump/jump/jumpdemo/slipmap23_250.dj3";
-        //LocalDatabase::Instance().ConvertOldReplay(file, replay);
+        //LocalDatabase::ConvertOldReplay(file, replay);
 
         //std::string folder = "E:/Downloads/jump/jump/jumpdemo";
-        //LocalDatabase::Instance().MigrateReplays(folder);
+        //LocalDatabase::MigrateReplays(folder);
         //return;
 
         std::vector<std::string> maplist;
@@ -115,7 +115,7 @@ namespace Jump
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        //LocalDatabase::Instance().CalculateAllStatistics(maplist);
+        //LocalDatabase::CalculateAllStatistics(maplist);
         LocalScores::CalculateAllStatistics();
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -127,7 +127,7 @@ namespace Jump
         return;
 
 
-        //LocalDatabase::Instance().MigrateAll();
+        //LocalDatabase::MigrateAll();
 
         typedef struct
         {
@@ -289,7 +289,7 @@ namespace Jump
         if (gi.argc() == 1)
         {
             // replay best time
-            loaded = LocalDatabase::Instance().GetReplayByPosition(
+            loaded = LocalDatabase::GetReplayByPosition(
                 level.mapname, 1, ent->client->jumpdata->replay_spectating, timeMs, username);
         }
         else
@@ -299,7 +299,7 @@ namespace Jump
             {
                 // replay self
                 username = ent->client->pers.netname;
-                loaded = LocalDatabase::Instance().GetReplayByUser(
+                loaded = LocalDatabase::GetReplayByUser(
                     level.mapname, username, ent->client->jumpdata->replay_spectating, timeMs);
             }
             else if (param == "now")
@@ -320,14 +320,14 @@ namespace Jump
                 if (StringToIntMaybe(param, num) && num >= 1 && num <= completions)
                 {
                     // replay n
-                    loaded = LocalDatabase::Instance().GetReplayByPosition(
+                    loaded = LocalDatabase::GetReplayByPosition(
                         level.mapname, num, ent->client->jumpdata->replay_spectating, timeMs, username);
                 }
                 else
                 {
                     // replay <username>
                     username = param;
-                    loaded = LocalDatabase::Instance().GetReplayByUser(
+                    loaded = LocalDatabase::GetReplayByUser(
                         level.mapname, username, ent->client->jumpdata->replay_spectating, timeMs);
                 }
             }
@@ -379,7 +379,7 @@ namespace Jump
         }
         else if (ent->client->jumpdata->scores_menu == SCORES_MENU_ACTIVEPLAYERS)
         {
-            BestTimesScoreboardMessage(ent);
+            ShowBestTimesScoreboard(ent);
             ent->client->jumpdata->scores_menu = SCORES_MENU_HIGHSCORES;
         }
         else

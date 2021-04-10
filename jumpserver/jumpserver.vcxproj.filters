@@ -132,9 +132,6 @@
     <ClCompile Include="jump_ents.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="jump_replays.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="shell.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -204,9 +201,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="jump_ents.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="jump_replays.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sqlite3.h">

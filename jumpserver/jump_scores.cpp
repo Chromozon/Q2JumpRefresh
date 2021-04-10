@@ -535,34 +535,15 @@ void LocalScores::PrintMapTimes(edict_t* ent)
 
 /// <summary>
 /// Show the top 15 best times for the given map in the HUD.
-/// Dev note: We could cache this scoreboard and only update when changes happen.  However, performance testing
-/// has shown that this takes < 0 ms to recalculate every time, so no need to do that until we see a slowdown here.
 /// </summary>
 /// <param name="ent"></param>
 void LocalScores::ShowBestTimesScoreboard(edict_t* ent)
 {
-    const std::vector<MapTimesEntry>* maptimes = nullptr;
+    std::vector<MapTimesEntry> maptimes;
     int totalPlayers = 0;
     int totalCompletions = 0;
-
-    auto it = _allMapTimes.find(level.mapname);
-    if (it == _allMapTimes.end())
-    {
-        Logger::Warning(va("Cannot find times for a map \"%s\" that is not in the maplist", level.mapname));
-    }
-    else
-    {
-        maptimes = &(it->second);
-    }
-
-    if (maptimes != nullptr)
-    {
-        totalPlayers = maptimes->size();
-        for (size_t i = 0; i < maptimes->size(); ++i)
-        {
-            totalCompletions += maptimes->at(i).completions;
-        }
-    }
+    LocalDatabase::Instance().GetTotalCompletions(level.mapname, totalPlayers, totalCompletions);
+    LocalDatabase::Instance().GetMapTimes(maptimes, level.mapname, 15, 0);
 
     // Sideways arrow symbol
     char symbol_arrow = 13;
@@ -572,9 +553,9 @@ void LocalScores::ShowBestTimesScoreboard(edict_t* ent)
 
     for (int i = 0; i < MAX_HIGHSCORES; ++i)
     {
-        if ((maptimes != nullptr) && (i < maptimes->size()))
+        if (i < maptimes.size())
         {
-            const MapTimesEntry& entry = maptimes->at(i);
+            const MapTimesEntry& entry = maptimes[i];
 
             std::string username = _allUsers.find(entry.userId)->second;
             std::string timeStr = GetCompletionTimeDisplayString(entry.timeMs);

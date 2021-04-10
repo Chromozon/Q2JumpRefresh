@@ -62,6 +62,7 @@ public:
     int GetUserId(const std::string& username);
     int GetMapId(const std::string& mapname);
     std::string GetUserName(int userId);
+    void GetTotalCompletions(const std::string& mapname, int& totalPlayers, int& totalCompletions);
 
     void MigrateAll();
 

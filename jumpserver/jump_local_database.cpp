@@ -882,6 +882,40 @@ std::string LocalDatabase::GetUserName(int userId)
 }
 
 /// <summary>
+/// Gets the total number of players and how many times they have completed a given map.
+/// </summary>
+/// <param name="mapname"></param>
+/// <param name="totalPlayers"></param>
+/// <param name="totalCompletions"></param>
+void LocalDatabase::GetTotalCompletions(const std::string& mapname, int& totalPlayers, int& totalCompletions)
+{
+    totalPlayers = 0;
+    totalCompletions = 0;
+    const char* sql = ""
+        "SELECT COUNT(UserId), SUM(Completions) FROM MapTimes "
+        "WHERE MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
+    ;
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(m_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting total map completions, mapname %s, error: %d, %s",
+            mapname.c_str(), error, sqlite3_errmsg(m_db)));
+        sqlite3_finalize(prepared);
+    }
+    int index = sqlite3_bind_parameter_index(prepared, "@mapname");
+    sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
+
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        totalPlayers = sqlite3_column_int(prepared, 0);
+        totalCompletions = sqlite3_column_int(prepared, 1);
+    }
+    sqlite3_finalize(prepared);
+}
+
+/// <summary>
 /// Deletes all data from all tables.
 /// </summary>
 void LocalDatabase::ClearAllTables()

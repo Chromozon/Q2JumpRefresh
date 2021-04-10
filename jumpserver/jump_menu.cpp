@@ -4,12 +4,17 @@
 #include <iomanip>
 #include <filesystem>
 #include "jump_utils.h"
+#include "jump_logger.h"
 
 namespace Jump
 {
     void BestTimesScoreboardMessage(edict_t* client)
 	{
+		PerformanceTimer timer;
+		timer.Start();
 		LocalScores::ShowBestTimesScoreboard(client);
+		timer.End();
+		Logger::DebugConsole(va("Scoreboard time: %d ms\n", timer.DurationMilliseconds()));
 	}
 
 	void ActiveClientsScoreboardMessage(edict_t* ent)

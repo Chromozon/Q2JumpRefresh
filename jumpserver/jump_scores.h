@@ -18,6 +18,7 @@ public:
     static void CalculateAllStatistics();
     static int GetTotalTimesForMap(const std::string& mapname);
     static std::string GetUserName(int userId);
+    static int GetMapCount();
 
     static void PrintPlayerTimes(edict_t* ent);
     static void PrintPlayerScores(edict_t* ent);

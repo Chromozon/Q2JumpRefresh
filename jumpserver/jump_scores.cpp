@@ -52,6 +52,7 @@ void LocalScores::LoadMaplist()
             std::string mapfile = GetModDir() + "/maps/" + line + ".bsp";
             if (std::filesystem::exists(mapfile))
             {
+                // TODO: could check for duplicate maps here!!!
                 _maplist.push_back(line);
             }
             else
@@ -256,6 +257,15 @@ std::string LocalScores::GetUserName(int userId)
         username = it->second;
     }
     return username;
+}
+
+/// <summary>
+/// Gets how many maps are in the loaded maplist.
+/// </summary>
+/// <returns></returns>
+int LocalScores::GetMapCount()
+{
+    return static_cast<int>(_maplist.size());
 }
 
 /// <summary>

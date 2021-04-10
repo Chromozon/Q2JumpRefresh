@@ -172,6 +172,6 @@ G_SetStats
 void G_SetStats (edict_t *ent)
 {
     // Jump
-    Jump::SetStats(ent);
+    Jump::HUD::SetStats(ent);
     // Jump
 }

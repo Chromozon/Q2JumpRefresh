@@ -834,7 +834,7 @@ void SP_worldspawn (edict_t *ent)
 	gi.configstring(CS_LIGHTS+63, "a");
 
     // Jump
-    Jump::SetConfigStrings();
+    Jump::HUD::SetConfigStrings();
     // Jump
 }
 

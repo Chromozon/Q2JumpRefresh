@@ -480,108 +480,90 @@ namespace Jump
 
     void HandleMapCompletion(edict_t* ent)
     {
-        std::string username_lower = AsciiToLower(ent->client->pers.netname);
+        int timeMs = static_cast<int>(ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin);
+        int pmoveTimeMs = static_cast<int>(ent->client->jumpdata->timer_pmove_msec);
 
-        int64_t time_ms = ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin;
-
-        auto it = jump_server.all_local_maptimes.find(level.mapname);
-        if (it == jump_server.all_local_maptimes.end())
+        if (!LocalScores::IsMapInMaplist(level.mapname))
         {
-            // TODO: show the time in console here so ppl can use this mod locally when making maps
-            Logger::Warning("Cannot set a time for a map that is not in the maplist");
+            gi.cprintf(ent, PRINT_HIGH, "You have finished in %s seconds.\n", GetCompletionTimeDisplayString(timeMs).c_str());
+            gi.cprintf(ent, PRINT_HIGH, "WARNING: Map not in maplist.  Time will not be saved.\n");
             return;
         }
 
-        gi.bprintf(PRINT_HIGH, "Pmove finish %s\n", GetCompletionTimeDisplayString(ent->client->jumpdata->timer_pmove_msec).c_str());
+        int userBestTimeMs = LocalDatabase::Instance().GetMapTime(level.mapname, ent->client->pers.netname);
 
-        if (it->second.empty())
+        std::vector<MapTimesEntry> bestTimeEntry;
+        LocalDatabase::Instance().GetMapTimes(bestTimeEntry, level.mapname, 1, 0);
+
+        LocalDatabase::Instance().AddMapTime(level.mapname, ent->client->pers.netname,
+            timeMs, pmoveTimeMs, ent->client->jumpdata->replay_recording);
+
+        if (bestTimeEntry.empty())
         {
             // No current times set on this map
             gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (1st completion on the map)\n",
-                ent->client->pers.netname, GetCompletionTimeDisplayString(time_ms).c_str());
-            jump_server.fresh_times.insert(username_lower);
-            //GhostChangeReplay();
+                ent->client->pers.netname, GetCompletionTimeDisplayString(timeMs).c_str());
+            GhostReplay::LoadReplay();
         }
         else
         {
-            int64_t first_time_ms = it->second.front().time_ms;
-            int64_t pb_time_ms = -1;
-            for (const auto& record : it->second)
+            if (timeMs < bestTimeEntry[0].timeMs)
             {
-                if (record.username_key == username_lower)
-                {
-                    pb_time_ms = record.time_ms;
-                }
-            }
-
-            if (time_ms < first_time_ms)
-            {
-                // User has set a first place!
-                if (pb_time_ms == -1)
+                // New best time for map!
+                if (userBestTimeMs == -1)
                 {
                     gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (1st %s)\n",
                         ent->client->pers.netname,
-                        GetCompletionTimeDisplayString(time_ms).c_str(),
-                        GetTimeDiffDisplayString(time_ms, first_time_ms).c_str());
+                        GetCompletionTimeDisplayString(timeMs).c_str(),
+                        GetTimeDiffDisplayString(timeMs, bestTimeEntry[0].timeMs).c_str());
                     std::string first_msg = std::string(ent->client->pers.netname) + " has set a 1st place!";
                     gi.bprintf(PRINT_HIGH, "%s\n", GetGreenConsoleText(first_msg).c_str());
-                    jump_server.fresh_times.insert(username_lower);
-                    //GhostChangeReplay();
                 }
                 else
                 {
                     gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (PB %s | 1st %s)\n",
                         ent->client->pers.netname,
-                        GetCompletionTimeDisplayString(time_ms).c_str(),
-                        GetTimeDiffDisplayString(time_ms, pb_time_ms).c_str(),
-                        GetTimeDiffDisplayString(time_ms, first_time_ms).c_str());
+                        GetCompletionTimeDisplayString(timeMs).c_str(),
+                        GetTimeDiffDisplayString(timeMs, userBestTimeMs).c_str(),
+                        GetTimeDiffDisplayString(timeMs, bestTimeEntry[0].timeMs).c_str());
                     std::string first_msg = std::string(ent->client->pers.netname) + " has set a 1st place!";
                     gi.bprintf(PRINT_HIGH, "%s\n", GetGreenConsoleText(first_msg).c_str());
-                    jump_server.fresh_times.insert(username_lower);
-                    //GhostChangeReplay();
                 }
+                GhostReplay::LoadReplay();
             }
             else
             {
-                // Not a first place :(
-                if (pb_time_ms == -1)
+                // Not a first place
+                if (userBestTimeMs == -1)
                 {
                     gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (1st %s)\n",
                         ent->client->pers.netname,
-                        GetCompletionTimeDisplayString(time_ms).c_str(),
-                        GetTimeDiffDisplayString(time_ms, first_time_ms).c_str());
-                    jump_server.fresh_times.insert(username_lower);
+                        GetCompletionTimeDisplayString(timeMs).c_str(),
+                        GetTimeDiffDisplayString(timeMs, bestTimeEntry[0].timeMs).c_str());
                 }
                 else
                 {
                     gi.bprintf(PRINT_HIGH, "%s finished in %s seconds (PB %s | 1st %s)\n",
                         ent->client->pers.netname,
-                        GetCompletionTimeDisplayString(time_ms).c_str(),
-                        GetTimeDiffDisplayString(time_ms, pb_time_ms).c_str(),
-                        GetTimeDiffDisplayString(time_ms, first_time_ms).c_str());
-                    if (time_ms < pb_time_ms)
-                    {
-                        jump_server.fresh_times.insert(username_lower);
-                    }
+                        GetCompletionTimeDisplayString(timeMs).c_str(),
+                        GetTimeDiffDisplayString(timeMs, userBestTimeMs).c_str(),
+                        GetTimeDiffDisplayString(timeMs, bestTimeEntry[0].timeMs).c_str());
                 }
             }
         }
 
-        // TODO: we might need to push another replay frame here, could be cutting out the last one
-
-        Logger::Completion(ent->client->pers.netname, ent->client->jumpdata->ip, level.mapname, time_ms);
-        //SaveMapCompletion(level.mapname, ent->client->pers.netname, time_ms, ent->client->jumpdata->replay_recording);
-
-        if (time_ms < jump_server.replay_now_time_ms)
+        jump_server.fresh_times.insert(ent->client->pers.netname);
+        if (timeMs < jump_server.replay_now_time_ms)
         {
-            jump_server.replay_now_time_ms = time_ms;
+            jump_server.replay_now_time_ms = timeMs;
             jump_server.replay_now_username = ent->client->pers.netname;
             jump_server.replay_now_recording = ent->client->jumpdata->replay_recording;
         }
+        Logger::Completion(ent->client->pers.netname, ent->client->jumpdata->ip, level.mapname, timeMs);
     }
 
     void SaveReplayFrame(edict_t* ent)
-    {
+    {   
         replay_frame_t frame = {};
 
         VectorCopy(ent->s.origin, frame.pos);

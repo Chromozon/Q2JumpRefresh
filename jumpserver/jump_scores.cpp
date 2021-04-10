@@ -421,7 +421,7 @@ void LocalScores::PrintPlayerMaps(edict_t* ent)
         int mapCount = _allMapCounts[i].second;
         float percentDone = (static_cast<float>(mapCount) / _maplist.size()) * 100.0f;
         const char* username = _allUsers[userId].c_str();
-        gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %4d  %2.1f\n", i, username, mapCount, percentDone);
+        gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %4d  %2.1f\n", static_cast<int>(i + 1), username, mapCount, percentDone);
     }
 
     // Footer

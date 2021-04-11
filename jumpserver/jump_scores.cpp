@@ -20,6 +20,7 @@ std::vector<std::string> LocalScores::_maplist;
 std::map<std::string, std::vector<MapTimesEntry>> LocalScores::_allMapTimes;
 std::map<int, std::string> LocalScores::_allUsers;
 std::map<int, UserHighscores> LocalScores::_allUserHighscores;
+std::map<int, std::vector<std::string>> LocalScores::_allUserMaps;
 std::vector<std::pair<int, int>> LocalScores::_allTotalScores;
 std::vector<std::pair<int, float>> LocalScores::_allPercentScores;
 std::vector<std::pair<int, int>> LocalScores::_allMapCounts;
@@ -52,8 +53,14 @@ void LocalScores::LoadMaplist()
             std::string mapfile = GetModDir() + "/maps/" + line + ".bsp";
             if (std::filesystem::exists(mapfile))
             {
-                // TODO: could check for duplicate maps here!!!
-                _maplist.push_back(line);
+                if (std::find(_maplist.begin(), _maplist.end(), line) != _maplist.end())
+                {
+                    Logger::Warning(va("Duplicate map found in maplist: %s", line.c_str()));
+                }
+                else
+                {
+                    _maplist.push_back(line);
+                }
             }
             else
             {
@@ -61,6 +68,10 @@ void LocalScores::LoadMaplist()
             }
         }
     }
+
+    // Sort the maplist so that it makes finding mapsleft and mapvote todos very easy
+    std::sort(_maplist.begin(), _maplist.end(), std::less<std::string>());
+
     LocalDatabase::AddMapList(_maplist);
     Logger::Info(va("Loaded %d maps from maplist \"%s\"", static_cast<int>(_maplist.size()), path.c_str()));
     for (const std::string& mapname : filesNotFound)
@@ -115,6 +126,14 @@ void LocalScores::CalculateAllStatistics()
     _allUsers.clear();
     LocalDatabase::GetAllUsers(_allUsers);
 
+    // Initialize the list of maps completed by each user
+    _allUserMaps.clear();
+    for (const auto& user : _allUsers)
+    {
+        int userId = user.first;
+        _allUserMaps.insert(std::make_pair(userId, std::vector<std::string>{}));
+    }
+
     // Calculate the top 15 counts and total maps completed for each user.
     _allUserHighscores.clear();
     for (const auto& user : _allUsers)
@@ -141,6 +160,7 @@ void LocalScores::CalculateAllStatistics()
         {
             int userId = mapTimes.second[i].userId;
             _allUserHighscores[userId].mapcount++;
+            _allUserMaps[userId].push_back(mapTimes.first);
         }
     }
 
@@ -178,6 +198,12 @@ void LocalScores::CalculateAllStatistics()
     {
         return left.second > right.second;
     });
+
+    // Sort the user maps alphabetically
+    for (auto& entry : _allUserMaps)
+    {
+        std::sort(entry.second.begin(), entry.second.end(), std::less<std::string>());
+    }
 }
 
 /// <summary>
@@ -266,6 +292,26 @@ std::string LocalScores::GetUserName(int userId)
 int LocalScores::GetMapCount()
 {
     return static_cast<int>(_maplist.size());
+}
+
+/// <summary>
+/// Gets the list of maps that the user has left to complete.
+/// </summary>
+/// <param name="userId"></param>
+/// <param name="results"></param>
+/// <returns>True if success, false if user not found.</returns>
+bool LocalScores::GetMapsLeft(int userId, std::vector<std::string>& results)
+{
+    results.clear();
+    auto it = _allUserMaps.find(userId);
+    if (it == _allUserMaps.end())
+    {
+        return false;
+    }
+    std::set_difference(
+        _maplist.begin(), _maplist.end(),
+        it->second.begin(), it->second.end(), std::back_inserter(results));
+    return true;
 }
 
 /// <summary>

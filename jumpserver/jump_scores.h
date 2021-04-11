@@ -19,6 +19,7 @@ public:
     static int GetTotalTimesForMap(const std::string& mapname);
     static std::string GetUserName(int userId);
     static int GetMapCount();
+    static bool GetMapsLeft(int userId, std::vector<std::string>& results);
 
     static void PrintPlayerTimes(edict_t* ent);
     static void PrintPlayerScores(edict_t* ent);
@@ -30,11 +31,13 @@ private:
     static int CalculateTotalScore(const std::array<int, 15>& highscores);
     static float CalculatePercentScore(int totalScore, int userMapCount);
 
+    static std::vector<std::string> _maplist; // <mapnames sorted alphabetically>
+
     // Statistics cache (reloaded between levels)
-    static std::vector<std::string> _maplist;
     static std::map<std::string, std::vector<MapTimesEntry>> _allMapTimes; // <mapname, times sorted best to worst>
-    static std::map<int, std::string> _allUsers; // <local userId, username>
+    static std::map<int, std::string> _allUsers; // <userId, username>
     static std::map<int, UserHighscores> _allUserHighscores; // <userId, highscores>
+    static std::map<int, std::vector<std::string>> _allUserMaps; // <userId, list of completed maps sorted alphabetically>
     static std::vector<std::pair<int, int>> _allTotalScores; // <userId, total score> sorted best to worst
     static std::vector<std::pair<int, float>> _allPercentScores; // <userId, percent score> sorted best to worst
     static std::vector<std::pair<int, int>> _allMapCounts; // <userId, mapcount> sorted best to worst

@@ -40,11 +40,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	GAMEVERSION	"baseq2"
 
 // protocol bytes that can be directly added to messages
+// These values must match the values in qcommon.h, svc_ops_e enum.
 #define	svc_muzzleflash		1
 #define	svc_muzzleflash2	2
 #define	svc_temp_entity		3
 #define	svc_layout			4
 #define	svc_inventory		5
+#define svc_configstring    13
 
 //==================================================================
 

@@ -196,7 +196,7 @@ namespace Jump
         std::vector<replay_frame_t> racing_frames;
         int racing_framenum = 0;
         int racing_delay_frames = 0;
-        // TODO: need to store what we are racing so can auto reload if someone sets a better time
+        int racing_highscore = 0;
 
         std::string hud_footer1; // it's easier to store the footer strings here so that chasecam can just copy these instead of recalculating them
         std::string hud_footer2;

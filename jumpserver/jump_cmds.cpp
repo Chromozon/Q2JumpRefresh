@@ -322,7 +322,7 @@ namespace Jump
             else
             {
                 int num = 0;
-                int completions = LocalScores::GetTotalTimesForMap(level.mapname);
+                int completions = LocalScores::GetTotalTimesForMap(level.mapname); // TODO: this uses cached value and won't be accurate for new maps
                 if (StringToIntMaybe(param, num) && num >= 1 && num <= completions)
                 {
                     // replay n
@@ -649,24 +649,31 @@ namespace Jump
         QueueGlobalDatabaseCmd(cmd);
     }
 
-    // race
-    // race off
-    // race now
-    // race <num>
-    // race self
-    // race delay <fnum>
     void Cmd_Jump_Race(edict_t* ent)
     {
         if (gi.argc() == 1)
         {
-            // "race"
-            // Get replay data for #1
-            // if (no data)
-            //   "There is no demo to race."
-            // else
-            //   Green "Now racing replay 1: Goblin"
-            //   White "Other options: race delay <num>, race off, race now, race <demonumber>"
-            //   Load replay data in client
+            // race (best time)
+            int timeMs = 0;
+            std::string username;
+            bool loaded = LocalDatabase::GetReplayByPosition(
+                level.mapname, 1, ent->client->jumpdata->racing_frames, timeMs, username);
+            if (loaded)
+            {
+                ent->client->jumpdata->racing = true;
+                ent->client->jumpdata->racing_delay_frames = 0;
+                ent->client->jumpdata->racing_framenum = 0;
+                ent->client->jumpdata->racing_highscore = 1;
+                std::string timeStr = GetCompletionTimeDisplayString(timeMs);
+                gi.cprintf(ent, PRINT_HIGH, "Racing replay 1: %s (%s seconds)\n", username.c_str(), timeStr.c_str());
+                gi.cprintf(ent, PRINT_HIGH, "Other options: race delay <num>, race off, race now, race self, race <demonumber>, race <username>\n");
+                return;
+            }
+            else
+            {
+                gi.cprintf(ent, PRINT_HIGH, "There is no demo to race.\n");
+                return;
+            }
         }
 
         if (gi.argc() == 2)
@@ -674,50 +681,118 @@ namespace Jump
             std::string arg = gi.argv(1);
             if (StringCompareInsensitive(arg, "now"))
             {
-                // Load replay now data
-                // if (no data)
-                //   "There is no demo to race."
-                // else
-                //   Green "Now racing fastest current time: Zero"
-                //   Load replay data in client
+                // race now
+                if (!jump_server.replay_now_recording.empty())
+                {
+                    ent->client->jumpdata->racing = true;
+                    ent->client->jumpdata->racing_frames = jump_server.replay_now_recording;
+                    ent->client->jumpdata->racing_delay_frames = 0;
+                    ent->client->jumpdata->racing_framenum = 0;
+                    ent->client->jumpdata->racing_highscore = 0; // TODO special value so we know to update if NOW becomes faster
+                    std::string timeStr = GetCompletionTimeDisplayString(jump_server.replay_now_time_ms);
+                    gi.cprintf(ent, PRINT_HIGH, "Racing fastest current time: %s (%s seconds)\n", jump_server.replay_now_username.c_str(), timeStr.c_str());
+                    return;
+                }
+                else
+                {
+                    gi.cprintf(ent, PRINT_HIGH, "There is no demo to race.\n");
+                    return;
+                }
             }
             else if (StringCompareInsensitive(arg, "off"))
             {
-                // Green "No longer racing."
+                // race off
+                gi.cprintf(ent, PRINT_HIGH, "No longer racing.\n");
                 ent->client->jumpdata->racing = false;
                 return;
             }
             else if (StringCompareInsensitive(arg, "self"))
             {
-                // Load replay data for self
-                // if (no data)
-                //   "There is no demo to race."
-                // else
-                //   Green "Now racing your fastest time: 34.776"
-                //   Load replay data in client
-            }
-            else if (StringCompareInsensitive(arg, "delay"))
-            {
-                // White "Invalid race delay option."
-                // White "Enter a value from 0.0 to 10.0 seconds for the delay. For example: race delay 0.5"
-            }
-            else // race n
-            {
-                int num = 0;
-                if (StringToIntMaybe(arg, num))
+                // race self
+                int timeMs = 0;
+                bool loaded = LocalDatabase::GetReplayByUser(
+                    level.mapname, ent->client->pers.netname, ent->client->jumpdata->racing_frames, timeMs);
+                if (loaded)
                 {
-                    // TODO: we could limit this to top 15 so we can use cached replays
-                    // Load replay data for num
-                    // if (no data)
-                    //   "There is no demo to race.'
-                    // else
-                    //   Green "Now racing replay num: Slip"
-                    //   Load replay data in client
+                    ent->client->jumpdata->racing = true;
+                    ent->client->jumpdata->racing_delay_frames = 0;
+                    ent->client->jumpdata->racing_framenum = 0;
+                    ent->client->jumpdata->racing_highscore = 0; // TODO special value to update if we set a better time
+                    std::string timeStr = GetCompletionTimeDisplayString(timeMs);
+                    gi.cprintf(ent, PRINT_HIGH, "Racing your fastest time (%s seconds)\n", timeStr.c_str());
+                    return;
                 }
                 else
                 {
-                    // White "Invalid race option."
-                    // White "Race options: race delay <num>, race off, race now, race <demonumber>"
+                    gi.cprintf(ent, PRINT_HIGH, "There is no demo to race.\n");
+                    return;
+                }
+            }
+            else if (StringCompareInsensitive(arg, "delay"))
+            {
+                if (!ent->client->jumpdata->racing)
+                {
+                    gi.cprintf(ent, PRINT_HIGH, "Race delay can only be set after race has been loaded.\n");
+                    gi.cprintf(ent, PRINT_HIGH, "Race delay resets to 0 each time a race is loaded.\n");
+                    return;
+                }
+                else
+                {
+                    float delaySeconds = ent->client->jumpdata->racing_delay_frames * 0.1;
+                    gi.cprintf(ent, PRINT_HIGH, "Current race delay is %.1f seconds.\n", delaySeconds);
+                    gi.cprintf(ent, PRINT_HIGH, "Use \"race delay <num>\" command to change the delay (value between 0.0 and 10.0 seconds).\n");
+                    return;
+                }
+            }
+            else
+            {
+                int num = 0;
+                int completions = LocalScores::GetTotalTimesForMap(level.mapname); // TODO: this uses cached value and won't be accurate for new maps
+                if (StringToIntMaybe(arg, num) && num >= 1 && num <= completions)
+                {
+                    // race n
+                    int timeMs = 0;
+                    std::string username;
+                    bool loaded = LocalDatabase::GetReplayByPosition(
+                        level.mapname, num, ent->client->jumpdata->racing_frames, timeMs, username);
+                    if (loaded)
+                    {
+                        ent->client->jumpdata->racing = true;
+                        ent->client->jumpdata->racing_delay_frames = 0;
+                        ent->client->jumpdata->racing_framenum = 0;
+                        ent->client->jumpdata->racing_highscore = num;
+                        std::string timeStr = GetCompletionTimeDisplayString(timeMs);
+                        gi.cprintf(ent, PRINT_HIGH, "Racing replay %d: %s (%s seconds)\n", num, username.c_str(), timeStr.c_str());
+                        return;
+                    }
+                    else
+                    {
+                        gi.cprintf(ent, PRINT_HIGH, "There is no demo to race.\n");
+                        return;
+                    }
+                }
+                else
+                {
+                    // race <username>
+                    int timeMs = 0;
+                    std::string username = arg;
+                    bool loaded = LocalDatabase::GetReplayByUser(
+                        level.mapname, username, ent->client->jumpdata->racing_frames, timeMs);
+                    if (loaded)
+                    {
+                        ent->client->jumpdata->racing = true;
+                        ent->client->jumpdata->racing_delay_frames = 0;
+                        ent->client->jumpdata->racing_framenum = 0;
+                        ent->client->jumpdata->racing_highscore = 0; // TODO special value so we can update if sets a faster time
+                        std::string timeStr = GetCompletionTimeDisplayString(timeMs);
+                        gi.cprintf(ent, PRINT_HIGH, "Racing replay: %s (%s seconds)\n", username.c_str(), timeStr.c_str());
+                        return;
+                    }
+                    else
+                    {
+                        gi.cprintf(ent, PRINT_HIGH, "There is no demo to race.\n");
+                        return;
+                    }
                 }
             }
         }
@@ -728,22 +803,32 @@ namespace Jump
             std::string arg2 = gi.argv(2);
             if (!StringCompareInsensitive(arg1, "delay"))
             {
-                // White "Invalid race option."
-                // White "Race options: race delay <num>, race off, race now, race <demonumber>"
+                gi.cprintf(ent, PRINT_HIGH, "Invalid race option.\n");
+                gi.cprintf(ent, PRINT_HIGH, "Race options: race delay <num>, race off, race now, race self, race <demonumber>, race <username>\n");
+                return;
             }
             else
             {
+                if (!ent->client->jumpdata->racing)
+                {
+                    gi.cprintf(ent, PRINT_HIGH, "Race delay can only be set after race has been loaded.\n");
+                    gi.cprintf(ent, PRINT_HIGH, "Race delay resets to 0 each time a race is loaded.\n");
+                    return;
+                }
+
                 float delay = 0.0;
                 if (StringToFloatMaybe(arg2, delay))
                 {
                     if (delay >= 0.0 && delay <= 10.0)
                     {
-                        ent->client->jumpdata->racing_delay_frames = delay * 10; // TODO: constant for server Hz
-                        // White "Race delay is 0.7"
+                        ent->client->jumpdata->racing_delay_frames = delay / FRAMETIME;
+                        gi.cprintf(ent, PRINT_HIGH, "Race delay is %.1f seconds.\n", delay);
                     }
                     else
                     {
                         // White "Invalid delay. Must provide number between 0.0 and 10.0 seconds"
+                        gi.cprintf(ent, PRINT_HIGH, "Invalid delay. Value must be between 0.0 and 10.0 seconds.\n");
+                        return;
                     }
                 }
             }

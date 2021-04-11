@@ -87,7 +87,7 @@ const char* HUD::_hudLayoutString =
     "yb -16 "
     "string \"DUCK DUCK\" "
     "endif "
-
+    ""
     // Timer
     //
     // It seems that numbers need 16 units of space per digit.
@@ -194,12 +194,17 @@ const char* HUD::_hudLayoutString =
     "stat_string " XSTRINGIFY(STAT_JUMP_HUD_VOTE_REMAINING) " "
     "endif "
     ""
-    // TODO footer strings (team, replay, race, chkpts)
-    // Current replay as observer
-    // TODO Replay: n and Race: n show up in the same spot depending on if you are observer or hard team
-    // See jumpmod.c hud_footer() to see how to do this.
-    // Basically you can send a configstring update to just a specific client,
-    // so this allows the config strings to differ between clients.
+    // Footer
+    "xv 72 "
+    "yb -32 "
+    "stat_string " XSTRINGIFY(STAT_JUMP_HUD_FOOTER_1) " "
+    "yb -24 "
+    "stat_string " XSTRINGIFY(STAT_JUMP_HUD_FOOTER_2) " "
+    "yb -16 "
+    "stat_string " XSTRINGIFY(STAT_JUMP_HUD_FOOTER_3) " "
+    "yb -8 "
+    "stat_string " XSTRINGIFY(STAT_JUMP_HUD_FOOTER_4) " "
+    ""
 ;
 
 /// <summary>
@@ -351,9 +356,12 @@ void HUD::SetStats(edict_t* ent)
     ent->client->ps.stats[STAT_JUMP_SPEED] = static_cast<short>(VectorNormalize(velocity));
 
     ent->client->ps.stats[STAT_JUMP_CLIENT_TRACE] = 0; // TODO name of person user is looking at
-    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_1] = 0;
-    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_2] = 0;
-    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_3] = 0;
+    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_1] = CS_JUMP_KEY_HUD_FOOTER_1;
+    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_2] = CS_JUMP_KEY_HUD_FOOTER_2;
+    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_3] = CS_JUMP_KEY_HUD_FOOTER_3;
+    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_4] = CS_JUMP_KEY_HUD_FOOTER_4;
+
+    FooterStrings(ent);
 
     ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = false;
     ent->client->ps.stats[STAT_JUMP_KEY_BACK] = false;
@@ -510,5 +518,166 @@ const char* HUD::GetFormattedLayoutString()
     return buffer;
     // TODO: verify that the filled in string is less than 1400
 }
+
+
+void HUD::FooterStrings(edict_t* ent)
+{
+    std::string footer1;
+    std::string footer2;
+    std::string footer3;
+    std::string footer4;
+
+    if (ent->client->jumpdata->team == TEAM_EASY)
+    {
+        footer1 = "  Team: ≈·Û˘";
+    }
+    else if (ent->client->jumpdata->team == TEAM_HARD)
+    {
+        footer1 = "  Team: »·Ú‰";
+    }
+    else
+    {
+        footer1 = "  Team: œ‚ÛÂÚˆÂÚ";
+    }
+
+    gi.WriteByte(svc_configstring);
+    gi.WriteShort(CS_JUMP_KEY_HUD_FOOTER_1);
+    gi.WriteString(const_cast<char*>(footer1.c_str()));
+    gi.unicast(ent, true);
+
+    gi.WriteByte(svc_configstring);
+    gi.WriteShort(CS_JUMP_KEY_HUD_FOOTER_2);
+    gi.WriteString(const_cast<char*>(footer2.c_str()));
+    gi.unicast(ent, true);
+
+    gi.WriteByte(svc_configstring);
+    gi.WriteShort(CS_JUMP_KEY_HUD_FOOTER_3);
+    gi.WriteString(const_cast<char*>(footer3.c_str()));
+    gi.unicast(ent, true);
+
+    gi.WriteByte(svc_configstring);
+    gi.WriteShort(CS_JUMP_KEY_HUD_FOOTER_4);
+    gi.WriteString(const_cast<char*>(footer4.c_str()));
+    gi.unicast(ent, true);
+
+#if 0
+    edict_t* cl_ent;
+    int i;
+    char cp[4];
+    char cptotal[4];
+    char race[10];
+    char lap[10];
+    char laptotal[10];
+    int strnr;
+
+    if (!ent->client)
+        return;
+
+    // update statusbar for client if it's chasing someone...
+    if (ent->client->chase_target) {
+        gi.WriteByte(svc_configstring);
+        gi.WriteShort(CONFIG_JUMP_HUDSTRING1);
+        gi.WriteString(ent->client->chase_target->client->resp.hud[0].string);
+        gi.unicast(ent, true);
+        gi.WriteByte(svc_configstring);
+        gi.WriteShort(CONFIG_JUMP_HUDSTRING2);
+        gi.WriteString(ent->client->chase_target->client->resp.hud[1].string);
+        gi.unicast(ent, true);
+        gi.WriteByte(svc_configstring);
+        gi.WriteShort(CONFIG_JUMP_HUDSTRING3);
+        gi.WriteString(ent->client->chase_target->client->resp.hud[2].string);
+        gi.unicast(ent, true);
+        gi.WriteByte(svc_configstring);
+        gi.WriteShort(CONFIG_JUMP_HUDSTRING4);
+        gi.WriteString(ent->client->chase_target->client->resp.hud[3].string);
+        gi.unicast(ent, true);
+        return;
+    }
+    //else if client is not chasing someone......
+
+    //rem old strings
+    for (i = 0; i < 4; i++) {
+        sprintf(ent->client->resp.hud[i].string, "");
+    }
+
+    //team (Team is always string1.)
+    if (ent->client->resp.ctf_team == CTF_TEAM1)
+        sprintf(ent->client->resp.hud[0].string, "  Team: ≈·Û˘");
+    else if (ent->client->resp.ctf_team == CTF_TEAM2)
+        sprintf(ent->client->resp.hud[0].string, "  Team: »·Ú‰");
+    else
+        sprintf(ent->client->resp.hud[0].string, "  Team: œ‚ÛÂÚˆÂÚ");
+
+    //rest of the strings
+    strnr = 1;
+    // race
+    if (ent->client->resp.replaying) { //if player is replaying, print replay string instead.
+        sprintf(race, "%d", ent->client->resp.replaying);
+        if (Q_stricmp(race, "16") == 0) {
+            sprintf(race, "NOW");
+        }
+        sprintf(ent->client->resp.hud[strnr].string, "Replay: %s", HighAscii(race));
+        strnr++;
+    }
+    else if (ent->client->resp.rep_racing) {
+        sprintf(race, "%d", ent->client->resp.rep_race_number + 1);
+        if (Q_stricmp(race, "16") == 0) {
+            sprintf(race, "NOW");
+        }
+        sprintf(ent->client->resp.hud[strnr].string, "  Race: %s", HighAscii(race));
+        strnr++;
+    }
+
+    // cp
+    if (mset_vars->checkpoint_total) {
+        sprintf(cptotal, "%d", mset_vars->checkpoint_total);
+        sprintf(cp, "%d", ent->client->resp.store[0].checkpoints);
+        sprintf(ent->client->resp.hud[strnr].string, "Chkpts: %s/%s", HighAscii(cp), HighAscii(cptotal));
+        strnr++;
+    }
+
+    // lap
+    if (mset_vars->lap_total) {
+        sprintf(laptotal, "%d", mset_vars->lap_total);
+        sprintf(lap, "%d", ent->client->pers.lapcount);
+        sprintf(ent->client->resp.hud[strnr].string, "  Laps: %s/%s", HighAscii(lap), HighAscii(laptotal));
+    }
+
+    //UPDATE IT, also for chasers....
+    for (i = 0; i < maxclients->value; i++) {
+        cl_ent = g_edicts + 1 + i;
+
+        if (!(cl_ent->client && cl_ent->inuse))
+            continue;
+
+        if (cl_ent != ent) {
+            if (!cl_ent->client->chase_target)
+                continue;
+            if (cl_ent->client->chase_target->client != ent->client)
+                continue;
+        }
+        gi.WriteByte(svc_configstring);
+        gi.WriteShort(CONFIG_JUMP_HUDSTRING1);
+        gi.WriteString(ent->client->resp.hud[0].string);
+        gi.unicast(cl_ent, true);
+        gi.WriteByte(svc_configstring);
+        gi.WriteShort(CONFIG_JUMP_HUDSTRING2);
+        gi.WriteString(ent->client->resp.hud[1].string);
+        gi.unicast(cl_ent, true);
+        gi.WriteByte(svc_configstring);
+        gi.WriteShort(CONFIG_JUMP_HUDSTRING3);
+        gi.WriteString(ent->client->resp.hud[2].string);
+        gi.unicast(cl_ent, true);
+        gi.WriteByte(svc_configstring);
+        gi.WriteShort(CONFIG_JUMP_HUDSTRING4);
+        gi.WriteString(ent->client->resp.hud[3].string);
+        gi.unicast(cl_ent, true);
+    }
+    Update_CP_Ents();
+
+#endif
+}
+
+
 
 } // namespace Jump

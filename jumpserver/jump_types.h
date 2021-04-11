@@ -172,6 +172,7 @@ namespace Jump
         std::vector<replay_frame_t> replay_spectating;
         int replay_spectating_framenum = 0;
         bool update_replay_spectating = false;
+        std::string replay_spectating_hud_string; // describes who we are currently replaying (now, self, 1, 2, etc.)
 
         int localUserId = -1;
         int fps = 0;
@@ -196,6 +197,11 @@ namespace Jump
         int racing_framenum = 0;
         int racing_delay_frames = 0;
         // TODO: need to store what we are racing so can auto reload if someone sets a better time
+
+        std::string hud_footer1; // it's easier to store the footer strings here so that chasecam can just copy these instead of recalculating them
+        std::string hud_footer2;
+        std::string hud_footer3;
+        std::string hud_footer4;
     };
 
     class server_data_t

@@ -49,12 +49,13 @@ namespace Jump
 #define CS_JUMP_KEY_HUD_FOOTER_1        (CS_GENERAL + 1)
 #define CS_JUMP_KEY_HUD_FOOTER_2        (CS_GENERAL + 2)
 #define CS_JUMP_KEY_HUD_FOOTER_3        (CS_GENERAL + 3)
-#define CS_JUMP_KEY_HUD_VOTE_INITIATED  (CS_GENERAL + 4)
-#define CS_JUMP_KEY_HUD_VOTE_TYPE       (CS_GENERAL + 5)
-#define CS_JUMP_KEY_HUD_VOTE_CAST       (CS_GENERAL + 6)
-#define CS_JUMP_KEY_HUD_VOTE_REMAINING  (CS_GENERAL + 7)
-#define CS_JUMP_KEY_HUD_TEAM_EASY       (CS_GENERAL + 8)
-#define CS_JUMP_KEY_HUD_TEAM_HARD       (CS_GENERAL + 9)
+#define CS_JUMP_KEY_HUD_FOOTER_4        (CS_GENERAL + 4)
+#define CS_JUMP_KEY_HUD_VOTE_INITIATED  (CS_GENERAL + 5)
+#define CS_JUMP_KEY_HUD_VOTE_TYPE       (CS_GENERAL + 6)
+#define CS_JUMP_KEY_HUD_VOTE_CAST       (CS_GENERAL + 7)
+#define CS_JUMP_KEY_HUD_VOTE_REMAINING  (CS_GENERAL + 8)
+#define CS_JUMP_KEY_HUD_TEAM_EASY       (CS_GENERAL + 9)
+#define CS_JUMP_KEY_HUD_TEAM_HARD       (CS_GENERAL + 10)
 
 // Config string strings
 #define CS_JUMP_VAL_EMPTY ""
@@ -71,6 +72,7 @@ private:
     static void SetStatsReplaying(edict_t* ent);
     static void SetStatsSpectating(edict_t* ent);
     static void SetStatsJumping(edict_t* ent);
+    static void FooterStrings(edict_t* ent);
 
     static const char* _hudLayoutString;
 };

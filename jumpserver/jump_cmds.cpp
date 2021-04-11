@@ -294,6 +294,7 @@ namespace Jump
             // replay best time
             loaded = LocalDatabase::GetReplayByPosition(
                 level.mapname, 1, ent->client->jumpdata->replay_spectating, timeMs, username);
+            ent->client->jumpdata->replay_spectating_hud_string = "1";
         }
         else
         {
@@ -304,6 +305,7 @@ namespace Jump
                 username = ent->client->pers.netname;
                 loaded = LocalDatabase::GetReplayByUser(
                     level.mapname, username, ent->client->jumpdata->replay_spectating, timeMs);
+                ent->client->jumpdata->replay_spectating_hud_string = "Self";
             }
             else if (param == "now")
             {
@@ -314,6 +316,7 @@ namespace Jump
                     timeMs = jump_server.replay_now_time_ms;
                     username = jump_server.replay_now_username;
                     loaded = true;
+                    ent->client->jumpdata->replay_spectating_hud_string = "Now";
                 }
             }
             else
@@ -325,6 +328,7 @@ namespace Jump
                     // replay n
                     loaded = LocalDatabase::GetReplayByPosition(
                         level.mapname, num, ent->client->jumpdata->replay_spectating, timeMs, username);
+                    ent->client->jumpdata->replay_spectating_hud_string = param;
                 }
                 else
                 {
@@ -332,6 +336,7 @@ namespace Jump
                     username = param;
                     loaded = LocalDatabase::GetReplayByUser(
                         level.mapname, username, ent->client->jumpdata->replay_spectating, timeMs);
+                    ent->client->jumpdata->replay_spectating_hud_string = username;
                 }
             }
         }

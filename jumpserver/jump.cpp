@@ -129,14 +129,12 @@ namespace Jump
     void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd)
     {
         PMenu_Close(ent);
-        UpdateUserId(ent);
         JoinTeam(ent, TEAM_EASY);
     }
 
     void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd)
     {
         PMenu_Close(ent);
-        UpdateUserId(ent);
         JoinTeam(ent, TEAM_HARD);
     }
 
@@ -402,6 +400,7 @@ namespace Jump
 
         // Clear replay
         ClearReplayData(ent);
+        ent->client->jumpdata->update_replay_spectating = false;
 
         // Clear any special move effects
         ent->s.event = EV_NONE;
@@ -613,10 +612,6 @@ namespace Jump
     {
         LocalDatabase::Init();
         LocalScores::LoadMaplist();
-        //LoadLocalMapList(jump_server.maplist);
-        //LoadAllLocalMaptimes(jump_server.maplist, jump_server.all_local_maptimes);
-        //CalculateAllLocalStatistics();
-        //LoadLastSeenTimes();
         jump_server.global_database_thread = std::thread(ThreadMainGlobal);
         VoteSystem::Init();
     }

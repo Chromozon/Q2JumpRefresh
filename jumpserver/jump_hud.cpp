@@ -341,6 +341,7 @@ void HUD::SetStats(edict_t* ent)
     {
         SetStatsReplaying(ent);
         return;
+        // TODO: need to update common STAT fields down below
     }
 
     vec3_t velocity;
@@ -500,13 +501,14 @@ const char* HUD::GetFormattedLayoutString()
     int total_maps = LocalScores::GetMapCount();
     std::string time_added = std::string("+") + std::to_string(jump_server.time_added_mins);
 
-    assert(strlen(_hudLayoutString) < 1024);
-    static char buffer[1024];
+    assert(strlen(_hudLayoutString) < 1400 - 16);
+    static char buffer[1400 - 16];
     snprintf(buffer, sizeof(buffer), _hudLayoutString,
         current_map.c_str(), last_map1.c_str(), last_map2.c_str(), last_map3.c_str(),
         total_maps,
         time_added.c_str());
     return buffer;
+    // TODO: verify that the filled in string is less than 1400
 }
 
 } // namespace Jump

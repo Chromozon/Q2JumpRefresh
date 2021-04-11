@@ -568,11 +568,7 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 		strncpy(ent->client->pers.netname, username.c_str(), maxUsernameSize);
 		ent->client->pers.netname[maxUsernameSize] = 0;
 		Jump::Logger::Activity(va("User changed name from \"%s\" to \"%s\"", oldUsername.c_str(), username.c_str()));
-
-		if (!(ent->client->jumpdata->team == Jump::TEAM_SPECTATOR))
-		{
-			Jump::UpdateUserId(ent);
-		}
+		Jump::UpdateUserId(ent);
 	}
 
     // Jump

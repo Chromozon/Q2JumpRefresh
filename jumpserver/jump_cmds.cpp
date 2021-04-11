@@ -95,6 +95,9 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
+        std::vector<std::string> mapsleft;
+        LocalScores::GetMapsLeft(ent->client->jumpdata->localUserId, mapsleft);
+
         std::string testDate = GetEuropeanShortDate("2020-12-23");
         //LocalDatabase::AddUser("atestname!!");
         //int size2 = sizeof(replay_frame_t);

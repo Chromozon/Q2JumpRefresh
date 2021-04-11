@@ -68,9 +68,9 @@ public:
     static const char* GetFormattedLayoutString();
 
 private:
-    void SetStatsReplaying(edict_t* ent);
-    void SetStatsSpectating(edict_t* ent);
-    void SetStatsJumping(edict_t* ent);
+    static void SetStatsReplaying(edict_t* ent);
+    static void SetStatsSpectating(edict_t* ent);
+    static void SetStatsJumping(edict_t* ent);
 
     static const char* _hudLayoutString;
 };

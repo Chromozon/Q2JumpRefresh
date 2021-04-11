@@ -211,9 +211,138 @@ void HUD::SetConfigStrings()
     gi.configstring(CS_STATUSBAR, const_cast<char*>(GetFormattedLayoutString()));
 }
 
+void HUD::SetStatsReplaying(edict_t* ent)
+{
+    assert(ent->client->jumpdata->team == TEAM_SPECTATOR);
+    assert(ent->client->jumpdata->update_replay_spectating);
+
+    const replay_frame_t& frame =
+        ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum];
+
+    // Update the input keys
+    ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_BACK] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = false;
+
+    if (frame.key_states & KEY_STATE_FORWARD)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = true;
+    }
+    else if (frame.key_states & KEY_STATE_BACK)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_BACK] = true;
+    }
+
+    if (frame.key_states & KEY_STATE_LEFT)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = true;
+    }
+    else if (frame.key_states & KEY_STATE_RIGHT)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = true;
+    }
+
+    if (frame.key_states & KEY_STATE_JUMP)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = true;
+    }
+    else if (frame.key_states & KEY_STATE_CROUCH)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = true;
+    }
+
+    if (frame.key_states & KEY_STATE_ATTACK)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = true;
+    }
+
+    // Update fps, async
+    ent->client->ps.stats[STAT_JUMP_FPS] = frame.fps;
+    if (frame.async == 0)
+    {
+        ent->client->ps.stats[STAT_JUMP_ASYNC_0] = 1;
+        ent->client->ps.stats[STAT_JUMP_ASYNC_1] = 0;
+    }
+    else
+    {
+        ent->client->ps.stats[STAT_JUMP_ASYNC_0] = 0;
+        ent->client->ps.stats[STAT_JUMP_ASYNC_1] = 1;
+    }
+
+    // Update timer
+    int timeMs = ent->client->jumpdata->replay_spectating_framenum * 100;
+    ent->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = static_cast<short>(timeMs / 1000);
+    ent->client->ps.stats[STAT_JUMP_TIMER_MS] = static_cast<short>((timeMs % 1000) / 100);
+
+    // Update weapon
+    // TODO STAT_JUMP_WEAPON_ICON
+
+    // Update speed
+    // To calculate speed, we calculate the distance traveled over 1 second.
+    // This is less jumpy than doing it for every frame.
+    if (ent->client->jumpdata->replay_spectating_framenum >= 10)
+    {
+        const replay_frame_t& prevFrame =
+            ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum - 10];
+        vec3_t velocity;
+        VectorSubtract(frame.pos, prevFrame.pos, velocity);
+        velocity[2] = 0;
+        short speed = static_cast<short>(VectorLength(velocity));
+        if (speed > ent->client->ps.stats[STAT_JUMP_SPEED] + 10 || speed < ent->client->ps.stats[STAT_JUMP_SPEED] - 10)
+        {
+            ent->client->ps.stats[STAT_JUMP_SPEED] = speed;
+        }
+    }
+    else if (ent->client->jumpdata->replay_spectating_framenum >= 1)
+    {
+        // If we are less than 1 second into the replay, adjust for fewer frames.
+        const replay_frame_t& prevFrame =
+            ent->client->jumpdata->replay_spectating[0];
+        vec3_t velocity;
+        velocity[0] = (frame.pos[0] - prevFrame.pos[0]) / (ent->client->jumpdata->replay_spectating_framenum * 0.1f);
+        velocity[1] = (frame.pos[1] - prevFrame.pos[1]) / (ent->client->jumpdata->replay_spectating_framenum * 0.1f);
+        velocity[2] = 0;
+        short speed = static_cast<short>(VectorLength(velocity));
+        if (speed > ent->client->ps.stats[STAT_JUMP_SPEED] + 10 || speed < ent->client->ps.stats[STAT_JUMP_SPEED] - 10)
+        {
+            ent->client->ps.stats[STAT_JUMP_SPEED] = speed;
+        }
+    }
+    else
+    {
+        ent->client->ps.stats[STAT_JUMP_SPEED] = 0;
+    }
+}
+
 // TODO refactor
 void HUD::SetStats(edict_t* ent)
 {
+    //if (ent->client->jumpdata->team == TEAM_EASY || ent->client->jumpdata->team == TEAM_HARD)
+    //{
+    //    SetStatsJumping(ent);
+    //}
+    //else
+    //{
+    //    if (ent->client->jumpdata->update_replay_spectating)
+    //    {
+    //        SetStatsReplaying(ent);
+    //    }
+    //    else
+    //    {
+    //        SetStatsSpectating(ent);
+    //    }
+    //}
+
+    if (ent->client->jumpdata->update_replay_spectating)
+    {
+        SetStatsReplaying(ent);
+        return;
+    }
+
     vec3_t velocity;
     velocity[0] = ent->velocity[0];
     velocity[1] = ent->velocity[1];

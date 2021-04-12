@@ -71,7 +71,35 @@ See `g_main.c GetGameAPI()` for the main logic entry points.
 - `ClientConnect` is called when the client first joins the server, and `ClientDisconnect` is called when leaving.
 - When a client first joins a map and on map changes, `ClientBegin` will be called.
 - `gi.cprintf(client, PRINT_HIGH, ...)` sends messages to the client's console.
-- `g_main.c, G_RunFrame()` is the main game loop function.  The logic to change maps is done here.
+
+### Main Game Loop
+`g_main.c, G_RunFrame()` is the main game loop function for our mod.
+```
+while (1)
+{
+    // Header: handle intermission and level change
+    // If we are in intermission or changing level, we can skip the physics and movement code
+
+    // Top half: ai, physics, movement, weapons, etc.
+    foreach (ent)
+    {
+        if (ent is a client)
+	{
+	    ClientBeginServerFrame(ent);
+        }
+	else
+	{
+	    G_RunEntity(ent);
+	}
+    }
+    
+    // Bottom half: now that the world has changed, update the HUD and client visual effects
+    foreach (client ent)
+    {
+        ClientEndServerFrame(ent);
+    }
+}
+```
 
 ### How to update the HUD
 The layout of the HUD is sent to all clients with `gi.configstring(CS_STATUSBAR, "<HUD layout string>"`.  The HUD layout string is the same for all clients.

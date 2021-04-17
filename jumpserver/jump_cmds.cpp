@@ -41,6 +41,8 @@ namespace Jump
         { "playermapsglobal", Cmd_Jump_PlayermapsGlobal },
         { "maptimesglobal", Cmd_Jump_MaptimesGlobal },
         { "race", Cmd_Jump_Race },
+        { "mapsleft", Cmd_Jump_Mapsleft },
+        { "mapsdone", Cmd_Jump_Mapsdone },
 
         { "votetime", Cmd_Jump_Vote_Time },
         { "timevote", Cmd_Jump_Vote_Time },
@@ -95,8 +97,6 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-        std::vector<std::string> mapsleft;
-        LocalScores::GetMapsLeft(ent->client->jumpdata->localUserId, mapsleft);
 
         std::string testDate = GetEuropeanShortDate("2020-12-23");
         //LocalDatabase::AddUser("atestname!!");
@@ -834,6 +834,19 @@ namespace Jump
             }
         }
     }
+
+
+    void Cmd_Jump_Mapsleft(edict_t* ent)
+    {
+        LocalScores::PrintMapsLeft(ent);
+    }
+
+
+    void Cmd_Jump_Mapsdone(edict_t* ent)
+    {
+        LocalScores::PrintMapsDone(ent);
+    }
+
 
 
 

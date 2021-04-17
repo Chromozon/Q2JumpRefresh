@@ -289,7 +289,7 @@ std::string LocalScores::GetUserName(int userId)
 /// Gets how many maps are in the loaded maplist.
 /// </summary>
 /// <returns></returns>
-int LocalScores::GetMapCount()
+int LocalScores::GetServerMapCount()
 {
     return static_cast<int>(_maplist.size());
 }
@@ -311,6 +311,24 @@ bool LocalScores::GetMapsLeft(int userId, std::vector<std::string>& results)
     std::set_difference(
         _maplist.begin(), _maplist.end(),
         it->second.begin(), it->second.end(), std::back_inserter(results));
+    return true;
+}
+
+/// <summary>
+/// Gets the list of maps that the user has completed.
+/// </summary>
+/// <param name="userId"></param>
+/// <param name="results"></param>
+/// <returns>True if success, false if user not found.</returns>
+bool LocalScores::GetMapsDone(int userId, std::vector<std::string>& results)
+{
+    results.clear();
+    auto it = _allUserMaps.find(userId);
+    if (it == _allUserMaps.end())
+    {
+        return false;
+    }
+    results = it->second;
     return true;
 }
 
@@ -603,6 +621,144 @@ void LocalScores::PrintMapTimes(edict_t* ent)
         gi.cprintf(ent, PRINT_HIGH, "You have NOT completed this map\n");
     }
     gi.cprintf(ent, PRINT_HIGH, "--------------------------------------------------------\n");
+}
+
+/// <summary>
+/// Prints the mapsleft to the client console.
+/// </summary>
+/// <param name="ent"></param>
+void LocalScores::PrintMapsLeft(edict_t* ent)
+{
+    if (gi.argc() < 3)
+    {
+        gi.cprintf(ent, PRINT_HIGH, "Invalid mapsleft command. Usage: \"mapsleft <username> <page>\" or \"mapsleft self <page>\"\n");
+        gi.cprintf(ent, PRINT_HIGH, "Example: mapsleft self 1\n");
+        return;
+    }
+
+    std::string username = gi.argv(1);
+    int userId = -1;
+    if (StringCompareInsensitive(username, "self"))
+    {
+        userId = ent->client->jumpdata->localUserId;
+    }
+    else
+    {
+        userId = LocalDatabase::GetUserId(username);
+        if (userId == -1)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "User not found.\n");
+            return;
+        }
+    }
+
+    int page = 1;
+    StringToIntMaybe(gi.argv(2), page);
+    if (page < 1)
+    {
+        page = 1;
+    }
+
+    std::vector<std::string> results;
+    GetMapsLeft(userId, results);
+
+    size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
+    if (index_start >= results.size())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "There are no mapsleft for this page.\n");
+        return;
+    }
+    size_t index_end = std::min<size_t>(
+        results.size() - 1,
+        (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
+
+    // Header
+    gi.cprintf(ent, PRINT_HIGH, "--------------------------------------\n");
+    std::string header = GetGreenConsoleText("No.  Map\n");
+    gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
+
+    for (size_t i = index_start; i <= index_end; ++i)
+    {
+        gi.cprintf(ent, PRINT_HIGH, "%-4d %-64s\n", static_cast<int>(i + 1), results[i].c_str());
+    }
+
+    // Footer
+    int totalPages = std::ceil(results.size() / (float)CONSOLE_HIGHSCORES_COUNT_PER_PAGE);
+    gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d maps). Use mapsleft %s <page>\n",
+        page, totalPages, static_cast<int>(results.size()), username.c_str());
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+}
+
+/// <summary>
+/// Prints the mapsdone to the client console.
+/// </summary>
+/// <param name="ent"></param>
+void LocalScores::PrintMapsDone(edict_t* ent)
+{
+    if (gi.argc() < 3)
+    {
+        gi.cprintf(ent, PRINT_HIGH, "Invalid mapsdone command. Usage: \"mapsdone <username> <page>\" or \"mapsdone self <page>\"\n");
+        gi.cprintf(ent, PRINT_HIGH, "Example: mapsdone self 1\n");
+        return;
+    }
+
+    std::string username = gi.argv(1);
+    int userId = -1;
+    if (StringCompareInsensitive(username, "self"))
+    {
+        userId = ent->client->jumpdata->localUserId;
+    }
+    else
+    {
+        userId = LocalDatabase::GetUserId(username);
+        if (userId == -1)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "User not found.\n");
+            return;
+        }
+    }
+
+    int page = 1;
+    StringToIntMaybe(gi.argv(2), page);
+    if (page < 1)
+    {
+        page = 1;
+    }
+
+    auto it = _allUserMaps.find(userId);
+    if (it == _allUserMaps.end())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "Error retrieving mapsdone.\n");
+        Logger::Error(va("Could not get mapsdone for user %s, %d", username.c_str(), userId));
+        return;
+    }
+    const std::vector<std::string>& results = it->second;
+
+    size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
+    if (index_start >= results.size())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "There are no mapsdone for this page.\n");
+        return;
+    }
+    size_t index_end = std::min<size_t>(
+        results.size() - 1,
+        (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
+
+    // Header
+    gi.cprintf(ent, PRINT_HIGH, "--------------------------------------\n");
+    std::string header = GetGreenConsoleText("No.  Map\n");
+    gi.cprintf(ent, PRINT_HIGH, "%s\n", header.c_str());
+
+    for (size_t i = index_start; i <= index_end; ++i)
+    {
+        gi.cprintf(ent, PRINT_HIGH, "%-4d %-64s\n", static_cast<int>(i + 1), results[i].c_str());
+    }
+
+    // Footer
+    int totalPages = std::ceil(results.size() / (float)CONSOLE_HIGHSCORES_COUNT_PER_PAGE);
+    gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d maps). Use mapsdone %s <page>\n",
+        page, totalPages, static_cast<int>(results.size()), username.c_str());
+    gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
 }
 
 } // namespace Jump

@@ -71,7 +71,35 @@ See `g_main.c GetGameAPI()` for the main logic entry points.
 - `ClientConnect` is called when the client first joins the server, and `ClientDisconnect` is called when leaving.
 - When a client first joins a map and on map changes, `ClientBegin` will be called.
 - `gi.cprintf(client, PRINT_HIGH, ...)` sends messages to the client's console.
-- `g_main.c, G_RunFrame()` is the main game loop function.  The logic to change maps is done here.
+
+### Main Game Loop
+`g_main.c, G_RunFrame()` is the main game loop function for our mod.
+```
+while (1)
+{
+    // Header: handle intermission and level change
+    // If we are in intermission or changing level, we can skip the physics and movement code
+
+    // Top half: ai, physics, movement, weapons, etc.
+    foreach (ent)
+    {
+        if (ent is a client)
+	{
+	    ClientBeginServerFrame(ent);
+        }
+	else
+	{
+	    G_RunEntity(ent);
+	}
+    }
+    
+    // Bottom half: now that the world has changed, update the HUD and client visual effects
+    foreach (client ent)
+    {
+        ClientEndServerFrame(ent);
+    }
+}
+```
 
 ### How to update the HUD
 The layout of the HUD is sent to all clients with `gi.configstring(CS_STATUSBAR, "<HUD layout string>"`.  The HUD layout string is the same for all clients.
@@ -82,6 +110,8 @@ Note that there are only 32 max STAT_ indices available for use (0 to 31).
 STAT_ values can be used directly, or they can be used to lookup a display value in the configstring table.  For example, if the HUD layout string has `stat_string 26`,
 the client will find the value of `ps.stats[26]` and will use that value to look up the corresponding string in the configstrings.
 Let's say the server has set `gi.configstring(1075, "HELLO")`.  If the value `ps.stats[26]` is 1075, then the string "HELLO" will be displayed in the HUD layout at that token.
+
+If you want to have different string values sent to different clients, you can send different values for configstrings to different clients.  The clients can share the HUD layout string and use common lookup values, but the string that corresponds to the lookup value can differ between clients.  See the HUD footer code for an example of how this works.
 
 If you don't want to use the configstring lookup and want to use the value directly, don't put `stat_string` in the HUD layout string.  Instead, use the STAT_ index directly.
 For example, if the HUD layout string has `num 4 17`, it will find the value of `ps.stats[17]` and display it formatted to 4 digits.

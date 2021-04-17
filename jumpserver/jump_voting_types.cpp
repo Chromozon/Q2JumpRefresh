@@ -46,21 +46,29 @@ namespace Jump
 
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
-            if (stricmp(arguments.c_str(), "random") == 0)
+            if (gi.argc() < 2)
+            {
+                gi.cprintf(caster, PRINT_HIGH,
+                    "Invalid args. Usage: mapvote <mapname>, mapvote random, mapvote todo, mapvote next");
+                return false;
+            }
+            std::string arg = gi.argv(1);
+
+            if (stricmp(arg.c_str(), "random") == 0)
             {
                 map_name = LocalScores::GetRandomMap();
                 return !map_name.empty();
             }
             else
             {
-                if (LocalScores::IsMapInMaplist(arguments))
+                if (LocalScores::IsMapInMaplist(arg))
                 {
                     map_name = arguments;
                     return true;
                 }
                 else
                 {
-                    gi.cprintf(caster, PRINT_HIGH, "Map %s does not exist in the map list.\n", arguments.c_str());
+                    gi.cprintf(caster, PRINT_HIGH, "Map %s does not exist in the map list.\n", arg.c_str());
                     return false;
                 }
             }

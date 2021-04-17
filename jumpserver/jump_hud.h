@@ -64,15 +64,23 @@ class HUD
 {
 public:
     static void SetConfigStrings();
-    static void SetStats(edict_t* ent);
-    static void UpdateTimer(edict_t* ent);
+    static void SetAllStats(edict_t* ent);
     static const char* GetFormattedLayoutString();
 
 private:
-    static void SetStatsReplaying(edict_t* ent);
-    static void SetStatsSpectating(edict_t* ent);
-    static void SetStatsJumping(edict_t* ent);
-    static void FooterStrings(edict_t* ent);
+    static void SetStatTimeLeft(edict_t* ent);
+    static void SetStatFps(edict_t* ent);
+    static void SetStatAsync(edict_t* ent);
+    static void SetStatKeyStates(edict_t* ent);
+    static void SetStatSpeed(edict_t* ent);
+    static void SetStatTimer(edict_t* ent);
+    static void SetStatFooter1(edict_t* ent);
+    static void SetStatFooter2(edict_t* ent);
+    static void SetStatFooter3(edict_t* ent);
+    static void SetStatFooter4(edict_t* ent);
+    static void SetStatWeapon(edict_t* ent);
+    static void SetStatHealth(edict_t* ent);
+    static void SetStatVoting(edict_t* ent);
 
     static const char* _hudLayoutString;
 };

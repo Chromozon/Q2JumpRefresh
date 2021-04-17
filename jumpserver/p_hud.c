@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Jump
 #include "jump_hud.h"
+#include "jump_menu.h"
 // Jump
 
 
@@ -64,14 +65,10 @@ void MoveClientToIntermission (edict_t *ent)
 	ent->solid = SOLID_NOT;
 
 	// add the layout
-
-    // Jump TODO: change to best times scoreboard
-	if (deathmatch->value || coop->value)
-	{
-		//DeathmatchScoreboardMessage (ent, NULL);
-		gi.unicast (ent, true);
-	}
-
+	// Jump
+	Jump::ShowBestTimesScoreboard(ent);
+	gi.unicast (ent, true);
+	// Jump
 }
 
 void BeginIntermission (edict_t *targ)

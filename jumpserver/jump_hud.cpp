@@ -473,6 +473,366 @@ void HUD::SetStats(edict_t* ent)
 }
 
 
+
+/// <summary>
+/// Set the FPS stat.
+/// </summary>
+/// <param name="ent"></param>
+void SetStatFps(edict_t* ent)
+{
+    if (ent->client->jumpdata->update_replay_spectating)
+    {
+        // Watching a replay
+        ent->client->ps.stats[STAT_JUMP_FPS] = 
+            ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum].fps;
+    }
+    else if (ent->client->chase_target != nullptr)
+    {
+        // Chasing another player
+        ent->client->ps.stats[STAT_JUMP_FPS] = ent->client->chase_target->client->jumpdata->fps;
+    }
+    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    {
+        // Not chasing anyone
+        ent->client->ps.stats[STAT_JUMP_FPS] = 0;
+    }
+    else
+    {
+        // Playing
+        ent->client->ps.stats[STAT_JUMP_FPS] = ent->client->jumpdata->fps;
+    }
+}
+
+/// <summary>
+/// Set the async stat.
+/// </summary>
+/// <param name="ent"></param>
+void SetStatAsync(edict_t* ent)
+{
+    bool showAsync = false;
+    int async = 0;
+    if (ent->client->jumpdata->update_replay_spectating)
+    {
+        // Watching a replay
+        async = ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum].async;
+        showAsync = true;
+    }
+    else if (ent->client->chase_target != nullptr)
+    {
+        // Chasing another player
+        async = ent->client->chase_target->client->jumpdata->async;
+        showAsync = true;
+    }
+    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    {
+        // Not chasing anyone
+        showAsync = false;
+    }
+    else
+    {
+        // Playing
+        async = ent->client->jumpdata->async;
+        showAsync = true;
+    }
+
+    ent->client->ps.stats[STAT_JUMP_ASYNC_0] = showAsync && (async == 0);
+    ent->client->ps.stats[STAT_JUMP_ASYNC_1] = showAsync && (async == 1);
+}
+
+/// <summary>
+/// Set the key states stats.
+/// </summary>
+/// <param name="ent"></param>
+void SetStatKeyStates(edict_t* ent)
+{
+    int keyStates = 0;
+    if (ent->client->jumpdata->update_replay_spectating)
+    {
+        // Watching a replay
+        keyStates = ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum].key_states;
+    }
+    else if (ent->client->chase_target != nullptr)
+    {
+        // Chasing another player
+        keyStates = ent->client->chase_target->client->jumpdata->key_states;
+    }
+    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    {
+        // Not chasing anyone
+        keyStates = 0;
+    }
+    else
+    {
+        // Playing
+        keyStates = ent->client->jumpdata->key_states;
+    }
+
+    ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_BACK] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = false;
+
+    if (keyStates & KEY_STATE_FORWARD)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = true;
+    }
+    else if (keyStates & KEY_STATE_BACK)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_BACK] = true;
+    }
+
+    if (keyStates & KEY_STATE_LEFT)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = true;
+    }
+    else if (keyStates & KEY_STATE_RIGHT)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = true;
+    }
+
+    if (keyStates & KEY_STATE_JUMP)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = true;
+    }
+    else if (keyStates & KEY_STATE_CROUCH)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = true;
+    }
+
+    if (keyStates & KEY_STATE_ATTACK)
+    {
+        ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = true;
+    }
+}
+
+/// <summary>
+/// Set the speed stat.
+/// </summary>
+/// <param name="ent"></param>
+void SetStatSpeed(edict_t* ent)
+{
+    int speed = 0;
+    if (ent->client->jumpdata->update_replay_spectating)
+    {
+        // Watching a replay
+        // To calculate speed, we calculate the distance traveled over 1 second.
+        // This is less jumpy than doing it for every frame.
+        const replay_frame_t& frame =
+            ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum];
+        if (ent->client->jumpdata->replay_spectating_framenum >= 10)
+        {
+            const replay_frame_t& prevFrame =
+                ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum - 10];
+            vec3_t velocity;
+            VectorSubtract(frame.pos, prevFrame.pos, velocity);
+            velocity[2] = 0;
+            speed = static_cast<int>(VectorLength(velocity));
+        }
+        else if (ent->client->jumpdata->replay_spectating_framenum >= 1)
+        {
+            // If we are less than 1 second into the replay, adjust for fewer frames.
+            const replay_frame_t& prevFrame = ent->client->jumpdata->replay_spectating[0];
+            vec3_t velocity;
+            velocity[0] = (frame.pos[0] - prevFrame.pos[0]) / (ent->client->jumpdata->replay_spectating_framenum * 0.1f);
+            velocity[1] = (frame.pos[1] - prevFrame.pos[1]) / (ent->client->jumpdata->replay_spectating_framenum * 0.1f);
+            velocity[2] = 0;
+            speed = static_cast<int>(VectorLength(velocity));
+        }
+    }
+    else if (ent->client->chase_target != nullptr)
+    {
+        // Chasing another player
+        vec3_t velocity;
+        velocity[0] = ent->client->chase_target->velocity[0];
+        velocity[1] = ent->client->chase_target->velocity[1];
+        velocity[2] = 0;
+        speed = static_cast<int>(VectorNormalize(velocity));
+    }
+    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    {
+        // Not chasing anyone
+        speed = 0;
+    }
+    else
+    {
+        // Playing
+        vec3_t velocity;
+        velocity[0] = ent->velocity[0];
+        velocity[1] = ent->velocity[1];
+        velocity[2] = 0;
+        speed = static_cast<int>(VectorNormalize(velocity));
+    }
+
+    if (speed > ent->client->ps.stats[STAT_JUMP_SPEED] + 10 || speed < ent->client->ps.stats[STAT_JUMP_SPEED] - 10)
+    {
+        ent->client->ps.stats[STAT_JUMP_SPEED] = speed;
+    }
+}
+
+/// <summary>
+/// Set the timer stat.
+/// </summary>
+/// <param name="ent"></param>
+void SetStatTimer(edict_t* ent)
+{
+    int64_t timeMs;
+    if (ent->client->jumpdata->update_replay_spectating)
+    {
+        // Watching a replay
+        timeMs = static_cast<int64_t>(ent->client->jumpdata->replay_spectating_framenum) * 100;
+    }
+    else if (ent->client->chase_target != nullptr)
+    {
+        // Chasing another player
+        if (ent->client->chase_target->client->jumpdata->timer_paused)
+        {
+            timeMs = 0;
+        }
+        else
+        {
+            timeMs = ent->client->chase_target->client->jumpdata->timer_end - ent->client->chase_target->client->jumpdata->timer_begin;
+        }
+    }
+    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    {
+        // Not chasing anyone
+        timeMs = 0;
+    }
+    else
+    {
+        // Playing
+        if (ent->client->jumpdata->timer_paused)
+        {
+            timeMs = 0;
+        }
+        else
+        {
+            timeMs = ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin;
+        }
+    }
+
+    // Note that if the time exceeds 32767 seconds, it will show up as negative.
+    ent->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = static_cast<short>(timeMs / 1000);
+    ent->client->ps.stats[STAT_JUMP_TIMER_MS] = (timeMs % 1000) / 100;
+}
+
+/// <summary>
+/// Set the footer1 stat.
+/// </summary>
+/// <param name="ent"></param>
+void SetStatFooter1(edict_t* ent)
+{
+    const char* TeamEasyStr = "  Team: ≈·Û˘";
+    const char* TeamHardStr = "  Team: »·Ú‰";
+    const char* TeamSpecStr = "  Team: œ‚ÛÂÚˆÂÚ";
+    std::string footer1;
+    if (ent->client->jumpdata->update_replay_spectating)
+    {
+        // Watching a replay
+        footer1 = TeamSpecStr;
+    }
+    else if (ent->client->chase_target != nullptr)
+    {
+        // Chasing another player
+        if (ent->client->chase_target->client->jumpdata->team == TEAM_EASY)
+        {
+            footer1 = TeamEasyStr;
+        }
+        else
+        {
+            footer1 = TeamHardStr;
+        }
+    }
+    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    {
+        // Not chasing anyone
+        footer1 = TeamSpecStr;
+    }
+    else
+    {
+        // Playing
+        if (ent->client->jumpdata->team == TEAM_EASY)
+        {
+            footer1 = TeamEasyStr;
+        }
+        else
+        {
+            footer1 = TeamHardStr;
+        }
+    }
+
+    gi.WriteByte(svc_configstring);
+    gi.WriteShort(CS_JUMP_KEY_HUD_FOOTER_1);
+    gi.WriteString(const_cast<char*>(footer1.c_str()));
+    gi.unicast(ent, true);
+
+    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_1] = CS_JUMP_KEY_HUD_FOOTER_1;
+}
+
+/// <summary>
+/// Set the footer2 stat.
+/// </summary>
+/// <param name="ent"></param>
+void SetStatFooter2(edict_t* ent)
+{
+    // Footer2
+// if (replaying) string = Replay: NOW or Replay: 14 or Replay: Self
+// if (playing or spectating AND racing) string = Race: NOW or Race: 12 or Race: Self
+
+    std::string footer2;
+    if (ent->client->jumpdata->update_replay_spectating)
+    {
+        // Watching a replay
+        // TODO: save who we are replaying when we use the replay cmd
+    }
+    else if (ent->client->chase_target != nullptr)
+    {
+        // Chasing another player
+        // if (chase_target is racing)
+        // Race: NOW or Race: 12 or Race: Self
+    }
+    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    {
+        // Not chasing anyone
+        footer2 = "";
+    }
+    else
+    {
+        // Playing
+        // if (racing)
+        // Race: NOW or Race: 12 or Race: Self
+    }
+
+    gi.WriteByte(svc_configstring);
+    gi.WriteShort(CS_JUMP_KEY_HUD_FOOTER_2);
+    gi.WriteString(const_cast<char*>(footer2.c_str()));
+    gi.unicast(ent, true);
+
+    ent->client->ps.stats[STAT_JUMP_HUD_FOOTER_2] = CS_JUMP_KEY_HUD_FOOTER_2;
+}
+
+
+void SetAllStats(edict_t* ent)
+{
+    SetStatFps(ent);
+    SetStatAsync(ent);
+    SetStatKeyStates(ent);
+    SetStatSpeed(ent);
+    SetStatTimer(ent);
+    //SetStatWeapon(ent);
+    //SetStatHealth(ent);
+    SetStatFooter1(ent);
+    //SetStatFooter2(ent);
+    //SetStatFooter3(ent);
+    //SetStatFooter4(ent);
+    //SetStatTrace(ent);
+
+    // Set the common stats: time left, time added, vote active, last maps played, current map
+}
+
 // TODO: move to the SetStats functions
 void HUD::UpdateTimer(edict_t * ent)
 {
@@ -506,7 +866,7 @@ const char* HUD::GetFormattedLayoutString()
     std::string last_map1 = jump_server.last_map1;
     std::string last_map2 = jump_server.last_map2;
     std::string last_map3 = jump_server.last_map3;
-    int total_maps = LocalScores::GetMapCount();
+    int total_maps = LocalScores::GetServerMapCount();
     std::string time_added = std::string("+") + std::to_string(jump_server.time_added_mins);
 
     assert(strlen(_hudLayoutString) < 1400 - 16);
@@ -517,6 +877,56 @@ const char* HUD::GetFormattedLayoutString()
         time_added.c_str());
     return buffer;
     // TODO: verify that the filled in string is less than 1400
+}
+
+
+void AllHud(edict_t* ent)
+{
+    // if (chasing)
+    //   show "Chasing <name>"
+    //   CommonStats(spec player, ent)
+    // else if (replaying)
+    //   get stats from replay frame
+    // else
+    //   get stats from self
+}
+
+void GetStatsFromEnt(edict_t* ent, int& fps, int& async, uint8_t& keyStates, int64_t& time)
+{
+    fps = static_cast<short>(ent->client->jumpdata->fps);
+    async = static_cast<short>(ent->client->jumpdata->async);
+    keyStates = ent->client->jumpdata->key_states;
+    //time = 
+}
+
+
+void CommonStats(edict_t* source, edict_t* dest)
+{
+    // FPS
+
+    // Key states
+
+    // Footer strings
+
+    // Timer
+    if (source->client->jumpdata->timer_paused)
+    {
+        dest->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = 0;
+        dest->client->ps.stats[STAT_JUMP_TIMER_MS] = 0;
+    }
+    else if (source->client->jumpdata->timer_finished)
+    {
+        int64_t time = source->client->jumpdata->timer_end - source->client->jumpdata->timer_begin;
+        dest->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = static_cast<short>(time / 1000);
+        dest->client->ps.stats[STAT_JUMP_TIMER_MS] = static_cast<short>((time % 1000) / 100);
+    }
+    else // active timer
+    {
+        // We can only show 32767 seconds (~9 hrs) on the timer
+        int64_t time = Sys_Milliseconds() - source->client->jumpdata->timer_begin;
+        dest->client->ps.stats[STAT_JUMP_TIMER_SECONDS] = static_cast<short>(time / 1000);
+        dest->client->ps.stats[STAT_JUMP_TIMER_MS] = static_cast<short>((time % 1000) / 100);
+    }
 }
 
 
@@ -539,6 +949,16 @@ void HUD::FooterStrings(edict_t* ent)
     {
         footer1 = "  Team: œ‚ÛÂÚˆÂÚ";
     }
+
+    // Footer2
+    // if (replaying) string = Replay: NOW or Replay: 14 or Replay: Self
+    // if (playing or spectating AND racing) string = Race: NOW or Race: 12 or Race: Self
+
+    // Footer3
+    // if (replaying, playing, or spectating AND checkpoints) string = Chkpts: 1/5
+
+    // Footer4
+    // if (replaying, playing, or spectating AND laps) string = Laps: 1/5
 
     gi.WriteByte(svc_configstring);
     gi.WriteShort(CS_JUMP_KEY_HUD_FOOTER_1);

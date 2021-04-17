@@ -45,6 +45,15 @@ const char* HUD::_hudLayoutString =
     // string "Texthere" is white text
     // string2 "Texthere" is green text
     //
+    // Health
+    "if " XSTRINGIFY(STAT_JUMP_HEALTH) " "
+    "yb	-32 "
+    "xv	310 "
+    "num 3 " XSTRINGIFY(STAT_JUMP_HEALTH) " "
+    "yb -8 "
+    "xv 312 "
+    "string2 \"Health\" "
+    "endif "
     // Attack key
     "if " XSTRINGIFY(STAT_JUMP_KEY_ATTACK) " "
     "xl 16 "
@@ -89,13 +98,6 @@ const char* HUD::_hudLayoutString =
     "endif "
     ""
     // Timer
-    //
-    // It seems that numbers need 16 units of space per digit.
-    // The maximum displayed number is int16 max (32767).
-    // Exceeding the max will cause rollover to a negative value.
-    // TODO: we can specify each digit individually to have infinite time displayed, or
-    // we can change from a number to a string value.
-    //
     // Seconds
     "xr -108 "
     "yb -32 "
@@ -257,6 +259,7 @@ void HUD::SetAllStats(edict_t* ent)
     SetStatFooter3(ent);
     SetStatFooter4(ent);
     SetStatVoting(ent);
+    SetStatTimeLeft(ent);
     //SetStatTrace(ent);
 
     // Show the menu if it is open
@@ -302,9 +305,14 @@ void HUD::SetStatVoting(edict_t* ent)
 /// <param name="ent"></param>
 void HUD::SetStatHealth(edict_t* ent)
 {
-    // TODO: show health if damage is taken
-    //ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
-    //ent->client->ps.stats[STAT_HEALTH] = ent->health;
+    if (ent->health < 999 && ent->health > 0)
+    {
+        ent->client->ps.stats[STAT_JUMP_HEALTH] = ent->health;
+    }
+    else
+    {
+        ent->client->ps.stats[STAT_HEALTH] = 0;
+    }
 }
 
 /// <summary>

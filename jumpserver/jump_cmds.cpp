@@ -43,6 +43,7 @@ namespace Jump
         { "race", Cmd_Jump_Race },
         { "mapsleft", Cmd_Jump_Mapsleft },
         { "mapsdone", Cmd_Jump_Mapsdone },
+        { "jumpers", Cmd_Jump_Jumpers },
 
         { "votetime", Cmd_Jump_Vote_Time },
         { "timevote", Cmd_Jump_Vote_Time },
@@ -64,7 +65,6 @@ namespace Jump
         { "globaltimes", Cmd_Jump_Void },
         { "globalmaps", Cmd_Jump_Void },
         { "globalscores", Cmd_Jump_Void },
-        { "jumpers", Cmd_Jump_Void },
         { "playerlist", Cmd_Jump_Void },
         { "mapsdone", Cmd_Jump_Void },
         { "mapsleft", Cmd_Jump_Void },
@@ -845,6 +845,56 @@ namespace Jump
     void Cmd_Jump_Mapsdone(edict_t* ent)
     {
         LocalScores::PrintMapsDone(ent);
+    }
+
+    void Cmd_Jump_Jumpers(edict_t* ent)
+    {
+        ent->client->jumpdata->show_jumpers = !ent->client->jumpdata->show_jumpers;
+
+        if (ent->client->jumpdata->show_jumpers)
+        {
+            for (int i = 0; i < game.maxclients; i++)
+            {
+                edict_t* user = &g_edicts[i + 1];
+                if (user->inuse && user->client != nullptr)
+                {
+                    const char* skin = nullptr;
+                    if (user->client->jumpdata->team == TEAM_SPECTATOR)
+                    {
+                        skin = va("%s\\female/invis", user->client->pers.netname);
+                    }
+                    else if (user->client->jumpdata->team == TEAM_EASY)
+                    {
+                        skin = va("%s\\female/ctf_r", user->client->pers.netname);
+                    }
+                    else // team Hard
+                    {
+                        skin = va("%s\\female/ctf_b", user->client->pers.netname);
+                    }
+                    gi.WriteByte(svc_configstring);
+                    gi.WriteShort(CS_PLAYERSKINS + i);
+                    gi.WriteString(const_cast<char*>(skin));
+                    gi.unicast(ent, true);
+                }
+            }
+            gi.cprintf(ent, PRINT_HIGH, "Player models are now ON.\n");
+        }
+        else
+        {
+            for (int i = 0; i < game.maxclients; i++)
+            {
+                edict_t* user = &g_edicts[i + 1];
+                if (user->inuse && user->client != nullptr)
+                {
+                    const char* skin = va("%s\\female/invis", user->client->pers.netname);
+                    gi.WriteByte(svc_configstring);
+                    gi.WriteShort(CS_PLAYERSKINS + i);
+                    gi.WriteString(const_cast<char*>(skin));
+                    gi.unicast(ent, true);
+                }
+            }
+            gi.cprintf(ent, PRINT_HIGH, "Player models are now OFF.\n");
+        }
     }
 
 

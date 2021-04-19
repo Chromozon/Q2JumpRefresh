@@ -30,6 +30,7 @@ namespace Jump
     void Cmd_Jump_Race(edict_t* ent);
     void Cmd_Jump_Mapsleft(edict_t* ent);
     void Cmd_Jump_Mapsdone(edict_t* ent);
+    void Cmd_Jump_Jumpers(edict_t* ent);
 
     // Global database cmd responses
     void HandleGlobalCmdResponse(const global_cmd_response& response);

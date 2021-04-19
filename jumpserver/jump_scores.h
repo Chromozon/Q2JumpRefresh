@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <time.h>
+#include <chrono>
 #include "jump_types.h"
 #include "jump_local_database.h"
 
@@ -49,6 +51,7 @@ private:
     static std::vector<std::pair<int, int>> _allTotalScores; // <userId, total score> sorted best to worst
     static std::vector<std::pair<int, float>> _allPercentScores; // <userId, percent score> sorted best to worst
     static std::vector<std::pair<int, int>> _allMapCounts; // <userId, mapcount> sorted best to worst
+    static std::vector<std::tuple<time_t, std::string, MapTimesEntry>> _firstPlacesToday; // <UTC timestamp, mapname, time> sorted by timestamp
 };
 
 } // namespace Jump

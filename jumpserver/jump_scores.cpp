@@ -24,6 +24,7 @@ std::map<int, std::vector<std::string>> LocalScores::_allUserMaps;
 std::vector<std::pair<int, int>> LocalScores::_allTotalScores;
 std::vector<std::pair<int, float>> LocalScores::_allPercentScores;
 std::vector<std::pair<int, int>> LocalScores::_allMapCounts;
+std::vector<std::tuple<time_t, std::string, MapTimesEntry>> LocalScores::_firstPlacesToday;
 
 /// <summary>
 /// Loads the list of server maps from the maplist.ini file and update the local database.
@@ -122,11 +123,37 @@ void LocalScores::CalculateAllStatistics()
         _allMapTimes.insert(std::make_pair(mapname, results));
     }
 
+    // Create the list of first places set in the last 24 hours.
+    time_t timeNowUtcSeconds = std::time(nullptr);
+    time_t timeYesterdayUtcSeconds = timeNowUtcSeconds - (24 * 60 * 60);
+    _firstPlacesToday.clear();
+    for (const auto& entry : _allMapTimes)
+    {
+        if (!entry.second.empty())
+        {
+            std::tm tm;
+            std::istringstream ss(entry.second[0].date);
+            ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+            time_t timeCompletionUtcSeconds = mktime(&tm);
+
+            if (timeCompletionUtcSeconds > timeYesterdayUtcSeconds)
+            {
+                _firstPlacesToday.push_back(std::make_tuple(timeCompletionUtcSeconds, entry.first, entry.second[0]));
+            }
+        }
+    }
+    std::sort(_firstPlacesToday.begin(), _firstPlacesToday.end(),
+        [](const std::tuple<time_t, std::string, MapTimesEntry>& left,
+           const std::tuple<time_t, std::string, MapTimesEntry>& right) -> bool
+    {
+        return std::get<0>(left) < std::get<0>(right);
+    });
+
     // Get a list of all local userIds and usernames.
     _allUsers.clear();
     LocalDatabase::GetAllUsers(_allUsers);
 
-    // Initialize the list of maps completed by each user
+    // Initialize the list of maps completed by each user.
     _allUserMaps.clear();
     for (const auto& user : _allUsers)
     {
@@ -199,7 +226,7 @@ void LocalScores::CalculateAllStatistics()
         return left.second > right.second;
     });
 
-    // Sort the user maps alphabetically
+    // Sort the user maps alphabetically.
     for (auto& entry : _allUserMaps)
     {
         std::sort(entry.second.begin(), entry.second.end(), std::less<std::string>());

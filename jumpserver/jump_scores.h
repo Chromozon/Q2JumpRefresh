@@ -41,7 +41,8 @@ private:
     static bool GetMapsLeft(int userId, std::vector<std::string>& results);
     static bool GetMapsDone(int userId, std::vector<std::string>& results);
 
-    static std::vector<std::string> _maplist; // <mapnames sorted alphabetically>
+    static std::vector<std::string> _maplistByName; // <mapnames sorted alphabetically>
+    static std::vector<std::string> _maplistByAdded; // <mapnames sorted by date added>
 
     // Statistics cache (reloaded between levels)
     static std::map<std::string, std::vector<MapTimesEntry>> _allMapTimes; // <mapname, times sorted best to worst>

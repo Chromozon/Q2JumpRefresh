@@ -16,7 +16,8 @@ namespace Jump
 /// <summary>
 /// Define the cache private variables.
 /// </summary>
-std::vector<std::string> LocalScores::_maplist;
+std::vector<std::string> LocalScores::_maplistByName;
+std::vector<std::string> LocalScores::_maplistByAdded;
 std::map<std::string, std::vector<MapTimesEntry>> LocalScores::_allMapTimes;
 std::map<int, std::string> LocalScores::_allUsers;
 std::map<int, UserHighscores> LocalScores::_allUserHighscores;
@@ -32,7 +33,8 @@ std::vector<std::tuple<time_t, std::string, MapTimesEntry>> LocalScores::_firstP
 /// </summary>
 void LocalScores::LoadMaplist()
 {
-    _maplist.clear();
+    _maplistByName.clear();
+    _maplistByAdded.clear();
     std::string path = GetModPortDir() + "/maplist.ini";
     std::ifstream file(path);
     if (!file.is_open())
@@ -54,13 +56,14 @@ void LocalScores::LoadMaplist()
             std::string mapfile = GetModDir() + "/maps/" + line + ".bsp";
             if (std::filesystem::exists(mapfile))
             {
-                if (std::find(_maplist.begin(), _maplist.end(), line) != _maplist.end())
+                if (std::find(_maplistByName.begin(), _maplistByName.end(), line) != _maplistByName.end())
                 {
                     Logger::Warning(va("Duplicate map found in maplist: %s", line.c_str()));
                 }
                 else
                 {
-                    _maplist.push_back(line);
+                    _maplistByName.push_back(line);
+                    _maplistByAdded.push_back(line);
                 }
             }
             else
@@ -71,10 +74,10 @@ void LocalScores::LoadMaplist()
     }
 
     // Sort the maplist so that it makes finding mapsleft and mapvote todos very easy
-    std::sort(_maplist.begin(), _maplist.end(), std::less<std::string>());
+    std::sort(_maplistByName.begin(), _maplistByName.end(), std::less<std::string>());
 
-    LocalDatabase::AddMapList(_maplist);
-    Logger::Info(va("Loaded %d maps from maplist \"%s\"", static_cast<int>(_maplist.size()), path.c_str()));
+    LocalDatabase::AddMapList(_maplistByName);
+    Logger::Info(va("Loaded %d maps from maplist \"%s\"", static_cast<int>(_maplistByName.size()), path.c_str()));
     for (const std::string& mapname : filesNotFound)
     {
         Logger::Warning("Server does not have bsp file: " + mapname);
@@ -88,13 +91,13 @@ void LocalScores::LoadMaplist()
 std::string LocalScores::GetRandomMap()
 {
     std::string mapname;
-    if (_maplist.empty())
+    if (_maplistByName.empty())
     {
         return mapname;
     }
     srand(time(0));
-    int n = rand() % _maplist.size();
-    return _maplist[n];
+    int n = rand() % _maplistByName.size();
+    return _maplistByName[n];
 }
 
 /// <summary>
@@ -104,8 +107,8 @@ std::string LocalScores::GetRandomMap()
 /// <returns>True if in maplist</returns>
 bool LocalScores::IsMapInMaplist(const std::string& mapname)
 {
-    auto it = std::find(_maplist.begin(), _maplist.end(), mapname);
-    return it != _maplist.end();
+    auto it = std::find(_maplistByName.begin(), _maplistByName.end(), mapname);
+    return it != _maplistByName.end();
 }
 
 /// <summary>
@@ -116,7 +119,7 @@ void LocalScores::CalculateAllStatistics()
 {
     // Load the times for all maps sorted by best to worst time.
     _allMapTimes.clear();
-    for (const std::string& mapname : _maplist)
+    for (const std::string& mapname : _maplistByName)
     {
         std::vector<MapTimesEntry> results;
         LocalDatabase::GetMapTimes(results, mapname);
@@ -318,7 +321,7 @@ std::string LocalScores::GetUserName(int userId)
 /// <returns></returns>
 int LocalScores::GetServerMapCount()
 {
-    return static_cast<int>(_maplist.size());
+    return static_cast<int>(_maplistByName.size());
 }
 
 /// <summary>
@@ -336,7 +339,7 @@ bool LocalScores::GetMapsLeft(int userId, std::vector<std::string>& results)
         return false;
     }
     std::set_difference(
-        _maplist.begin(), _maplist.end(),
+        _maplistByName.begin(), _maplistByName.end(),
         it->second.begin(), it->second.end(), std::back_inserter(results));
     return true;
 }
@@ -536,7 +539,7 @@ void LocalScores::PrintPlayerMaps(edict_t* ent)
     {
         int userId = _allMapCounts[i].first;
         int mapCount = _allMapCounts[i].second;
-        float percentDone = (static_cast<float>(mapCount) / _maplist.size()) * 100.0f;
+        float percentDone = (static_cast<float>(mapCount) / _maplistByName.size()) * 100.0f;
         const char* username = _allUsers[userId].c_str();
         gi.cprintf(ent, PRINT_HIGH, "%-3d %-15s %4d  %2.1f\n", static_cast<int>(i + 1), username, mapCount, percentDone);
     }

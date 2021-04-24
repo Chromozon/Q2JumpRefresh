@@ -160,6 +160,7 @@ extern long Q_ftol( float f );
 #define VectorClear(a)			(a[0]=a[1]=a[2]=0)
 #define VectorNegate(a,b)		(b[0]=-a[0],b[1]=-a[1],b[2]=-a[2])
 #define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))
+#define ArrayClear(a)			(memset(a, 0, sizeof(a)))
 
 void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
 

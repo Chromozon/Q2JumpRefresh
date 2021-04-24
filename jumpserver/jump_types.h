@@ -202,6 +202,8 @@ namespace Jump
         std::string hud_footer2;
         std::string hud_footer3;
         std::string hud_footer4;
+
+        bool show_jumpers = true;
     };
 
     class server_data_t

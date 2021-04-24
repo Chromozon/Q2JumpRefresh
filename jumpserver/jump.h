@@ -21,6 +21,10 @@ namespace Jump
     void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd);
     void JoinChaseCam(edict_t* ent, pmenuhnd_t* hnd);
 
+    std::string GetSkin(const std::string& username, team_t team);
+    std::string GetSkinEasy(const std::string& username);
+    std::string GetSkinHard(const std::string& username);
+    std::string GetSkinInvis(const std::string& username);
     void AssignTeamSkin(edict_t* ent);
 
     edict_t* SelectJumpSpawnPoint();

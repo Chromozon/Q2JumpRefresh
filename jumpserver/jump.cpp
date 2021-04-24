@@ -12,7 +12,7 @@ namespace Jump
 {
     server_data_t jump_server;
 
-    static const int DefaultHealth = 1000;
+    static const int MaxHealthAndAmmo = 1000;
 
     static const char* SexTeamEasy = "female";
     static const char* SexTeamHard = "male";
@@ -104,6 +104,88 @@ namespace Jump
         }
     }
 
+
+
+
+    void ClearAllVariablesForRespawn(edict_t* ent)
+    {
+        
+    }
+
+    void JoinTeamHard(edict_t* ent)
+    {
+        ent->client->jumpdata->team = TEAM_HARD;
+
+        // Reset race
+        if (ent->client->jumpdata->racing)
+        {
+            ent->client->jumpdata->racing_framenum = 0;
+        }
+
+        // Reset replay and timer
+        ent->client->jumpdata->replay_recording.clear();
+        ent->client->jumpdata->timer_paused = true;
+        ent->client->jumpdata->timer_finished = false;
+        ent->client->jumpdata->timer_begin = 0;
+        ent->client->jumpdata->timer_end = 0;
+        ent->client->jumpdata->timer_pmove_msec = 0;
+
+        // Reset spectating replay
+        ent->client->jumpdata->update_replay_spectating = false;
+        ent->client->jumpdata->replay_spectating_framenum = 0;
+        ent->client->jumpdata->replay_spectating.clear();
+        ent->client->jumpdata->replay_spectating_hud_string.clear();
+
+        AssignTeamSkin(ent);
+
+        // Clear all ent variables
+        ent->groundentity = NULL;
+        ent->takedamage = DAMAGE_YES;
+        ent->movetype = MOVETYPE_WALK;
+        ent->solid = SOLID_TRIGGER;
+        ent->deadflag = DEAD_NO;
+        ent->air_finished = 0;
+        ent->clipmask = MASK_PLAYERSOLID;
+        ent->waterlevel = 0;
+        ent->watertype = 0;
+        ent->flags = 0;
+        ent->svflags = 0;
+        ent->health = MaxHealthAndAmmo;
+        ent->max_health = MaxHealthAndAmmo;
+
+        ent->client->pers.health = MaxHealthAndAmmo;
+        ent->client->pers.max_health = MaxHealthAndAmmo;
+        ent->client->resp.score = 0;
+        ent->client->pers.score = 0;
+
+        // Clear weapons and inventory
+        memset(ent->client->pers.inventory, 0, sizeof(ent->client->pers.inventory));
+        ent->client->pers.weapon = NULL;
+        ent->client->pers.lastweapon = NULL;
+        ent->client->pers.selected_item = 0;
+        VectorClear(ent->client->ps.gunangles);
+        VectorClear(ent->client->ps.gunoffset);
+        ent->client->ps.gunframe = 0;
+        ent->client->ps.gunindex = 0;
+
+        // Clear effects
+        ent->s.event = EV_NONE;
+        ent->s.effects = 0;
+        ent->s.frame = 0;
+
+        edict_t* spawn = SelectJumpSpawnPoint();
+
+        vec3_t spawnOrigin;
+        VectorCopy(spawn->s.origin, spawnOrigin);
+        spawnOrigin[2] += 9;
+
+        vec3_t spawnAngles;
+        VectorCopy(spawn->s.angles, spawnAngles);
+        
+        MoveClientToPosition(ent, spawnOrigin, spawnAngles);
+    }
+
+
     void JoinTeam(edict_t* ent, team_t team)
     {
         ent->client->jumpdata->team = team;
@@ -138,26 +220,62 @@ namespace Jump
         JoinTeam(ent, TEAM_HARD);
     }
 
-    void JoinChaseCam(edict_t* ent, pmenuhnd_t* hnd) {}
+    void JoinChaseCam(edict_t* ent, pmenuhnd_t* hnd)
+    {
+        PMenu_Close(ent);
+        JoinTeam(ent, TEAM_SPECTATOR);
+    }
+
+    std::string GetSkin(const std::string& username, team_t team)
+    {
+        switch (team)
+        {
+        case TEAM_EASY:
+            return GetSkinEasy(username);
+        case TEAM_HARD:
+            return GetSkinHard(username);
+        default:
+            return GetSkinInvis(username);
+        }
+    }
+
+    std::string GetSkinEasy(const std::string& username)
+    {
+        return username + "\\female/ctf_r";
+    }
+
+    std::string GetSkinHard(const std::string& username)
+    {
+        return username + "\\female/ctf_b";
+    }
+
+    std::string GetSkinInvis(const std::string& username)
+    {
+        return username + "\\female/invis";
+    }
 
     void AssignTeamSkin(edict_t* ent)
     {
-        // TODO: we use female model for both easy and hard
-        // Current code uses male model for admins, but we don't have to implement this
-        // TODO: doesn't seem to be working with the model
         int playernum = ent - g_edicts - 1;
-
-        switch (ent->client->jumpdata->team)
+        for (int i = 0; i < game.maxclients; i++)
         {
-        case TEAM_EASY:
-            gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\%s/%s", ent->client->pers.netname, SexTeamEasy, SkinTeamEasy));
-            break;
-        case TEAM_HARD:
-            gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\%s/%s", ent->client->pers.netname, SexTeamHard, SkinTeamHard));
-            break;
-        default:
-            gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\female/invis", ent->client->pers.netname));
-            break;
+            edict_t* user = &g_edicts[i + 1];
+            if (user->inuse && user->client != nullptr)
+            {
+                std::string skin;
+                if (!user->client->jumpdata->show_jumpers)
+                {
+                    skin = GetSkinInvis(ent->client->pers.netname);
+                }
+                else
+                {
+                    skin = GetSkin(ent->client->pers.netname, ent->client->jumpdata->team);
+                }
+                gi.WriteByte(svc_configstring);
+                gi.WriteShort(CS_PLAYERSKINS + playernum);
+                gi.WriteString(const_cast<char*>(skin.c_str()));
+                gi.unicast(user, true);
+            }
         }
     }
 
@@ -181,8 +299,7 @@ namespace Jump
     // make the player a spectator, and open the join team menu.
     void ClientOnEnterMap(edict_t* ent)
     {
-        // TODO: go through all of the ent structs and set their values to what we want here
-
+        // The ent that we are given needs to be initialized as a player.
         int fov = ent->client->ps.fov;
         memset(&ent->client->ps, 0, sizeof(ent->client->ps));
         ent->client->ps.fov = fov;
@@ -190,66 +307,36 @@ namespace Jump
         memset(&ent->client->resp, 0, sizeof(ent->client->resp));
         ent->client->resp.enterframe = level.framenum;
 
-        //gitem_t* item;
-        //item = FindItem("Blaster");
-        //ent->client->pers.selected_item = ITEM_INDEX(item);
-        //ent->client->pers.inventory[ent->client->pers.selected_item] = 1;
-        //ent->client->pers.weapon = item;
-        //ent->client->pers.lastweapon = item;
-        ent->client->pers.selected_item = 0;
-        memset(ent->client->pers.inventory, 0, sizeof(ent->client->pers.inventory));
-        ent->client->pers.weapon = NULL;
-        ent->client->pers.lastweapon = NULL;
-
-        ent->client->pers.health = 999;
-        ent->client->pers.max_health = 999;
-
-        ent->client->pers.max_bullets = 999;
-        ent->client->pers.max_shells = 999;
-        ent->client->pers.max_rockets = 999;
-        ent->client->pers.max_grenades = 999;
-        ent->client->pers.max_cells = 999;
-        ent->client->pers.max_slugs = 999;
-
+        ent->client->pers.max_health = MaxHealthAndAmmo;
+        ent->client->pers.max_bullets = MaxHealthAndAmmo;
+        ent->client->pers.max_shells = MaxHealthAndAmmo;
+        ent->client->pers.max_rockets = MaxHealthAndAmmo;
+        ent->client->pers.max_grenades = MaxHealthAndAmmo;
+        ent->client->pers.max_cells = MaxHealthAndAmmo;
+        ent->client->pers.max_slugs = MaxHealthAndAmmo;
         ent->client->pers.connected = true;
 
-        ent->health = ent->client->pers.health;
-        ent->max_health = ent->client->pers.max_health;
-        ent->flags |= ent->client->pers.savedFlags;
+        ent->max_health = MaxHealthAndAmmo;
+        ent->flags = 0;
 
         ent->s.number = ent - g_edicts;
         ent->gravity = 1.0;
         ent->groundentity = NULL;
-        ent->takedamage = DAMAGE_AIM;
         ent->viewheight = 22;
         ent->inuse = true;
         ent->classname = "player";
         ent->mass = 200;
-        ent->deadflag = DEAD_NO;
-        ent->air_finished = level.time + 12; // TODO: this is water air time, need this?
-        ent->clipmask = MASK_PLAYERSOLID;
         ent->pain = player_pain;
         ent->die = player_die;
-        ent->waterlevel = 0;
-        ent->watertype = 0;
-        ent->flags &= ~FL_NO_KNOCKBACK;
-        ent->svflags &= ~SVF_DEADMONSTER;
 
         vec3_t mins = { -16, -16, -24 };
         vec3_t maxs = { 16, 16, 32 };
         VectorCopy(mins, ent->mins);
         VectorCopy(maxs, ent->maxs);
-        VectorClear(ent->velocity);
 
-        //ent->client->ps.gunindex = gi.modelindex(ent->client->pers.weapon->view_model);
-        ent->client->ps.gunindex = 0;
-
-        // clear entity state values
-        ent->s.effects = 0;
         ent->s.skinnum = ent - g_edicts - 1;
         ent->s.modelindex = 255;        // will use the skin specified model
         ent->s.modelindex2 = 255;       // custom gun model
-        ent->s.frame = 0;
 
         // TODO: jumpdata init
         ent->client->jumpdata->update_replay_spectating = false;
@@ -427,8 +514,8 @@ namespace Jump
         ent->client->ps.gunframe = 0;
         ent->client->ps.gunindex = 0;
 
-        ent->client->pers.health = DefaultHealth;
-        ent->health = DefaultHealth;
+        ent->client->pers.health = MaxHealthAndAmmo;
+        ent->health = MaxHealthAndAmmo;
 
         // Score is unused in Jump
         ent->client->resp.score = 0;
@@ -480,6 +567,13 @@ namespace Jump
 
     void HandleMapCompletion(edict_t* ent)
     {
+        if (ent->client->jumpdata->timer_begin == 0 || ent->client->jumpdata->replay_recording.empty())
+        {
+            Logger::Error(va("Invalid zero time map completion, user %s, map %s",
+                ent->client->pers.netname, level.mapname));
+            return;
+        }
+
         int timeMs = static_cast<int>(ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin);
         int pmoveTimeMs = static_cast<int>(ent->client->jumpdata->timer_pmove_msec);
 
@@ -564,6 +658,8 @@ namespace Jump
         // TODO: need to automatically update the replays of anyone racing
         // The could be the first race replay or whatever else position they are racing
         // People usually only race the first place replay
+
+        // TODO: send to global database
     }
 
     void SaveReplayFrame(edict_t* ent)
@@ -726,4 +822,286 @@ namespace Jump
 
         jump_server.fresh_times.clear();
     }
+
+
+    void InitializeClientEnt(edict_t* ent)
+    {
+        // Set all fields of ent->s
+        ent->s.number = ent - g_edicts;
+        VectorClear(ent->s.origin);
+        VectorClear(ent->s.angles);
+        VectorClear(ent->s.old_origin);
+        ent->s.modelindex = 255;
+        ent->s.modelindex2 = 255;
+        ent->s.modelindex3 = 0;
+        ent->s.modelindex4 = 0;
+        ent->s.frame = 0;
+        ent->s.skinnum = ent - g_edicts - 1;
+        ent->s.effects = 0;
+        ent->s.renderfx = 0;
+        ent->s.solid = SOLID_TRIGGER;
+        ent->s.sound = 0;
+        ent->s.event = 0;
+
+        // Set all fields of ent->client
+        ent->client->ps.pmove.pm_type = PM_SPECTATOR;
+        VectorClear(ent->client->ps.pmove.origin);
+        VectorClear(ent->client->ps.pmove.velocity);
+        ent->client->ps.pmove.pm_flags = 0;
+        ent->client->ps.pmove.pm_time = 0;
+        ent->client->ps.pmove.gravity = 0; // TODO?
+        VectorClear(ent->client->ps.pmove.delta_angles);
+
+        VectorClear(ent->client->ps.viewangles);
+        VectorClear(ent->client->ps.viewoffset);
+        VectorClear(ent->client->ps.kick_angles);
+        VectorClear(ent->client->ps.gunangles);
+        VectorClear(ent->client->ps.gunoffset);
+        ent->client->ps.gunindex = 0;
+        ent->client->ps.gunframe = 0;
+        ArrayClear(ent->client->ps.blend);
+        ent->client->ps.fov; // TODO: already set?
+        ent->client->ps.rdflags = 0;
+        ArrayClear(ent->client->ps.stats);
+
+        ent->client->ping; // TODO: already set?
+
+        ent->client->pers.userinfo; // Already set
+        ent->client->pers.netname; // Already set
+        ent->client->pers.hand; // Already set
+        ent->client->pers.connected = true;
+        ent->client->pers.health = MaxHealthAndAmmo;
+        ent->client->pers.max_health = MaxHealthAndAmmo;
+        ent->client->pers.savedFlags = 0;
+        ent->client->pers.selected_item = 0;
+        ArrayClear(ent->client->pers.inventory);
+        ent->client->pers.max_bullets = MaxHealthAndAmmo;
+        ent->client->pers.max_shells = MaxHealthAndAmmo;
+        ent->client->pers.max_rockets = MaxHealthAndAmmo;
+        ent->client->pers.max_grenades = MaxHealthAndAmmo;
+        ent->client->pers.max_cells = MaxHealthAndAmmo;
+        ent->client->pers.max_slugs = MaxHealthAndAmmo;
+        ent->client->pers.weapon = nullptr;
+        ent->client->pers.lastweapon = nullptr;
+        ent->client->pers.power_cubes = 0;
+        ent->client->pers.score = 0;
+
+        ent->client->resp.enterframe = level.framenum;
+        ent->client->resp.score = 0;
+        VectorClear(ent->client->resp.cmd_angles);
+        ent->client->resp.game_helpchanged = 0;
+        ent->client->resp.helpchanged = 0;
+
+        ent->client->old_pmove.pm_type = PM_SPECTATOR;
+        VectorClear(ent->client->old_pmove.origin);
+        VectorClear(ent->client->old_pmove.velocity);
+        ent->client->old_pmove.pm_flags = 0;
+        ent->client->old_pmove.pm_time = 0;
+        ent->client->old_pmove.gravity = 0; // TODO?
+        VectorClear(ent->client->old_pmove.delta_angles);
+
+        ent->client->showscores = false;
+        ent->client->inmenu = false;
+        ent->client->menu = nullptr;
+        ent->client->showinventory = false;
+        ent->client->showhelp = false;
+        ent->client->showhelpicon = false;
+        ent->client->ammo_index = 0;
+        ent->client->buttons = 0;
+        ent->client->oldbuttons = 0;
+        ent->client->latched_buttons = 0;
+        ent->client->weapon_thunk = false;
+        ent->client->newweapon = nullptr;
+        ent->client->damage_armor = 0;
+        ent->client->damage_parmor = 0;
+        ent->client->damage_blood = 0;
+        ent->client->damage_knockback = 0;
+        VectorClear(ent->client->damage_from);
+        ent->client->killer_yaw = 0;
+        ent->client->weaponstate = WEAPON_READY;
+        VectorClear(ent->client->kick_angles);
+        VectorClear(ent->client->kick_origin);
+        ent->client->v_dmg_roll = 0;
+        ent->client->v_dmg_pitch = 0;
+        ent->client->v_dmg_time = 0;
+        ent->client->fall_time = 0;
+        ent->client->fall_value = 0;
+        ent->client->damage_alpha = 0;
+        ent->client->bonus_alpha = 0;
+        VectorClear(ent->client->damage_blend);
+        VectorClear(ent->client->v_angle);
+        ent->client->bobtime = 0;
+        VectorClear(ent->client->oldviewangles);
+        VectorClear(ent->client->oldvelocity);
+        ent->client->next_drown_time = 0;
+        ent->client->old_waterlevel = 0;
+        ent->client->breather_sound = 0;
+        ent->client->machinegun_shots = 0;
+        ent->client->anim_end = 0;
+        ent->client->anim_priority = ANIM_BASIC;
+        ent->client->anim_duck = false;
+        ent->client->anim_run = false;
+        ent->client->quad_framenum = 0;
+        ent->client->invincible_framenum = 0;
+        ent->client->breather_framenum = 0;
+        ent->client->enviro_framenum = 0;
+        ent->client->grenade_blew_up = false;
+        ent->client->grenade_time = 0;
+        ent->client->silencer_shots = 0;
+        ent->client->weapon_sound = 0;
+        ent->client->pickup_msg_time = 0;
+        ent->client->flood_locktill = 0;
+        ArrayClear(ent->client->flood_when);
+        ent->client->flood_whenhead = 0;
+        ent->client->respawn_time = 0; // TODO: could set this maybe
+        ent->client->chase_target = nullptr;
+        ent->client->update_chase = false;
+        ent->client->menutime = 0;
+        ent->client->menudirty = false;
+
+        ent->client->jumpdata->replay_recording.clear();
+        ent->client->jumpdata->replay_spectating.clear();
+        ent->client->jumpdata->replay_spectating_framenum = 0;
+        ent->client->jumpdata->update_replay_spectating = false;
+        ent->client->jumpdata->replay_spectating_hud_string.clear();
+        ent->client->jumpdata->localUserId; // Already set
+        ent->client->jumpdata->fps; // Already set
+        ent->client->jumpdata->async; // Already set
+        ent->client->jumpdata->ip; // Already set
+        ent->client->jumpdata->team = TEAM_SPECTATOR;
+        ent->client->jumpdata->timer_pmove_msec = 0;
+        ent->client->jumpdata->timer_begin = 0;
+        ent->client->jumpdata->timer_end = 0;
+        ent->client->jumpdata->timer_paused = true;
+        ent->client->jumpdata->timer_finished = false;
+        ent->client->jumpdata->stores = {};
+        ent->client->jumpdata->store_ent = nullptr;
+        ent->client->jumpdata->key_states = 0;
+        ent->client->jumpdata->scores_menu = SCORES_MENU_NONE;
+        ent->client->jumpdata->racing = false;
+        ent->client->jumpdata->racing_frames.clear();
+        ent->client->jumpdata->racing_framenum = 0;
+        ent->client->jumpdata->racing_delay_frames = 0;
+        ent->client->jumpdata->racing_highscore = 0;
+        ent->client->jumpdata->hud_footer1.clear();
+        ent->client->jumpdata->hud_footer2.clear();
+        ent->client->jumpdata->hud_footer3.clear();
+        ent->client->jumpdata->hud_footer4.clear();
+        ent->client->jumpdata->show_jumpers = true;
+
+        // Set the rest of ent fields
+        ent->inuse = true;
+
+        ent->linkcount = 0; // All this link stuff gets set when the ent is linked
+        ent->area.prev = nullptr;
+        ent->area.next = nullptr;
+        ent->num_clusters = 0;
+        ArrayClear(ent->clusternums);
+        ent->headnode = 0;
+        ent->areanum = 0;
+        ent->areanum2 = 0;
+
+        ent->svflags = 0;
+
+        vec3_t mins = { -16, -16, -24 };
+        vec3_t maxs = { 16, 16, 32 };
+        VectorCopy(mins, ent->mins);
+        VectorCopy(maxs, ent->maxs);
+
+        VectorClear(ent->absmin); // These all get set when the ent is linked
+        VectorClear(ent->absmax);
+        VectorClear(ent->size);
+
+        ent->solid = SOLID_TRIGGER;
+        ent->clipmask = 0;
+        ent->owner = nullptr;
+        ent->movetype = MOVETYPE_NOCLIP;
+        ent->flags = 0;
+        ent->model = "players/female/tris.md2";
+        ent->freetime = 0;
+        ent->message = nullptr;
+        ent->classname = "player";
+        ent->spawnflags = 0;
+        ent->timestamp = 0;
+        ent->angle = 0;
+        ent->target = nullptr;
+        ent->targetname = nullptr;
+        ent->killtarget = nullptr;
+        ent->team = nullptr;
+        ent->pathtarget = nullptr;
+        ent->deathtarget = nullptr;
+        ent->combattarget = nullptr;
+        ent->target_ent = nullptr;
+        ent->speed = 0;
+        ent->accel = 0;
+        ent->decel = 0;
+        VectorClear(ent->movedir);
+        VectorClear(ent->pos1);
+        VectorClear(ent->pos2);
+        VectorClear(ent->velocity);
+        VectorClear(ent->avelocity);
+        ent->mass = 200;
+        ent->air_finished = 0;
+        ent->gravity = 1.0f;
+        ent->goalentity = nullptr;
+        ent->movetarget = nullptr;
+        ent->yaw_speed = 0;
+        ent->ideal_yaw = 0;
+        ent->nextthink = 0;
+        ent->prethink = nullptr;
+        ent->think = nullptr;
+        ent->blocked = nullptr;
+        ent->touch = nullptr;
+        ent->use = nullptr;
+        ent->pain = player_pain;
+        ent->die = player_die;
+        ent->touch_debounce_time = 0;
+        ent->pain_debounce_time = 0;
+        ent->damage_debounce_time = 0;
+        ent->fly_sound_debounce_time = 0;
+        ent->last_move_time = 0;
+        ent->health = MaxHealthAndAmmo;
+        ent->max_health = MaxHealthAndAmmo;
+        ent->gib_health = 0;
+        ent->deadflag = DEAD_NO;
+        ent->show_hostile = 0;
+        ent->powerarmor_time = 0;
+        ent->map = nullptr;
+        ent->viewheight = 22;
+        ent->takedamage = DAMAGE_NO;
+        ent->dmg = 0;
+        ent->radius_dmg = 0;
+        ent->dmg_radius = 0;
+        ent->sounds = 0;
+        ent->count = 0;
+        ent->chain = nullptr;
+        ent->enemy = nullptr;
+        ent->oldenemy = nullptr;
+        ent->activator = nullptr;
+        ent->groundentity = nullptr;
+        ent->groundentity_linkcount = 0;
+        ent->teamchain = nullptr;
+        ent->teammaster = nullptr;
+        ent->mynoise = nullptr;
+        ent->mynoise2 = nullptr;
+        ent->noise_index = 0;
+        ent->noise_index2 = 0;
+        ent->volume = 0;
+        ent->attenuation = 0;
+        ent->wait = 0;
+        ent->delay = 0;
+        ent->random = 0;
+        ent->teleport_time = 0;
+        ent->watertype = 0;
+        ent->waterlevel = 0;
+        VectorClear(ent->move_origin);
+        VectorClear(ent->move_angles);
+        ent->light_level = 0;
+        ent->style = 0;
+        ent->item = nullptr;
+        memset(&ent->moveinfo, 0, sizeof(ent->moveinfo));
+        memset(&ent->monsterinfo, 0, sizeof(ent->monsterinfo));
+    }
+
+
 }

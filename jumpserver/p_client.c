@@ -577,7 +577,10 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
     //Jump::AssignTeamSkin(ent);
 
 	std::string ip = Info_ValueForKey(userinfo, "ip");
-	ent->client->jumpdata->ip = ip.substr(0, ip.find_first_of(':')); // remove port from ip address
+	if (!ip.empty())
+	{
+		ent->client->jumpdata->ip = ip.substr(0, ip.find_first_of(':')); // remove port from ip address
+	}
 
     // Jump
 

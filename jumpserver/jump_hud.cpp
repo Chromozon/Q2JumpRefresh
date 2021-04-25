@@ -305,13 +305,13 @@ void HUD::SetStatVoting(edict_t* ent)
 /// <param name="ent"></param>
 void HUD::SetStatHealth(edict_t* ent)
 {
-    if (ent->health < 999 && ent->health > 0)
+    if (ent->health < 1000)
     {
         ent->client->ps.stats[STAT_JUMP_HEALTH] = ent->health;
     }
     else
     {
-        ent->client->ps.stats[STAT_HEALTH] = 0;
+        ent->client->ps.stats[STAT_JUMP_HEALTH] = 0;
     }
 }
 

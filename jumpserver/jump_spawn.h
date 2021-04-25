@@ -16,7 +16,7 @@ public:
     static void JoinTeamEasy(edict_t* ent);
     static void JoinTeamHard(edict_t* ent);
     static void JoinTeamSpectator(edict_t* ent);
-    static void PlayerRespawn(edict_t* ent);
+    static void PlayerRespawn(edict_t* ent, int storeNum = 0);
 
 private:
     static std::string GetSkin(const std::string& username, team_t team);

@@ -16,27 +16,9 @@ namespace Jump
     int CountPlayersOnTeam(team_t team);
 
     void UpdateUserId(edict_t* ent);
-    void JoinTeam(edict_t* ent, team_t team);
-    void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd);
-    void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd);
-    void JoinChaseCam(edict_t* ent, pmenuhnd_t* hnd);
-
-    std::string GetSkin(const std::string& username, team_t team);
-    std::string GetSkinEasy(const std::string& username);
-    std::string GetSkinHard(const std::string& username);
-    std::string GetSkinInvis(const std::string& username);
-    void AssignTeamSkin(edict_t* ent);
-
-    edict_t* SelectJumpSpawnPoint();
-
-    void ClientOnEnterMap(edict_t* ent);
-    void InitAsSpectator(edict_t* ent);
-
-    void MoveClientToPosition(edict_t* ent, vec3_t origin, vec3_t angles);
-
-    void SpawnForJumping(edict_t* ent);
-    void InitClientForRespawn(edict_t* ent);
-    void SpawnAtStorePosition(edict_t* ent, store_data_t data);
+    void JoinTeamEasyCommand(edict_t* ent, pmenuhnd_t* hnd);
+    void JoinTeamHardCommand(edict_t* ent, pmenuhnd_t* hnd);
+    void JoinChaseCamCommand(edict_t* ent, pmenuhnd_t* hnd);
 
     qboolean PickupWeapon(edict_t* weap, edict_t* ent);
 
@@ -53,4 +35,6 @@ namespace Jump
     void HandleMapCompletion(edict_t* ent);
 
     void AdvanceRacingSpark(edict_t* ent);
+
+    void InitializeClientEnt(edict_t* ent);
 }

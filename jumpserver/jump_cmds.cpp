@@ -13,6 +13,7 @@
 #include <algorithm>
 #include "rapidjson/document.h"
 #include "jump_local_database.h"
+#include "jump_spawn.h"
 
 namespace Jump
 {
@@ -207,35 +208,17 @@ namespace Jump
 
     void Cmd_Jump_Kill(edict_t* ent)
     {
-        SpawnForJumping(ent);
+        Spawn::PlayerRespawn(ent);
     }
 
     void Cmd_Jump_Recall(edict_t* ent)
     {
-        if (ent->client->jumpdata->team == TEAM_EASY)
+        int storeNum = 0;
+        if (gi.argc() >= 2)
         {
-            if (ent->client->jumpdata->stores.HasStore())
-            {
-                int num = 1;
-                if (gi.argc() >= 2 && StringToIntMaybe(gi.argv(1), num))
-                {
-                    if (num <= 0)
-                    {
-                        num = 1;
-                    }
-                }
-                store_data_t data = ent->client->jumpdata->stores.GetStore(num);
-                SpawnAtStorePosition(ent, data);
-            }
-            else
-            {
-                SpawnForJumping(ent);
-            }
+            StringToIntMaybe(gi.argv(1), storeNum);
         }
-        else
-        {
-            SpawnForJumping(ent);
-        }
+        Spawn::PlayerRespawn(ent, storeNum);
     }
 
     void Cmd_Jump_Store(edict_t* ent)
@@ -353,7 +336,10 @@ namespace Jump
         }
 
         // Move client to a spectator
-        InitAsSpectator(ent);
+        if (ent->client->jumpdata->team != TEAM_SPECTATOR)
+        {
+            Spawn::JoinTeamSpectator(ent);
+        }
 
         // Set to replay state
         ent->client->jumpdata->replay_spectating_framenum = 0;

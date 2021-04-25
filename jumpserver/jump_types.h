@@ -33,7 +33,7 @@ namespace Jump
     typedef enum
     {
         LEVEL_STATE_FREEPLAY,
-        LEVEL_STATE_VOTING,
+        LEVEL_STATE_VOTING, // TODO: remove end of map voting
         LEVEL_STATE_INTERMISSION
     } level_state_t;
 

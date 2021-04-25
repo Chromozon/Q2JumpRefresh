@@ -25,13 +25,12 @@ void Spawn::JoinTeamEasy(edict_t* ent)
     {
         store_data_t data = ent->client->jumpdata->stores.GetStore(1);
         // TODO: restore weapons/ammo from store
-        // TODO: restore current time from store
         MovePlayerToPosition(ent, data.pos, data.angles, false);
         ent->client->jumpdata->timer_begin = Sys_Milliseconds() - data.time_interval;
     }
     else
     {
-        edict_t* spawn = SelectJumpSpawnPoint();
+        edict_t* spawn = SelectPlayerSpawn();
         MovePlayerToSpawn(ent, spawn, true);
     }
     gi.linkentity(ent);
@@ -49,7 +48,7 @@ void Spawn::JoinTeamHard(edict_t* ent)
 
     InitDefaultSpawnVariables(ent);
 
-    edict_t* spawn = SelectJumpSpawnPoint();
+    edict_t* spawn = SelectPlayerSpawn();
     MovePlayerToSpawn(ent, spawn, true);
     gi.linkentity(ent);
 }
@@ -69,7 +68,7 @@ void Spawn::JoinTeamSpectator(edict_t* ent)
 /// Handles player respawning for all teams.
 /// </summary>
 /// <param name="ent"></param>
-void Spawn::PlayerRespawn(edict_t* ent)
+void Spawn::PlayerRespawn(edict_t* ent, int storeNum)
 {
     if (ent->client->jumpdata->team == TEAM_SPECTATOR)
     {
@@ -80,14 +79,18 @@ void Spawn::PlayerRespawn(edict_t* ent)
     InitDefaultSpawnVariables(ent);
     if (ent->client->jumpdata->team == TEAM_EASY && ent->client->jumpdata->stores.HasStore())
     {
-        store_data_t data = ent->client->jumpdata->stores.GetStore(1);
+        if (storeNum < 1)
+        {
+            storeNum = 1;
+        }
+        store_data_t data = ent->client->jumpdata->stores.GetStore(storeNum);
         // TODO: restore weapons/ammo from store
         MovePlayerToPosition(ent, data.pos, data.angles, false);
         ent->client->jumpdata->timer_begin = Sys_Milliseconds() - data.time_interval;
     }
     else // TEAM_EASY with no stores or TEAM_HARD
     {
-        edict_t* spawn = SelectJumpSpawnPoint();
+        edict_t* spawn = SelectPlayerSpawn();
         MovePlayerToSpawn(ent, spawn, true);
     }
     gi.linkentity(ent);
@@ -182,6 +185,7 @@ void Spawn::InitDefaultSpawnVariables(edict_t* ent)
     ent->client->jumpdata->timer_end = 0;
     ent->client->jumpdata->timer_paused = true;
     ent->client->jumpdata->timer_finished = false;
+    ent->client->jumpdata->racing_framenum = 0;
 
     ent->svflags = 0;
     ent->solid = SOLID_TRIGGER;
@@ -453,10 +457,6 @@ void Spawn::InitAsSpectator(edict_t* ent)
     ent->client->update_chase = false;
 
     ent->client->jumpdata->replay_recording.clear();
-    ent->client->jumpdata->replay_spectating.clear();
-    ent->client->jumpdata->replay_spectating_framenum = 0;
-    ent->client->jumpdata->update_replay_spectating = false;
-    ent->client->jumpdata->replay_spectating_hud_string.clear();
     ent->client->jumpdata->team = TEAM_SPECTATOR;
     ent->client->jumpdata->timer_pmove_msec = 0;
     ent->client->jumpdata->timer_begin = 0;

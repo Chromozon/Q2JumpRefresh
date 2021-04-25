@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump_logger.h"
 #include "g_chase.h"
 #include "jump_local_database.h"
+#include "jump_spawn.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -393,27 +394,6 @@ void FetchClientEntData (edict_t *ent)
 		ent->client->resp.score = ent->client->pers.score;
 }
 
-/*
-===========
-SelectSpawnPoint
-
-Chooses a player start, deathmatch start, coop start, etc
-============
-*/
-void SelectSpawnPoint(edict_t* ent, vec3_t origin /* set on return */, vec3_t angles /* set on return */)
-{
-	edict_t* spot = Jump::SelectJumpSpawnPoint();
-	if (spot == NULL)
-	{
-		gi.error("Couldn't find spawn point %s\n", game.spawnpoint);
-	}
-	else
-	{
-		VectorCopy(spot->s.origin, origin);
-		origin[2] += 9;
-		VectorCopy(spot->s.angles, angles);
-	}
-}
 
 //======================================================================
 
@@ -524,7 +504,7 @@ to be placed into the game.  This will happen every level load.
 void ClientBegin (edict_t *ent)
 {
     // Jump
-    Jump::ClientOnEnterMap(ent);
+    Jump::Spawn::ClientOnEnterMap(ent);
     // Jump
 }
 
@@ -1061,7 +1041,7 @@ void ClientBeginServerFrame (edict_t *ent)
 				(deathmatch->value && ((int)dmflags->value & DF_FORCE_RESPAWN) ))
 			{
 				//respawn(ent);
-				Jump::SpawnForJumping(ent);
+				Jump::Spawn::PlayerRespawn(ent);
 				client->latched_buttons = 0;
 			}
 		}

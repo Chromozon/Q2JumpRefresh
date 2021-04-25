@@ -7,6 +7,7 @@
 #include "jump_voting.h"
 #include "jump_ghost.h"
 #include "jump_local_database.h"
+#include "jump_spawn.h"
 
 namespace Jump
 {
@@ -32,11 +33,11 @@ namespace Jump
         { NULL /* mapname */,             PMENU_ALIGN_CENTER, NULL },
         { NULL,                           PMENU_ALIGN_CENTER, NULL },
         { NULL,                           PMENU_ALIGN_CENTER, NULL },
-        { "Join Easy Team",               PMENU_ALIGN_LEFT,   JoinTeamEasy },
+        { "Join Easy Team",               PMENU_ALIGN_LEFT,   JoinTeamEasyCommand },
         { NULL /* number of players */,   PMENU_ALIGN_LEFT,   NULL },
-        { "Join Hard Team",               PMENU_ALIGN_LEFT,   JoinTeamHard },
+        { "Join Hard Team",               PMENU_ALIGN_LEFT,   JoinTeamHardCommand },
         { NULL /* number of players */,   PMENU_ALIGN_LEFT,   NULL },
-        { NULL /* chase camera */,        PMENU_ALIGN_LEFT,   JoinChaseCam },
+        { NULL /* chase camera */,        PMENU_ALIGN_LEFT,   JoinChaseCamCommand },
         { NULL,                           PMENU_ALIGN_LEFT,   NULL }, // TODO help commands menu
         { NULL,                           PMENU_ALIGN_LEFT,   NULL },
         { "Highlight your choice and",    PMENU_ALIGN_LEFT,   NULL },
@@ -49,10 +50,10 @@ namespace Jump
     // No other menus can be open when this function is called
     void OpenMenu_Join(edict_t* ent)
     {
-        char mapName[MaxMenuWidth] = { 0 };
-        char playersEasy[MaxMenuWidth] = { 0 };
-        char playersHard[MaxMenuWidth] = { 0 };
-        char chaseCam[MaxMenuWidth] = { 0 };
+        static char mapName[MaxMenuWidth] = { 0 };
+        static char playersEasy[MaxMenuWidth] = { 0 };
+        static char playersHard[MaxMenuWidth] = { 0 };
+        static char chaseCam[MaxMenuWidth] = { 0 };
 
         strncpy(mapName, level.mapname, MaxMenuWidth - 1);
         sprintf(playersEasy, "  (%d players)", CountPlayersOnTeam(TEAM_EASY));
@@ -104,433 +105,29 @@ namespace Jump
         }
     }
 
-
-
-
-    void ClearAllVariablesForRespawn(edict_t* ent)
+    void JoinTeamEasyCommand(edict_t* ent, pmenuhnd_t* hnd)
     {
-        
+        PMenu_Close(ent);
+        Spawn::JoinTeamEasy(ent);
     }
 
-    void JoinTeamHard(edict_t* ent)
+    void JoinTeamHardCommand(edict_t* ent, pmenuhnd_t* hnd)
     {
-        ent->client->jumpdata->team = TEAM_HARD;
-
-        // Reset race
-        if (ent->client->jumpdata->racing)
-        {
-            ent->client->jumpdata->racing_framenum = 0;
-        }
-
-        // Reset replay and timer
-        ent->client->jumpdata->replay_recording.clear();
-        ent->client->jumpdata->timer_paused = true;
-        ent->client->jumpdata->timer_finished = false;
-        ent->client->jumpdata->timer_begin = 0;
-        ent->client->jumpdata->timer_end = 0;
-        ent->client->jumpdata->timer_pmove_msec = 0;
-
-        // Reset spectating replay
-        ent->client->jumpdata->update_replay_spectating = false;
-        ent->client->jumpdata->replay_spectating_framenum = 0;
-        ent->client->jumpdata->replay_spectating.clear();
-        ent->client->jumpdata->replay_spectating_hud_string.clear();
-
-        AssignTeamSkin(ent);
-
-        // Clear all ent variables
-        ent->groundentity = NULL;
-        ent->takedamage = DAMAGE_YES;
-        ent->movetype = MOVETYPE_WALK;
-        ent->solid = SOLID_TRIGGER;
-        ent->deadflag = DEAD_NO;
-        ent->air_finished = 0;
-        ent->clipmask = MASK_PLAYERSOLID;
-        ent->waterlevel = 0;
-        ent->watertype = 0;
-        ent->flags = 0;
-        ent->svflags = 0;
-        ent->health = MaxHealthAndAmmo;
-        ent->max_health = MaxHealthAndAmmo;
-
-        ent->client->pers.health = MaxHealthAndAmmo;
-        ent->client->pers.max_health = MaxHealthAndAmmo;
-        ent->client->resp.score = 0;
-        ent->client->pers.score = 0;
-
-        // Clear weapons and inventory
-        memset(ent->client->pers.inventory, 0, sizeof(ent->client->pers.inventory));
-        ent->client->pers.weapon = NULL;
-        ent->client->pers.lastweapon = NULL;
-        ent->client->pers.selected_item = 0;
-        VectorClear(ent->client->ps.gunangles);
-        VectorClear(ent->client->ps.gunoffset);
-        ent->client->ps.gunframe = 0;
-        ent->client->ps.gunindex = 0;
-
-        // Clear effects
-        ent->s.event = EV_NONE;
-        ent->s.effects = 0;
-        ent->s.frame = 0;
-
-        edict_t* spawn = SelectJumpSpawnPoint();
-
-        vec3_t spawnOrigin;
-        VectorCopy(spawn->s.origin, spawnOrigin);
-        spawnOrigin[2] += 9;
-
-        vec3_t spawnAngles;
-        VectorCopy(spawn->s.angles, spawnAngles);
-        
-        MoveClientToPosition(ent, spawnOrigin, spawnAngles);
+        PMenu_Close(ent);
+        Spawn::JoinTeamHard(ent);
     }
 
-
-    void JoinTeam(edict_t* ent, team_t team)
+    void JoinChaseCamCommand(edict_t* ent, pmenuhnd_t* hnd)
     {
-        ent->client->jumpdata->team = team;
-        AssignTeamSkin(ent);
-        if (team == TEAM_EASY)
+        PMenu_Close(ent);
+        if (ent->client->jumpdata->team == TEAM_SPECTATOR)
         {
-            if (ent->client->jumpdata->stores.HasStore())
-            {
-                store_data_t data = ent->client->jumpdata->stores.GetStore(1);
-                SpawnAtStorePosition(ent, data);
-            }
-            else
-            {
-                SpawnForJumping(ent);
-            }
+            // TODO: Try to find someone to chase
         }
         else
         {
-            SpawnForJumping(ent);
+            Spawn::JoinTeamSpectator(ent);
         }
-    }
-
-    void JoinTeamEasy(edict_t* ent, pmenuhnd_t* hnd)
-    {
-        PMenu_Close(ent);
-        JoinTeam(ent, TEAM_EASY);
-    }
-
-    void JoinTeamHard(edict_t* ent, pmenuhnd_t* hnd)
-    {
-        PMenu_Close(ent);
-        JoinTeam(ent, TEAM_HARD);
-    }
-
-    void JoinChaseCam(edict_t* ent, pmenuhnd_t* hnd)
-    {
-        PMenu_Close(ent);
-        JoinTeam(ent, TEAM_SPECTATOR);
-    }
-
-    std::string GetSkin(const std::string& username, team_t team)
-    {
-        switch (team)
-        {
-        case TEAM_EASY:
-            return GetSkinEasy(username);
-        case TEAM_HARD:
-            return GetSkinHard(username);
-        default:
-            return GetSkinInvis(username);
-        }
-    }
-
-    std::string GetSkinEasy(const std::string& username)
-    {
-        return username + "\\female/ctf_r";
-    }
-
-    std::string GetSkinHard(const std::string& username)
-    {
-        return username + "\\female/ctf_b";
-    }
-
-    std::string GetSkinInvis(const std::string& username)
-    {
-        return username + "\\female/invis";
-    }
-
-    void AssignTeamSkin(edict_t* ent)
-    {
-        int playernum = ent - g_edicts - 1;
-        for (int i = 0; i < game.maxclients; i++)
-        {
-            edict_t* user = &g_edicts[i + 1];
-            if (user->inuse && user->client != nullptr)
-            {
-                std::string skin;
-                if (!user->client->jumpdata->show_jumpers)
-                {
-                    skin = GetSkinInvis(ent->client->pers.netname);
-                }
-                else
-                {
-                    skin = GetSkin(ent->client->pers.netname, ent->client->jumpdata->team);
-                }
-                gi.WriteByte(svc_configstring);
-                gi.WriteShort(CS_PLAYERSKINS + playernum);
-                gi.WriteString(const_cast<char*>(skin.c_str()));
-                gi.unicast(user, true);
-            }
-        }
-    }
-
-    edict_t* SelectJumpSpawnPoint()
-    {
-        edict_t* spot = G_Find(NULL, FOFS(classname), "info_player_deathmatch");
-        if (spot != NULL)
-        {
-            return spot;
-        }
-        spot = G_Find(NULL, FOFS(classname), "info_player_start");
-        if (spot != NULL)
-        {
-            return spot;
-        }
-        return NULL;
-    }
-
-    // This is called once whenever a player first enters a map.
-    // We want to initialize everything to a clean state,
-    // make the player a spectator, and open the join team menu.
-    void ClientOnEnterMap(edict_t* ent)
-    {
-        // The ent that we are given needs to be initialized as a player.
-        int fov = ent->client->ps.fov;
-        memset(&ent->client->ps, 0, sizeof(ent->client->ps));
-        ent->client->ps.fov = fov;
-
-        memset(&ent->client->resp, 0, sizeof(ent->client->resp));
-        ent->client->resp.enterframe = level.framenum;
-
-        ent->client->pers.max_health = MaxHealthAndAmmo;
-        ent->client->pers.max_bullets = MaxHealthAndAmmo;
-        ent->client->pers.max_shells = MaxHealthAndAmmo;
-        ent->client->pers.max_rockets = MaxHealthAndAmmo;
-        ent->client->pers.max_grenades = MaxHealthAndAmmo;
-        ent->client->pers.max_cells = MaxHealthAndAmmo;
-        ent->client->pers.max_slugs = MaxHealthAndAmmo;
-        ent->client->pers.connected = true;
-
-        ent->max_health = MaxHealthAndAmmo;
-        ent->flags = 0;
-
-        ent->s.number = ent - g_edicts;
-        ent->gravity = 1.0;
-        ent->groundentity = NULL;
-        ent->viewheight = 22;
-        ent->inuse = true;
-        ent->classname = "player";
-        ent->mass = 200;
-        ent->pain = player_pain;
-        ent->die = player_die;
-
-        vec3_t mins = { -16, -16, -24 };
-        vec3_t maxs = { 16, 16, 32 };
-        VectorCopy(mins, ent->mins);
-        VectorCopy(maxs, ent->maxs);
-
-        ent->s.skinnum = ent - g_edicts - 1;
-        ent->s.modelindex = 255;        // will use the skin specified model
-        ent->s.modelindex2 = 255;       // custom gun model
-
-        // TODO: jumpdata init
-        ent->client->jumpdata->update_replay_spectating = false;
-
-        InitAsSpectator(ent);
-
-        if (level.intermissiontime || jump_server.level_state == LEVEL_STATE_VOTING)
-        {
-            // TODO move to intermission
-            MoveClientToIntermission(ent);
-        }
-        else
-        {
-            vec3_t spawn_origin = { 0 };
-            vec3_t spawn_angles = { 0 };
-            SelectSpawnPoint(ent, spawn_origin, spawn_angles);
-            MoveClientToPosition(ent, spawn_origin, spawn_angles);
-            
-            // Send updates to the client before opening the menu
-            gi.linkentity(ent);
-
-            OpenMenu_Join(ent);
-        }
-
-        gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
-
-        // make sure all view stuff is valid
-        ClientEndServerFrame(ent);
-    }
-
-    void InitAsSpectator(edict_t* ent)
-    {
-        ent->movetype = MOVETYPE_NOCLIP;
-        ent->solid = SOLID_NOT;
-        ent->svflags |= SVF_NOCLIENT;
-        ent->client->ps.gunindex = 0;
-        ent->client->jumpdata->team = TEAM_SPECTATOR;
-    }
-
-    void MoveClientToPosition(edict_t* ent, vec3_t origin, vec3_t angles)
-    {
-        // Stop all previous movement
-        ent->waterlevel = 0;
-        ent->watertype = 0;
-        VectorClear(ent->velocity);
-
-        ent->client->ps.pmove.origin[0] = origin[0] * 8;
-        ent->client->ps.pmove.origin[1] = origin[1] * 8;
-        ent->client->ps.pmove.origin[2] = origin[2] * 8;
-
-        VectorCopy(origin, ent->s.origin);
-        ent->s.origin[2] += 1;	// make sure off ground
-        VectorCopy(ent->s.origin, ent->s.old_origin);
-
-        ent->s.angles[PITCH] = 0;
-        ent->s.angles[YAW] = angles[YAW];
-        ent->s.angles[ROLL] = 0;
-        VectorCopy(ent->s.angles, ent->client->ps.viewangles);
-        VectorCopy(ent->s.angles, ent->client->v_angle);
-        VectorClear(ent->client->ps.viewoffset);
-
-        for (int i = 0; i < 3; i++)
-        {
-            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->s.angles[i] - ent->client->resp.cmd_angles[i]);
-        }
-    }
-
-    void SpawnForJumping(edict_t* ent)
-    {
-#if 0
-        ent->groundentity = NULL;
-        ent->client = &game.clients[index];
-        ent->takedamage = DAMAGE_AIM;
-        ent->movetype = MOVETYPE_WALK;
-        ent->viewheight = 22;
-        ent->inuse = true;
-        ent->classname = "player";
-        ent->mass = 200;
-        ent->solid = SOLID_BBOX;
-        ent->deadflag = DEAD_NO;
-        ent->air_finished = level.time + 12;
-        ent->clipmask = MASK_PLAYERSOLID;
-        ent->model = "players/male/tris.md2";
-        ent->pain = player_pain;
-        ent->die = player_die;
-        ent->waterlevel = 0;
-        ent->watertype = 0;
-        ent->flags &= ~FL_NO_KNOCKBACK;
-        ent->svflags &= ~SVF_DEADMONSTER;
-
-        VectorCopy(mins, ent->mins);
-        VectorCopy(maxs, ent->maxs);
-        VectorClear(ent->velocity);
-
-        // clear playerstate values
-        memset(&ent->client->ps, 0, sizeof(client->ps));
-
-        client->ps.pmove.origin[0] = spawn_origin[0] * 8;
-        client->ps.pmove.origin[1] = spawn_origin[1] * 8;
-        client->ps.pmove.origin[2] = spawn_origin[2] * 8;
-        //ZOID
-        client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
-#endif
-
-        // Remove spectator flags
-        ent->movetype = MOVETYPE_WALK;
-        ent->solid = SOLID_TRIGGER;
-        ent->flags = 0;
-        ent->svflags = 0;
-        ent->viewheight = 22;
-        ent->mass = 200;
-        ent->deadflag = DEAD_NO;
-        ent->takedamage = DAMAGE_YES;
-        
-        // clear entity state values
-        ent->s.effects = 0;
-        ent->s.skinnum = ent - g_edicts - 1;
-        ent->s.modelindex = 255;        // will use the skin specified model
-        ent->s.modelindex2 = 255;       // custom gun model
-        ent->s.frame = 0;
-
-        int gravity = ent->client->ps.pmove.gravity;
-        memset(&ent->client->ps.pmove, 0, sizeof(ent->client->ps.pmove));
-        ent->client->ps.pmove.gravity = gravity;
-
-        // Clear inventory of all weapons and ammo and change to blaster
-        // TODO: simplify the weapon change code
-        //char userinfo[MAX_INFO_STRING] = { 0 };
-        //memcpy(userinfo, ent->client->pers.userinfo, sizeof(userinfo));
-        //InitClientPersistant(ent->client); // TODO: don't like this, should just set all the vars
-        //ClientUserinfoChanged(ent, userinfo); // TODO: dont' need this or the copy from above
-        Jump::AssignTeamSkin(ent);
-
-        // TODO inline
-        InitClientForRespawn(ent);
-
-        // Move to spawn
-        vec3_t spawn_origin = { 0 };
-        vec3_t spawn_angles = { 0 };
-        SelectSpawnPoint(ent, spawn_origin, spawn_angles);
-        MoveClientToPosition(ent, spawn_origin, spawn_angles);
-
-        // Reset timer
-        ent->client->jumpdata->timer_begin = 0;
-        ent->client->jumpdata->timer_end = 0;
-        ent->client->jumpdata->timer_paused = true;
-        ent->client->jumpdata->timer_finished = false;
-
-        // Clear replay
-        ClearReplayData(ent);
-        ent->client->jumpdata->update_replay_spectating = false;
-
-        // Clear any special move effects
-        ent->s.event = EV_NONE;
-        ent->client->ps.pmove.pm_flags = 0;
-        ent->client->ps.pmove.pm_time = 0;
-
-        // Reset race
-        ent->client->jumpdata->racing_framenum = 0;
-
-        gi.linkentity(ent);
-    }
-
-    void InitClientForRespawn(edict_t* ent)
-    {
-        // Clear out the entire inventory
-        memset(ent->client->pers.inventory, 0, sizeof(ent->client->pers.inventory));
-
-        // Unequip all weapons
-        ent->client->pers.weapon = NULL;
-        ent->client->pers.lastweapon = NULL;
-        ent->client->pers.selected_item = 0;
-        VectorClear(ent->client->ps.gunangles);
-        VectorClear(ent->client->ps.gunoffset);
-        ent->client->ps.gunframe = 0;
-        ent->client->ps.gunindex = 0;
-
-        ent->client->pers.health = MaxHealthAndAmmo;
-        ent->health = MaxHealthAndAmmo;
-
-        // Score is unused in Jump
-        ent->client->resp.score = 0;
-        ent->client->pers.score = 0;
-    }
-
-    void SpawnAtStorePosition(edict_t* ent, store_data_t data)
-    {
-        if (ent->client->jumpdata->team == TEAM_HARD) {
-            // Should never get here!
-            gi.error("Uh oh, tried to use a store on team hard.");
-            return;
-        }
-        ent->client->jumpdata->timer_begin = Sys_Milliseconds() - data.time_interval;
-        MoveClientToPosition(ent, data.pos, data.angles);
     }
 
     qboolean PickupWeapon(edict_t* weap, edict_t* ent)

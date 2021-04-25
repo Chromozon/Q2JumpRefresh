@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Jump
 #include "jump_hud.h"
 #include "jump_menu.h"
+#include "jump_spawn.h"
 // Jump
 
 
@@ -94,7 +95,7 @@ void BeginIntermission (edict_t *targ)
 			continue;
 		if (client->health <= 0)
 			//respawn(client);
-			Jump::SpawnForJumping(targ);
+			Jump::Spawn::PlayerRespawn(targ);
 	}
 
 	level.intermissiontime = level.time;

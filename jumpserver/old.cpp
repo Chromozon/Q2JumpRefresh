@@ -1588,5 +1588,26 @@ void GhostReplay::LaserThink(edict_t* ent)
 	_ghostBeam->nextthink = level.time + FRAMETIME;
 }
 
+/*
+===========
+SelectSpawnPoint
+
+Chooses a player start, deathmatch start, coop start, etc
+============
+*/
+void SelectSpawnPoint(edict_t* ent, vec3_t origin /* set on return */, vec3_t angles /* set on return */)
+{
+	edict_t* spot = Jump::SelectJumpSpawnPoint();
+	if (spot == NULL)
+	{
+		gi.error("Couldn't find spawn point %s\n", game.spawnpoint);
+	}
+	else
+	{
+		VectorCopy(spot->s.origin, origin);
+		origin[2] += 9;
+		VectorCopy(spot->s.angles, angles);
+	}
+}
 
 #endif

@@ -10,6 +10,223 @@ namespace Jump
 const int Spawn::MaxHealthAndAmmo = 1000;
 
 /// <summary>
+/// Client joins the easy team.
+/// </summary>
+/// <param name="ent"></param>
+void Spawn::JoinTeamEasy(edict_t* ent)
+{
+    gi.unlinkentity(ent);
+    ent->client->jumpdata->team = TEAM_EASY;
+    AssignTeamSkin(ent);
+
+    InitDefaultSpawnVariables(ent);
+
+    if (ent->client->jumpdata->stores.HasStore())
+    {
+        store_data_t data = ent->client->jumpdata->stores.GetStore(1);
+        // TODO: restore weapons/ammo from store
+        // TODO: restore current time from store
+        MovePlayerToPosition(ent, data.pos, data.angles, false);
+        ent->client->jumpdata->timer_begin = Sys_Milliseconds() - data.time_interval;
+    }
+    else
+    {
+        edict_t* spawn = SelectJumpSpawnPoint();
+        MovePlayerToSpawn(ent, spawn, true);
+    }
+    gi.linkentity(ent);
+}
+
+/// <summary>
+/// Client joins the hard team.
+/// </summary>
+/// <param name="ent"></param>
+void Spawn::JoinTeamHard(edict_t* ent)
+{
+    gi.unlinkentity(ent);
+    ent->client->jumpdata->team = TEAM_HARD;
+    AssignTeamSkin(ent);
+
+    InitDefaultSpawnVariables(ent);
+
+    edict_t* spawn = SelectJumpSpawnPoint();
+    MovePlayerToSpawn(ent, spawn, true);
+    gi.linkentity(ent);
+}
+
+/// <summary>
+/// Client joins the spectator team.
+/// </summary>
+/// <param name="ent"></param>
+void Spawn::JoinTeamSpectator(edict_t* ent)
+{
+    ent->client->jumpdata->team = TEAM_SPECTATOR;
+    AssignTeamSkin(ent);
+    InitAsSpectator(ent);
+}
+
+/// <summary>
+/// Handles player respawning for all teams.
+/// </summary>
+/// <param name="ent"></param>
+void Spawn::PlayerRespawn(edict_t* ent)
+{
+    if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    {
+        return;
+    }
+
+    gi.unlinkentity(ent);
+    InitDefaultSpawnVariables(ent);
+    if (ent->client->jumpdata->team == TEAM_EASY && ent->client->jumpdata->stores.HasStore())
+    {
+        store_data_t data = ent->client->jumpdata->stores.GetStore(1);
+        // TODO: restore weapons/ammo from store
+        MovePlayerToPosition(ent, data.pos, data.angles, false);
+        ent->client->jumpdata->timer_begin = Sys_Milliseconds() - data.time_interval;
+    }
+    else // TEAM_EASY with no stores or TEAM_HARD
+    {
+        edict_t* spawn = SelectJumpSpawnPoint();
+        MovePlayerToSpawn(ent, spawn, true);
+    }
+    gi.linkentity(ent);
+}
+
+/// <summary>
+/// Sets the client to a good default state when spawning for jumping.
+/// </summary>
+/// <param name="ent"></param>
+void Spawn::InitDefaultSpawnVariables(edict_t* ent)
+{
+    ent->s.modelindex = 255;
+    ent->s.modelindex2 = 255;
+    ent->s.modelindex3 = 0;
+    ent->s.modelindex4 = 0;
+    ent->s.frame = 0;
+    ent->s.effects = 0;
+    ent->s.renderfx = 0;
+    ent->s.solid = SOLID_TRIGGER;
+
+    ent->client->ps.pmove.pm_type = PM_NORMAL;
+    VectorClear(ent->client->ps.pmove.origin);
+    VectorClear(ent->client->ps.pmove.velocity);
+    ent->client->ps.pmove.pm_flags = 0;
+    ent->client->ps.pmove.pm_time = 0;
+    VectorClear(ent->client->ps.pmove.delta_angles);
+
+    VectorClear(ent->client->ps.viewangles);
+    VectorClear(ent->client->ps.viewoffset);
+    VectorClear(ent->client->ps.kick_angles);
+    VectorClear(ent->client->ps.gunangles);
+    VectorClear(ent->client->ps.gunoffset);
+    ent->client->ps.gunindex = 0;
+    ent->client->ps.gunframe = 0;
+    ArrayClear(ent->client->ps.blend);
+    ent->client->ps.rdflags = 0;
+
+    ent->client->pers.health = MaxHealthAndAmmo;
+    ent->client->pers.selected_item = 0;
+    ArrayClear(ent->client->pers.inventory);
+    ent->client->pers.weapon = nullptr;
+    ent->client->pers.lastweapon = nullptr;
+
+    ent->client->ammo_index = 0;
+    ent->client->weapon_thunk = false;
+    ent->client->newweapon = nullptr;
+    ent->client->damage_armor = 0;
+    ent->client->damage_parmor = 0;
+    ent->client->damage_blood = 0;
+    ent->client->damage_knockback = 0;
+    VectorClear(ent->client->damage_from);
+    ent->client->killer_yaw = 0;
+    ent->client->weaponstate = WEAPON_READY;
+    VectorClear(ent->client->kick_angles);
+    VectorClear(ent->client->kick_origin);
+    ent->client->v_dmg_roll = 0;
+    ent->client->v_dmg_pitch = 0;
+    ent->client->v_dmg_time = 0;
+    ent->client->fall_time = 0;
+    ent->client->fall_value = 0;
+    ent->client->damage_alpha = 0;
+    ent->client->bonus_alpha = 0;
+    VectorClear(ent->client->damage_blend);
+    ent->client->bobtime = 0;
+    ent->client->next_drown_time = 0;
+    ent->client->old_waterlevel = 0;
+    ent->client->breather_sound = 0;
+    ent->client->machinegun_shots = 0;
+    ent->client->anim_end = 0;
+    ent->client->anim_priority = ANIM_BASIC;
+    ent->client->anim_duck = false;
+    ent->client->anim_run = false;
+    ent->client->quad_framenum = 0;
+    ent->client->invincible_framenum = 0;
+    ent->client->breather_framenum = 0;
+    ent->client->enviro_framenum = 0;
+    ent->client->grenade_blew_up = false;
+    ent->client->grenade_time = 0;
+    ent->client->silencer_shots = 0;
+    ent->client->weapon_sound = 0;
+    ent->client->pickup_msg_time = 0;
+    ent->client->chase_target = nullptr;
+    ent->client->update_chase = false;
+
+    ent->client->jumpdata->replay_recording.clear();
+    ent->client->jumpdata->replay_spectating.clear();
+    ent->client->jumpdata->replay_spectating_framenum = 0;
+    ent->client->jumpdata->update_replay_spectating = false;
+    ent->client->jumpdata->replay_spectating_hud_string.clear();
+    ent->client->jumpdata->timer_pmove_msec = 0;
+    ent->client->jumpdata->timer_begin = 0;
+    ent->client->jumpdata->timer_end = 0;
+    ent->client->jumpdata->timer_paused = true;
+    ent->client->jumpdata->timer_finished = false;
+
+    ent->svflags = 0;
+    ent->solid = SOLID_TRIGGER;
+    ent->clipmask = 0;
+    ent->movetype = MOVETYPE_WALK;
+    ent->flags = 0;
+    ent->air_finished = 0;
+    ent->touch_debounce_time = 0;
+    ent->pain_debounce_time = 0;
+    ent->damage_debounce_time = 0;
+    ent->fly_sound_debounce_time = 0;
+    ent->last_move_time = 0;
+    ent->health = MaxHealthAndAmmo;
+    ent->deadflag = DEAD_NO;
+    ent->show_hostile = 0;
+    ent->powerarmor_time = 0;
+    ent->takedamage = DAMAGE_YES;
+    ent->dmg = 0;
+    ent->radius_dmg = 0;
+    ent->dmg_radius = 0;
+    ent->chain = nullptr;
+    ent->enemy = nullptr;
+    ent->oldenemy = nullptr;
+    ent->activator = nullptr;
+    ent->groundentity = nullptr;
+    ent->groundentity_linkcount = 0;
+    ent->teamchain = nullptr;
+    ent->teammaster = nullptr;
+    ent->teleport_time = 0;
+    ent->watertype = 0;
+    ent->waterlevel = 0;
+    ent->item = nullptr;
+
+    // If the player dies and turns into gibs, it messes up the size and view of this entity
+    ent->viewheight = 22;
+    vec3_t mins = { -16, -16, -24 };
+    vec3_t maxs = { 16, 16, 32 };
+    VectorCopy(mins, ent->mins);
+    VectorCopy(maxs, ent->maxs);
+    VectorClear(ent->absmin); // These all get set when the ent is linked
+    VectorClear(ent->absmax);
+    VectorClear(ent->size);
+}
+
+/// <summary>
 /// Selects the player spawn point.
 /// </summary>
 /// <returns>Spawn ent or null if not found</returns>
@@ -127,6 +344,7 @@ void Spawn::AssignTeamSkin(edict_t* ent)
 /// <param name="ent"></param>
 void Spawn::ClientOnEnterMap(edict_t* ent)
 {
+    gi.unlinkentity(ent);
     InitializeClientEnt(ent);
 
     if (level.intermissiontime)
@@ -146,6 +364,137 @@ void Spawn::ClientOnEnterMap(edict_t* ent)
     gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
     gi.linkentity(ent);
     ClientEndServerFrame(ent);
+}
+
+/// <summary>
+/// Configures the client as a spectator.  Does not change their position in the world.
+/// </summary>
+/// <param name="ent"></param>
+void Spawn::InitAsSpectator(edict_t* ent)
+{
+    gi.unlinkentity(ent);
+
+    ent->s.frame = 0;
+    ent->s.effects = 0;
+    ent->s.renderfx = 0;
+    ent->s.solid = SOLID_NOT;
+
+    ent->client->ps.pmove.pm_type = PM_SPECTATOR;
+    VectorClear(ent->client->ps.pmove.velocity);
+    ent->client->ps.pmove.pm_flags = 0;
+    ent->client->ps.pmove.pm_time = 0;
+    ent->client->ps.pmove.gravity = 0;
+
+    VectorClear(ent->client->ps.kick_angles);
+    VectorClear(ent->client->ps.gunangles);
+    VectorClear(ent->client->ps.gunoffset);
+    ent->client->ps.gunindex = 0;
+    ent->client->ps.gunframe = 0;
+    ArrayClear(ent->client->ps.blend);
+    ent->client->ps.rdflags = 0;
+    ArrayClear(ent->client->ps.stats);
+
+    ent->client->pers.health = MaxHealthAndAmmo;
+    ent->client->pers.selected_item = 0;
+    ArrayClear(ent->client->pers.inventory);
+    ent->client->pers.weapon = nullptr;
+    ent->client->pers.lastweapon = nullptr;
+
+    ent->client->old_pmove.pm_type = PM_SPECTATOR;
+    VectorClear(ent->client->old_pmove.origin);
+    VectorClear(ent->client->old_pmove.velocity);
+    ent->client->old_pmove.pm_flags = 0;
+    ent->client->old_pmove.pm_time = 0;
+    ent->client->old_pmove.gravity = 0;
+    VectorClear(ent->client->old_pmove.delta_angles);
+
+    ent->client->ammo_index = 0;
+    ent->client->weapon_thunk = false;
+    ent->client->newweapon = nullptr;
+    ent->client->damage_armor = 0;
+    ent->client->damage_parmor = 0;
+    ent->client->damage_blood = 0;
+    ent->client->damage_knockback = 0;
+    VectorClear(ent->client->damage_from);
+    ent->client->killer_yaw = 0;
+    ent->client->weaponstate = WEAPON_READY;
+    VectorClear(ent->client->kick_angles);
+    VectorClear(ent->client->kick_origin);
+    ent->client->v_dmg_roll = 0;
+    ent->client->v_dmg_pitch = 0;
+    ent->client->v_dmg_time = 0;
+    ent->client->fall_time = 0;
+    ent->client->fall_value = 0;
+    ent->client->damage_alpha = 0;
+    ent->client->bonus_alpha = 0;
+    VectorClear(ent->client->damage_blend);
+    VectorClear(ent->client->v_angle);
+    ent->client->bobtime = 0;
+    VectorClear(ent->client->oldviewangles);
+    VectorClear(ent->client->oldvelocity);
+    ent->client->next_drown_time = 0;
+    ent->client->old_waterlevel = 0;
+    ent->client->breather_sound = 0;
+    ent->client->machinegun_shots = 0;
+    ent->client->anim_end = 0;
+    ent->client->anim_priority = ANIM_BASIC;
+    ent->client->anim_duck = false;
+    ent->client->anim_run = false;
+    ent->client->quad_framenum = 0;
+    ent->client->invincible_framenum = 0;
+    ent->client->breather_framenum = 0;
+    ent->client->enviro_framenum = 0;
+    ent->client->grenade_blew_up = false;
+    ent->client->grenade_time = 0;
+    ent->client->silencer_shots = 0;
+    ent->client->weapon_sound = 0;
+    ent->client->pickup_msg_time = 0;
+    ent->client->chase_target = nullptr;
+    ent->client->update_chase = false;
+
+    ent->client->jumpdata->replay_recording.clear();
+    ent->client->jumpdata->replay_spectating.clear();
+    ent->client->jumpdata->replay_spectating_framenum = 0;
+    ent->client->jumpdata->update_replay_spectating = false;
+    ent->client->jumpdata->replay_spectating_hud_string.clear();
+    ent->client->jumpdata->team = TEAM_SPECTATOR;
+    ent->client->jumpdata->timer_pmove_msec = 0;
+    ent->client->jumpdata->timer_begin = 0;
+    ent->client->jumpdata->timer_end = 0;
+    ent->client->jumpdata->timer_paused = true;
+    ent->client->jumpdata->timer_finished = false;
+    ent->client->jumpdata->hud_footer1.clear();
+    ent->client->jumpdata->hud_footer2.clear();
+    ent->client->jumpdata->hud_footer3.clear();
+    ent->client->jumpdata->hud_footer4.clear();
+
+    ent->svflags |= SVF_NOCLIENT;
+    ent->solid = SOLID_NOT;
+    ent->clipmask = 0;
+    ent->movetype = MOVETYPE_NOCLIP;
+    ent->flags = 0;
+    ent->freetime = 0;
+    ent->air_finished = 0;
+    ent->gravity = 1.0f;
+    ent->yaw_speed = 0;
+    ent->ideal_yaw = 0;
+    ent->touch_debounce_time = 0;
+    ent->pain_debounce_time = 0;
+    ent->damage_debounce_time = 0;
+    ent->fly_sound_debounce_time = 0;
+    ent->last_move_time = 0;
+    ent->health = MaxHealthAndAmmo;
+    ent->deadflag = DEAD_NO;
+    ent->powerarmor_time = 0;
+    ent->takedamage = DAMAGE_NO;
+    ent->dmg = 0;
+    ent->radius_dmg = 0;
+    ent->dmg_radius = 0;
+    ent->teleport_time = 0;
+    ent->watertype = 0;
+    ent->waterlevel = 0;
+
+    gi.linkentity(ent);
 }
 
 /// <summary>
@@ -171,23 +520,36 @@ void Spawn::MovePlayerToIntermission(edict_t* ent)
 /// <param name="useTeleportEffects"></param>
 void Spawn::MovePlayerToSpawn(edict_t* ent, edict_t* spawn, bool useTeleportEffects)
 {
+    MovePlayerToPosition(ent, spawn->s.origin, spawn->s.angles, useTeleportEffects);
+}
+
+/// <summary>
+/// Moves a player to a position in the world specified by origin and angles.
+/// </summary>
+/// <param name="ent"></param>
+/// <param name="origin"></param>
+/// <param name="angles"></param>
+/// <param name="useTeleportEffects"></param>
+void Spawn::MovePlayerToPosition(edict_t* ent, const vec3_t& origin, const vec3_t& angles, bool useTeleportEffects)
+{
     // Code taken from teleporter_touch().
     gi.unlinkentity(ent);
 
-    VectorCopy(spawn->s.origin, ent->s.origin);
-    VectorCopy(spawn->s.origin, ent->s.old_origin);
+    VectorCopy(origin, ent->s.origin);
+    VectorCopy(origin, ent->s.old_origin);
     ent->s.origin[2] += 10;
     VectorClear(ent->velocity);
 
     if (useTeleportEffects)
     {
+        ent->client->ps.pmove.pm_time = 1; // this cannot be 0 when using the teleport flag or else the player cannot move
         ent->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
     }
 
     // set angles
     for (int i = 0; i < 3; i++)
     {
-        ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(spawn->s.angles[i] - ent->client->resp.cmd_angles[i]);
+        ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(angles[i] - ent->client->resp.cmd_angles[i]);
     }
 
     VectorClear(ent->s.angles);

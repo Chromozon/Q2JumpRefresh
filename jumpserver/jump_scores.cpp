@@ -95,7 +95,12 @@ std::string LocalScores::GetRandomMap()
     {
         return mapname;
     }
-    srand(time(0));
+    static bool initialized = false;
+    if (!initialized)
+    {
+        srand(time(0));
+        initialized = true;
+    }
     int n = rand() % _maplistByName.size();
     return _maplistByName[n];
 }

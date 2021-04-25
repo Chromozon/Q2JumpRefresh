@@ -1810,8 +1810,8 @@ void teleporter_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_
 
 	// clear the velocity and hold them in place briefly
 	VectorClear (other->velocity);
-	other->client->ps.pmove.pm_time = 160>>3;		// hold time
-	other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
+	//other->client->ps.pmove.pm_time = 160>>3;		// hold time after teleporting; we don't want any in jump
+	//other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
 
 	// set angles
 	for (i=0 ; i<3 ; i++)

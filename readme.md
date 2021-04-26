@@ -13,42 +13,20 @@ A reimplementation of Quake 2 jump mod.  The code currently compiles with C++17.
   - Log file `server.txt` stores errors, warnings, info, and debug messages.
   - Log file `activity.txt` stores general server activity (players joining and leaving, players talking, etc.).
   - Log file `completions.txt` stores a record of every time a client completes a map.
-  - *TODO* I want to change storing completion times locally back to using userid
-  - Map completion times and demos are stored in `C:/Quake2/jump/<port>/scores`.
-  - There is a subfolder for each map, ex: `/scores/slipmap33/`, `/scores/ddrace/`, etc.
-  - Inside each map subfolder are `<username>.time` files which store completion time, date, and number of completions.
-  - Each map subfolder also contains a `<username>.demo` file.  This is an arbitrary length replay.
+- Map completion times and demos are stored in `C:/Quake2/jump/<port>/local_db.sqlite3`.
 
 ## TODO
-- Remove the unused CTF stuff
-- There is this "tourney" mode which seems to be unused.
-- The function "SelectSpawnPoint" can be cleaned up.  Currently it looks for the red/blue team spawn points, then deathmatch, then info_play_start.
-- The "apply_time" function has a funky way of determining first place; could use cleanup overall.
-- The kill and recall functions share some logic and have CTF overtime logic cluttering them up.
 - Weapons:
     - Mset for weapon maps
     - Disable being able to drop a weapon
     - Fix being able to pick up a weapon and being able to switch between them
-
-- There are a bunch of variables that have to deal with map completion time, but many seem unused:
-	float			item_timer; // map completion time
-	float			item_timer_penalty;
-	int			item_timer_penalty_delay;
-	float			stored_item_timer;
-	qboolean	item_timer_allow;
 
 - Replays need to record async 0/1, what weapon is equipped, and when a weapon is shot
     - When replaying a demo with weapons, need to store the source client and only show the rockets/grenade ents to that source client
     - Replay should store client used (r1q2, q2pro-speed, etc.)
     - Replay should store replay version in case there are future changes
 
-- Replays should be arbitrary length.  There's no need to cap replays at 1000 seconds.
-
-- Replay ghost
-
 - "Store" should save equipped weapons and ammo, "recall" should reset the inventory back to the stored point
-
-- [Big Project] Design and implement the global highscores table
 
 ## Notes
 See `g_main.c GetGameAPI()` for the main logic entry points.
@@ -92,7 +70,7 @@ while (1)
 	    G_RunEntity(ent);
 	}
     }
-    
+
     // Bottom half: now that the world has changed, update the HUD and client visual effects
     foreach (client ent)
     {

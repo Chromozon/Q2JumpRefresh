@@ -625,15 +625,15 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 		int asyncValue = atoi(s);
 		if (asyncValue == 0)
 		{
-			ent->client->jumpdata->async = Jump::async_t::ASYNC_0;
+			ent->client->jumpdata->async = Jump::AsyncEnum::Zero;
 		}
 		else if (asyncValue == 1)
 		{
-			ent->client->jumpdata->async = Jump::async_t::ASYNC_1;
+			ent->client->jumpdata->async = Jump::AsyncEnum::One;
 		}
 		else
 		{
-			ent->client->jumpdata->async = Jump::async_t::ASYNC_UNKNOWN;
+			ent->client->jumpdata->async = Jump::AsyncEnum::Unknown;
 		}
 	}
 

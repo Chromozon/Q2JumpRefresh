@@ -78,11 +78,11 @@ namespace Jump
         ActivePlayers,
     };
 
-    enum class async_t : uint8_t
+    enum class AsyncEnum
     {
-        ASYNC_UNKNOWN = 0,
-        ASYNC_1 = 1,
-        ASYNC_0 = 2,
+        Unknown = 0,
+        One = 1,
+        Zero = 2,
     };
 
     // How much disk space is required to store a replay:
@@ -182,7 +182,7 @@ namespace Jump
 
         int localUserId = -1;
         int fps = 0;
-        async_t async = async_t::ASYNC_UNKNOWN;
+        AsyncEnum async = AsyncEnum::Unknown;
         std::string ip;
         TeamEnum team = TeamEnum::Spectator;
         int64_t timer_pmove_msec = 0;

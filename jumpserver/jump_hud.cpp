@@ -376,11 +376,11 @@ void HUD::SetStatFps(edict_t* ent)
 void HUD::SetStatAsync(edict_t* ent)
 {
     bool showAsync = false;
-    async_t async = async_t::ASYNC_UNKNOWN;
+    AsyncEnum async = AsyncEnum::Unknown;
     if (ent->client->jumpdata->update_replay_spectating)
     {
         // Watching a replay
-        async = static_cast<async_t>(
+        async = static_cast<AsyncEnum>(
             ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum].async);
         showAsync = true;
     }
@@ -402,10 +402,10 @@ void HUD::SetStatAsync(edict_t* ent)
         showAsync = true;
     }
 
-    if (showAsync && async != async_t::ASYNC_UNKNOWN)
+    if (showAsync && async != AsyncEnum::Unknown)
     {
-        ent->client->ps.stats[STAT_JUMP_ASYNC_0] = (async == async_t::ASYNC_0);
-        ent->client->ps.stats[STAT_JUMP_ASYNC_1] = (async == async_t::ASYNC_1);
+        ent->client->ps.stats[STAT_JUMP_ASYNC_0] = (async == AsyncEnum::Zero);
+        ent->client->ps.stats[STAT_JUMP_ASYNC_1] = (async == AsyncEnum::One);
     }
     else
     {

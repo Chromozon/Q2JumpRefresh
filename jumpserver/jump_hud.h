@@ -16,8 +16,8 @@ namespace Jump
 #define STAT_JUMP_AVAILABLE_FOR_USE4    4
 #define STAT_JUMP_AVAILABLE_FOR_USE5    5
 #define STAT_JUMP_HEALTH                6  // (int)
-#define STAT_JUMP_ASYNC_0               7  // (int) 0 or 1
-#define STAT_JUMP_ASYNC_1               8  // (int) 0 or 1
+#define STAT_JUMP_ASYNC_0               7  // (bool) visible or not
+#define STAT_JUMP_ASYNC_1               8  // (bool) visible or not
 #define STAT_JUMP_HUD_VOTE_CAST         9  // (configstring) for "Votes: X of X" 
 #define STAT_JUMP_HUD_VOTE_REMAINING    10 // (configstring) for "X remaining"
 #define STAT_JUMP_HUD_VOTE_TYPE         11 // (configstring) for short vote description (eg. "Map: ddrace")

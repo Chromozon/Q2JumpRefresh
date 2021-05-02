@@ -109,4 +109,5 @@ Try to keep threads to a minimum or not used at all.
 We should never lose any times or replays due to disruptions to the global database.  New times and their replay data should be saved locally,
 and we should queue up a command to send that data off to the global database async. Only once we receive a good reply from the global database do we remove the item from the queue.
 
-
+### Useful References
+https://www.gamers.org/dEngine/quake2/Q2DP/

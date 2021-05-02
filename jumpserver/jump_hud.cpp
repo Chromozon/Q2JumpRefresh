@@ -357,7 +357,7 @@ void HUD::SetStatFps(edict_t* ent)
         // Chasing another player
         ent->client->ps.stats[STAT_JUMP_FPS] = ent->client->chase_target->client->jumpdata->fps;
     }
-    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    else if (ent->client->jumpdata->team == TeamEnum::Spectator)
     {
         // Not chasing anyone
         ent->client->ps.stats[STAT_JUMP_FPS] = 0;
@@ -390,7 +390,7 @@ void HUD::SetStatAsync(edict_t* ent)
         async = ent->client->chase_target->client->jumpdata->async;
         showAsync = true;
     }
-    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    else if (ent->client->jumpdata->team == TeamEnum::Spectator)
     {
         // Not chasing anyone
         showAsync = false;
@@ -431,7 +431,7 @@ void HUD::SetStatKeyStates(edict_t* ent)
         // Chasing another player
         keyStates = ent->client->chase_target->client->jumpdata->key_states;
     }
-    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    else if (ent->client->jumpdata->team == TeamEnum::Spectator)
     {
         // Not chasing anyone
         keyStates = 0;
@@ -528,7 +528,7 @@ void HUD::SetStatSpeed(edict_t* ent)
         speed = static_cast<int>(VectorNormalize(velocity));
         quickRefresh = true;
     }
-    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    else if (ent->client->jumpdata->team == TeamEnum::Spectator)
     {
         // Not chasing anyone
         speed = 0;
@@ -586,7 +586,7 @@ void HUD::SetStatTimer(edict_t* ent)
             timeMs = Sys_Milliseconds() - ent->client->chase_target->client->jumpdata->timer_begin;
         }
     }
-    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    else if (ent->client->jumpdata->team == TeamEnum::Spectator)
     {
         // Not chasing anyone
         timeMs = 0;
@@ -631,7 +631,7 @@ void HUD::SetStatFooter1(edict_t* ent)
     else if (ent->client->chase_target != nullptr)
     {
         // Chasing another player
-        if (ent->client->chase_target->client->jumpdata->team == TEAM_EASY)
+        if (ent->client->chase_target->client->jumpdata->team == TeamEnum::Easy)
         {
             footer1 = TeamEasyStr;
         }
@@ -640,7 +640,7 @@ void HUD::SetStatFooter1(edict_t* ent)
             footer1 = TeamHardStr;
         }
     }
-    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    else if (ent->client->jumpdata->team == TeamEnum::Spectator)
     {
         // Not chasing anyone
         footer1 = TeamSpecStr;
@@ -648,7 +648,7 @@ void HUD::SetStatFooter1(edict_t* ent)
     else
     {
         // Playing
-        if (ent->client->jumpdata->team == TEAM_EASY)
+        if (ent->client->jumpdata->team == TeamEnum::Easy)
         {
             footer1 = TeamEasyStr;
         }
@@ -688,7 +688,7 @@ void HUD::SetStatFooter2(edict_t* ent)
         // if (chase_target is racing)
         // Race: NOW or Race: 12 or Race: Self
     }
-    else if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    else if (ent->client->jumpdata->team == TeamEnum::Spectator)
     {
         // Not chasing anyone
         footer2 = "";

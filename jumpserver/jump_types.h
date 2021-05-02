@@ -23,12 +23,12 @@
 
 namespace Jump
 {
-    typedef enum
+    enum class TeamEnum
     {
-        TEAM_SPECTATOR,
-        TEAM_EASY,
-        TEAM_HARD
-    } team_t;
+        Spectator,
+        Easy,
+        Hard
+    };
 
     typedef enum
     {
@@ -185,7 +185,7 @@ namespace Jump
         int fps = 0;
         async_t async = async_t::ASYNC_UNKNOWN;
         std::string ip;
-        team_t team = TEAM_SPECTATOR;
+        TeamEnum team = TeamEnum::Spectator;
         int64_t timer_pmove_msec = 0;
         int64_t timer_begin = 0;
         int64_t timer_end = 0;

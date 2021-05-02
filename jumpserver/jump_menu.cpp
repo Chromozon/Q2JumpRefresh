@@ -114,11 +114,11 @@ namespace Jump
 			{
 				continue;
 			}
-			if (ent->client->jumpdata->team == TEAM_HARD)
+			if (ent->client->jumpdata->team == TeamEnum::Hard)
 			{
 				clients_hard.push_back(ent);
 			}
-			else if (ent->client->jumpdata->team == TEAM_EASY)
+			else if (ent->client->jumpdata->team == TeamEnum::Easy)
 			{
 				clients_easy.push_back(ent);
 			}
@@ -276,11 +276,11 @@ namespace Jump
 			{
 				continue;
 			}
-			if (ent->client->jumpdata->team == TEAM_HARD)
+			if (ent->client->jumpdata->team == TeamEnum::Hard)
 			{
 				clients_hard.push_back(ent);
 			}
-			else if (ent->client->jumpdata->team == TEAM_EASY)
+			else if (ent->client->jumpdata->team == TeamEnum::Easy)
 			{
 				clients_easy.push_back(ent);
 			}

@@ -16,7 +16,7 @@ const int Spawn::MaxHealthAndAmmo = 1000;
 void Spawn::JoinTeamEasy(edict_t* ent)
 {
     gi.unlinkentity(ent);
-    ent->client->jumpdata->team = TEAM_EASY;
+    ent->client->jumpdata->team = TeamEnum::Easy;
     AssignTeamSkin(ent);
 
     InitDefaultSpawnVariables(ent);
@@ -43,7 +43,7 @@ void Spawn::JoinTeamEasy(edict_t* ent)
 void Spawn::JoinTeamHard(edict_t* ent)
 {
     gi.unlinkentity(ent);
-    ent->client->jumpdata->team = TEAM_HARD;
+    ent->client->jumpdata->team = TeamEnum::Hard;
     AssignTeamSkin(ent);
 
     InitDefaultSpawnVariables(ent);
@@ -59,7 +59,7 @@ void Spawn::JoinTeamHard(edict_t* ent)
 /// <param name="ent"></param>
 void Spawn::JoinTeamSpectator(edict_t* ent)
 {
-    ent->client->jumpdata->team = TEAM_SPECTATOR;
+    ent->client->jumpdata->team = TeamEnum::Spectator;
     AssignTeamSkin(ent);
     InitAsSpectator(ent);
 }
@@ -70,14 +70,14 @@ void Spawn::JoinTeamSpectator(edict_t* ent)
 /// <param name="ent"></param>
 void Spawn::PlayerRespawn(edict_t* ent, int storeNum)
 {
-    if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+    if (ent->client->jumpdata->team == TeamEnum::Spectator)
     {
         return;
     }
 
     gi.unlinkentity(ent);
     InitDefaultSpawnVariables(ent);
-    if (ent->client->jumpdata->team == TEAM_EASY && ent->client->jumpdata->stores.HasStore())
+    if (ent->client->jumpdata->team == TeamEnum::Easy && ent->client->jumpdata->stores.HasStore())
     {
         if (storeNum < 1)
         {
@@ -88,7 +88,7 @@ void Spawn::PlayerRespawn(edict_t* ent, int storeNum)
         MovePlayerToPosition(ent, data.pos, data.angles, false);
         ent->client->jumpdata->timer_begin = Sys_Milliseconds() - data.time_interval;
     }
-    else // TEAM_EASY with no stores or TEAM_HARD
+    else // TeamEnum::Easy with no stores or TeamEnum::Hard
     {
         edict_t* spawn = SelectPlayerSpawn();
         MovePlayerToSpawn(ent, spawn, true);
@@ -269,13 +269,13 @@ edict_t* Spawn::SelectIntermissionSpawn()
 /// <param name="username"></param>
 /// <param name="team"></param>
 /// <returns></returns>
-std::string Spawn::GetSkin(const std::string& username, team_t team)
+std::string Spawn::GetSkin(const std::string& username, TeamEnum team)
 {
     switch (team)
     {
-    case TEAM_EASY:
+    case TeamEnum::Easy:
         return GetSkinEasy(username);
-    case TEAM_HARD:
+    case TeamEnum::Hard:
         return GetSkinHard(username);
     default:
         return GetSkinInvis(username);
@@ -457,7 +457,7 @@ void Spawn::InitAsSpectator(edict_t* ent)
     ent->client->update_chase = false;
 
     ent->client->jumpdata->replay_recording.clear();
-    ent->client->jumpdata->team = TEAM_SPECTATOR;
+    ent->client->jumpdata->team = TeamEnum::Spectator;
     ent->client->jumpdata->timer_pmove_msec = 0;
     ent->client->jumpdata->timer_begin = 0;
     ent->client->jumpdata->timer_end = 0;
@@ -707,7 +707,7 @@ void Spawn::InitializeClientEnt(edict_t* ent)
     ent->client->jumpdata->fps; // Already set
     ent->client->jumpdata->async; // Already set
     ent->client->jumpdata->ip; // Already set
-    ent->client->jumpdata->team = TEAM_SPECTATOR;
+    ent->client->jumpdata->team = TeamEnum::Spectator;
     ent->client->jumpdata->timer_pmove_msec = 0;
     ent->client->jumpdata->timer_begin = 0;
     ent->client->jumpdata->timer_end = 0;

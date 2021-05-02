@@ -56,8 +56,8 @@ namespace Jump
         static char chaseCam[MaxMenuWidth] = { 0 };
 
         strncpy(mapName, level.mapname, MaxMenuWidth - 1);
-        sprintf(playersEasy, "  (%d players)", CountPlayersOnTeam(TEAM_EASY));
-        sprintf(playersHard, "  (%d players)", CountPlayersOnTeam(TEAM_HARD));
+        sprintf(playersEasy, "  (%d players)", CountPlayersOnTeam(TeamEnum::Easy));
+        sprintf(playersHard, "  (%d players)", CountPlayersOnTeam(TeamEnum::Hard));
 
         Menu_Join[MapNameLine].text = mapName;
         Menu_Join[NumPlayersEasyLine].text = playersEasy;
@@ -75,7 +75,7 @@ namespace Jump
         PMenu_Open(ent, Menu_Join, cursor, sizeof(Menu_Join) / sizeof(pmenu_t), NULL);
     }
 
-    int CountPlayersOnTeam(team_t team)
+    int CountPlayersOnTeam(TeamEnum team)
     {
         int count = 0;
         for (int i = 0; i < game.maxclients; ++i)
@@ -120,7 +120,7 @@ namespace Jump
     void JoinChaseCamCommand(edict_t* ent, pmenuhnd_t* hnd)
     {
         PMenu_Close(ent);
-        if (ent->client->jumpdata->team == TEAM_SPECTATOR)
+        if (ent->client->jumpdata->team == TeamEnum::Spectator)
         {
             // TODO: Try to find someone to chase
         }
@@ -147,12 +147,12 @@ namespace Jump
         {
             ent->client->jumpdata->timer_end = Sys_Milliseconds();
             int64_t time_diff = ent->client->jumpdata->timer_end - ent->client->jumpdata->timer_begin;
-            if (ent->client->jumpdata->team == TEAM_EASY)
+            if (ent->client->jumpdata->team == TeamEnum::Easy)
             {
                 gi.cprintf(ent, PRINT_HIGH, "You would have obtained this weapon in %s seconds.\n",
                     GetCompletionTimeDisplayString(time_diff).c_str());
             }
-            else if (ent->client->jumpdata->team == TEAM_HARD)
+            else if (ent->client->jumpdata->team == TeamEnum::Hard)
             {
                 HandleMapCompletion(ent);
             }
@@ -565,7 +565,7 @@ namespace Jump
         ent->client->jumpdata->fps; // Already set
         ent->client->jumpdata->async; // Already set
         ent->client->jumpdata->ip; // Already set
-        ent->client->jumpdata->team = TEAM_SPECTATOR;
+        ent->client->jumpdata->team = TeamEnum::Spectator;
         ent->client->jumpdata->timer_pmove_msec = 0;
         ent->client->jumpdata->timer_begin = 0;
         ent->client->jumpdata->timer_end = 0;

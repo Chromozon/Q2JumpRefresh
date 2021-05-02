@@ -191,7 +191,7 @@ namespace Jump
 
     void Cmd_Jump_Noclip(edict_t* ent)
     {
-        if (ent->client->jumpdata->team == TEAM_EASY)
+        if (ent->client->jumpdata->team == TeamEnum::Easy)
         {
             if (ent->movetype == MOVETYPE_NOCLIP)
             {
@@ -336,7 +336,7 @@ namespace Jump
         }
 
         // Move client to a spectator
-        if (ent->client->jumpdata->team != TEAM_SPECTATOR)
+        if (ent->client->jumpdata->team != TeamEnum::Spectator)
         {
             Spawn::JoinTeamSpectator(ent);
         }
@@ -845,11 +845,11 @@ namespace Jump
                 if (user->inuse && user->client != nullptr)
                 {
                     const char* skin = nullptr;
-                    if (user->client->jumpdata->team == TEAM_SPECTATOR)
+                    if (user->client->jumpdata->team == TeamEnum::Spectator)
                     {
                         skin = va("%s\\female/invis", user->client->pers.netname);
                     }
-                    else if (user->client->jumpdata->team == TEAM_EASY)
+                    else if (user->client->jumpdata->team == TeamEnum::Easy)
                     {
                         skin = va("%s\\female/ctf_r", user->client->pers.netname);
                     }

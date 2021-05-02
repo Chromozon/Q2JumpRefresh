@@ -19,7 +19,7 @@ public:
     static void PlayerRespawn(edict_t* ent, int storeNum = 0);
 
 private:
-    static std::string GetSkin(const std::string& username, team_t team);
+    static std::string GetSkin(const std::string& username, TeamEnum team);
     static std::string GetSkinEasy(const std::string& username);
     static std::string GetSkinHard(const std::string& username);
     static std::string GetSkinInvis(const std::string& username);

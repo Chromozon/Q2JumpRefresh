@@ -1112,7 +1112,7 @@ void ClientEndServerFrame (edict_t *ent)
 	}
 
     // Jump
-    if (ent->client->jumpdata->team == Jump::TEAM_HARD)
+    if (ent->client->jumpdata->team == Jump::TeamEnum::Hard)
     {
         if (!ent->client->jumpdata->timer_finished && !ent->client->jumpdata->timer_paused)
         {

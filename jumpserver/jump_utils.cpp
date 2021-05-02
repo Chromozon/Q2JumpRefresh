@@ -162,14 +162,41 @@ namespace Jump
     }
 
     // Tries to convert a string to an int.  If the string is an int, returns true, else false.
+    // Does not currently support negative numbers or leading + sign.  Ignores whitespace.
     bool StringToIntMaybe(const std::string& str, int& num)
     {
-        try
+        bool hasDigit = false;
+        for (char c : str)
         {
-            num = std::stoi(str);
+            if (::isdigit(c))
+            {
+                hasDigit = true;
+                continue;
+            }
+            else if (::isspace(c))
+            {
+                continue;
+            }
+            else // not a digit or a space
+            {
+                return false;
+            }
+        }
+
+        if (hasDigit)
+        {
+            long value = ::strtol(str.c_str(), nullptr, 10);
+            if (value > INT32_MAX)
+            {
+                num = INT32_MAX;
+            }
+            else
+            {
+                num = static_cast<int>(value);
+            }
             return true;
         }
-        catch (...)
+        else
         {
             return false;
         }

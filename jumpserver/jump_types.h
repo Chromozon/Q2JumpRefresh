@@ -30,12 +30,11 @@ namespace Jump
         Hard
     };
 
-    typedef enum
+    enum class LevelStateEnum
     {
-        LEVEL_STATE_FREEPLAY,
-        LEVEL_STATE_VOTING, // TODO: remove end of map voting
-        LEVEL_STATE_INTERMISSION
-    } level_state_t;
+        FreePlay,
+        Intermission
+    };
 
     typedef enum
     {
@@ -218,13 +217,13 @@ namespace Jump
     public:
         server_data_t()
         {
-            level_state = LEVEL_STATE_FREEPLAY;
+            level_state = LevelStateEnum::FreePlay;
             time_added_mins = 0;
             replay_now_time_ms = INT64_MAX;
             local_map_id = -1;
         }
 
-        level_state_t level_state;    // freeplay, voting, or intermission
+        LevelStateEnum level_state;    // freeplay, voting, or intermission
         int time_added_mins;
 
         std::string last_map1;

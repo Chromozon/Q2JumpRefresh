@@ -366,15 +366,15 @@ namespace Jump
             PMenu_Close(ent);
         }
 
-        if (ent->client->jumpdata->scores_menu == SCORES_MENU_NONE)
+        if (ent->client->jumpdata->scores_menu == ScoresMenuEnum::None)
         {
             ActiveClientsScoreboardMessage(ent);
-            ent->client->jumpdata->scores_menu = SCORES_MENU_ACTIVEPLAYERS;
+            ent->client->jumpdata->scores_menu = ScoresMenuEnum::ActivePlayers;
         }
-        else if (ent->client->jumpdata->scores_menu == SCORES_MENU_ACTIVEPLAYERS)
+        else if (ent->client->jumpdata->scores_menu == ScoresMenuEnum::ActivePlayers)
         {
             ShowBestTimesScoreboard(ent);
-            ent->client->jumpdata->scores_menu = SCORES_MENU_HIGHSCORES;
+            ent->client->jumpdata->scores_menu = ScoresMenuEnum::Highscores;
         }
         else
         {
@@ -387,7 +387,7 @@ namespace Jump
                 PMenu_Close(ent);
             }
             ent->client->update_chase = true;
-            ent->client->jumpdata->scores_menu = SCORES_MENU_NONE;
+            ent->client->jumpdata->scores_menu = ScoresMenuEnum::None;
         }
     }
 
@@ -401,10 +401,10 @@ namespace Jump
             PMenu_Close(ent);
         }
 
-        if (ent->client->jumpdata->scores_menu == SCORES_MENU_NONE)
+        if (ent->client->jumpdata->scores_menu == ScoresMenuEnum::None)
         {
             ExtendedActiveClientsScoreboardMessage(ent);
-            ent->client->jumpdata->scores_menu = SCORES_MENU_ACTIVEPLAYERS;
+            ent->client->jumpdata->scores_menu = ScoresMenuEnum::ActivePlayers;
         }
         else
         {
@@ -417,7 +417,7 @@ namespace Jump
                 PMenu_Close(ent);
             }
             ent->client->update_chase = true;
-            ent->client->jumpdata->scores_menu = SCORES_MENU_NONE;
+            ent->client->jumpdata->scores_menu = ScoresMenuEnum::None;
         }
     }
 

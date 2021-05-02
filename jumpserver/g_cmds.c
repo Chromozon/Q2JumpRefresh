@@ -728,7 +728,7 @@ void Cmd_PutAway_f (edict_t *ent)
 	ent->client->update_chase = true;
 //ZOID
 	// Jump
-	ent->client->jumpdata->scores_menu = Jump::SCORES_MENU_NONE;
+	ent->client->jumpdata->scores_menu = Jump::ScoresMenuEnum::None;
 	// Jump
 }
 

@@ -27,16 +27,16 @@ namespace Jump
     {
         Spectator,
         Easy,
-        Hard
+        Hard,
     };
 
     enum class LevelStateEnum
     {
         FreePlay,
-        Intermission
+        Intermission,
     };
 
-    enum class KeyStateEnum
+    enum class KeyStateEnum // flags
     {
         None = 0,
         Jump = 1,
@@ -71,12 +71,12 @@ namespace Jump
         REPLAY_SPEED_100 = 10000,
     } replay_speed_t;
 
-    typedef enum
+    enum class ScoresMenuEnum
     {
-        SCORES_MENU_NONE = 0,
-        SCORES_MENU_HIGHSCORES = 1,
-        SCORES_MENU_ACTIVEPLAYERS = 2,
-    } scores_menu_t;
+        None,
+        Highscores,
+        ActivePlayers,
+    };
 
     enum class async_t : uint8_t
     {
@@ -196,7 +196,7 @@ namespace Jump
 
         uint8_t key_states = 0; // input actions that are currently active
 
-        scores_menu_t scores_menu = SCORES_MENU_NONE;
+        ScoresMenuEnum scores_menu = ScoresMenuEnum::None;
 
         bool racing = false;
         std::vector<replay_frame_t> racing_frames;

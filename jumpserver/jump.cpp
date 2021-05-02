@@ -574,7 +574,7 @@ namespace Jump
         ent->client->jumpdata->stores = {};
         ent->client->jumpdata->store_ent = nullptr;
         ent->client->jumpdata->key_states = 0;
-        ent->client->jumpdata->scores_menu = SCORES_MENU_NONE;
+        ent->client->jumpdata->scores_menu = ScoresMenuEnum::None;
         ent->client->jumpdata->racing = false;
         ent->client->jumpdata->racing_frames.clear();
         ent->client->jumpdata->racing_framenum = 0;

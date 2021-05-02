@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "g_chase.h"
 #include "jump_local_database.h"
 #include "jump_spawn.h"
+#include "jump_types.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -621,7 +622,19 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 	s = Info_ValueForKey(userinfo, "cl_async");
 	if (strlen(s))
 	{
-		ent->client->jumpdata->async = atoi(s);
+		int asyncValue = atoi(s);
+		if (asyncValue == 0)
+		{
+			ent->client->jumpdata->async = Jump::async_t::ASYNC_0;
+		}
+		else if (asyncValue == 1)
+		{
+			ent->client->jumpdata->async = Jump::async_t::ASYNC_1;
+		}
+		else
+		{
+			ent->client->jumpdata->async = Jump::async_t::ASYNC_UNKNOWN;
+		}
 	}
 
 	// save off the userinfo in case we want to check something later

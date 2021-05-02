@@ -79,6 +79,13 @@ namespace Jump
         SCORES_MENU_ACTIVEPLAYERS = 2,
     } scores_menu_t;
 
+    enum class async_t : uint8_t
+    {
+        ASYNC_UNKNOWN = 0,
+        ASYNC_1 = 1,
+        ASYNC_0 = 2,
+    };
+
     // How much disk space is required to store a replay:
     // 48 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 480 bytes/s
     // 15 seconds = 7.2 kB
@@ -98,7 +105,7 @@ namespace Jump
         uint8_t key_states;         // (byte 26) active inputs bitset (jump, crouch, left, right, etc.)
         uint8_t checkpoints;        // (byte 27) number of checkpoints picked up
 
-        uint8_t async;              // (byte 28) async 0 or 1
+        uint8_t async;              // (byte 28) async 1 = 1, async 0 = 2, unknown = 0
         uint8_t weapon_equipped;    // (byte 29) enum for currently equipped weapon
         uint16_t weapon_inven;      // (byte 30-31) picked up weapon bitset
 
@@ -176,7 +183,7 @@ namespace Jump
 
         int localUserId = -1;
         int fps = 0;
-        int async = 0;
+        async_t async = async_t::ASYNC_UNKNOWN;
         std::string ip;
         team_t team = TEAM_SPECTATOR;
         int64_t timer_pmove_msec = 0;

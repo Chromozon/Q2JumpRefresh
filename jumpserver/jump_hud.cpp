@@ -376,11 +376,12 @@ void HUD::SetStatFps(edict_t* ent)
 void HUD::SetStatAsync(edict_t* ent)
 {
     bool showAsync = false;
-    int async = 0;
+    async_t async = async_t::ASYNC_UNKNOWN;
     if (ent->client->jumpdata->update_replay_spectating)
     {
         // Watching a replay
-        async = ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum].async;
+        async = static_cast<async_t>(
+            ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum].async);
         showAsync = true;
     }
     else if (ent->client->chase_target != nullptr)
@@ -401,8 +402,16 @@ void HUD::SetStatAsync(edict_t* ent)
         showAsync = true;
     }
 
-    ent->client->ps.stats[STAT_JUMP_ASYNC_0] = showAsync && (async == 0);
-    ent->client->ps.stats[STAT_JUMP_ASYNC_1] = showAsync && (async == 1);
+    if (showAsync && async != async_t::ASYNC_UNKNOWN)
+    {
+        ent->client->ps.stats[STAT_JUMP_ASYNC_0] = (async == async_t::ASYNC_0);
+        ent->client->ps.stats[STAT_JUMP_ASYNC_1] = (async == async_t::ASYNC_1);
+    }
+    else
+    {
+        ent->client->ps.stats[STAT_JUMP_ASYNC_0] = false;
+        ent->client->ps.stats[STAT_JUMP_ASYNC_1] = false;
+    }
 }
 
 /// <summary>

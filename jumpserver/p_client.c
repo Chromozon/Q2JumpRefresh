@@ -976,34 +976,34 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
     if (ucmd->forwardmove > 10)
     {
-        ent->client->jumpdata->key_states |= Jump::KEY_STATE_FORWARD;
+        ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Forward);
     }
     else if (ucmd->forwardmove < -10)
     {
-        ent->client->jumpdata->key_states |= Jump::KEY_STATE_BACK;
+        ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Back);
     }
 
     if (ucmd->sidemove > 10)
     {
-        ent->client->jumpdata->key_states |= Jump::KEY_STATE_RIGHT;
+        ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Right);
     }
     else if (ucmd->sidemove < -10)
     {
-        ent->client->jumpdata->key_states |= Jump::KEY_STATE_LEFT;
+        ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Left);
     }
 
     if (ucmd->upmove > 10)
     {
-        ent->client->jumpdata->key_states |= Jump::KEY_STATE_JUMP;
+        ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Jump);
     }
     else if (ucmd->upmove < -10)
     {
-        ent->client->jumpdata->key_states |= Jump::KEY_STATE_CROUCH;
+        ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Crouch);
     }
 
 	if (ucmd->buttons & BUTTON_ATTACK)
 	{
-		ent->client->jumpdata->key_states |= Jump::KEY_STATE_ATTACK;
+		ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Attack);
 	}
 
     // Jump

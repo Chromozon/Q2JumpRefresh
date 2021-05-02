@@ -36,17 +36,17 @@ namespace Jump
         Intermission
     };
 
-    typedef enum
+    enum class KeyStateEnum
     {
-        KEY_STATE_NONE = 0,
-        KEY_STATE_JUMP = 1,
-        KEY_STATE_CROUCH = 2,
-        KEY_STATE_LEFT = 4,
-        KEY_STATE_RIGHT = 8,
-        KEY_STATE_FORWARD = 16,
-        KEY_STATE_BACK = 32,
-        KEY_STATE_ATTACK = 64,
-    } key_state_t;
+        None = 0,
+        Jump = 1,
+        Crouch = 2,
+        Left = 4,
+        Right = 8,
+        Forward = 16,
+        Back = 32,
+        Attack = 64,
+    };
 
     typedef enum
     {

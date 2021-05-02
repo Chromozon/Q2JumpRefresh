@@ -420,7 +420,7 @@ void HUD::SetStatAsync(edict_t* ent)
 /// <param name="ent"></param>
 void HUD::SetStatKeyStates(edict_t* ent)
 {
-    int keyStates = 0;
+    uint8_t keyStates = 0;
     if (ent->client->jumpdata->update_replay_spectating)
     {
         // Watching a replay
@@ -450,34 +450,34 @@ void HUD::SetStatKeyStates(edict_t* ent)
     ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = false;
     ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = false;
 
-    if (keyStates & KEY_STATE_FORWARD)
+    if (keyStates & static_cast<uint8_t>(KeyStateEnum::Forward))
     {
         ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = true;
     }
-    else if (keyStates & KEY_STATE_BACK)
+    else if (keyStates & static_cast<uint8_t>(KeyStateEnum::Back))
     {
         ent->client->ps.stats[STAT_JUMP_KEY_BACK] = true;
     }
 
-    if (keyStates & KEY_STATE_LEFT)
+    if (keyStates & static_cast<uint8_t>(KeyStateEnum::Left))
     {
         ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = true;
     }
-    else if (keyStates & KEY_STATE_RIGHT)
+    else if (keyStates & static_cast<uint8_t>(KeyStateEnum::Right))
     {
         ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = true;
     }
 
-    if (keyStates & KEY_STATE_JUMP)
+    if (keyStates & static_cast<uint8_t>(KeyStateEnum::Jump))
     {
         ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = true;
     }
-    else if (keyStates & KEY_STATE_CROUCH)
+    else if (keyStates & static_cast<uint8_t>(KeyStateEnum::Crouch))
     {
         ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = true;
     }
 
-    if (keyStates & KEY_STATE_ATTACK)
+    if (keyStates & static_cast<uint8_t>(KeyStateEnum::Attack))
     {
         ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = true;
     }

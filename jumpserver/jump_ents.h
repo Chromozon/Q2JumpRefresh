@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include "g_local.h"
 #include <map>
 #include <string>

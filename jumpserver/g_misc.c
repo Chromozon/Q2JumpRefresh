@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // g_misc.c
 
 #include "g_local.h"
+#include "jump_msets.h"
 
 
 /*QUAKED func_group (0 0 0) ?
@@ -1808,10 +1809,13 @@ void teleporter_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	VectorCopy (dest->s.origin, other->s.old_origin);
 	other->s.origin[2] += 10;
 
-	// clear the velocity and hold them in place briefly
-	VectorClear (other->velocity);
-	//other->client->ps.pmove.pm_time = 160>>3;		// hold time after teleporting; we don't want any in jump
-	//other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
+	// Hold the user in place briefly if fast tele isn't set.
+	if (!Jump::MSets::GetFastTele())
+	{
+		VectorClear(other->velocity);
+		other->client->ps.pmove.pm_time = 160 >> 3; // hold time (20)
+		other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
+	}
 
 	// set angles
 	for (i=0 ; i<3 ; i++)

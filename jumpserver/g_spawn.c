@@ -343,7 +343,7 @@ void ED_CallSpawn (edict_t *ent)
 	}
 
 	// Jump
-	if (Jump::SpawnJumpEnt(ent))
+	if (Jump::Entities::SpawnJumpEnt(ent))
 	{
 		return;
 	}

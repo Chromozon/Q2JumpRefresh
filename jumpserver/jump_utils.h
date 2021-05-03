@@ -96,6 +96,7 @@ namespace Jump
     std::string GetGreenConsoleText(const std::string& str);
 
     // Tries to convert a string to an int.  If the string is an int, returns true, else false.
+    // Does not currently support negative numbers or leading + sign.  Ignores whitespace.
     bool StringToIntMaybe(const std::string& str, int& num);
 
     // Tries to convert a string to a float.  If the string is a float, returns true, else false.

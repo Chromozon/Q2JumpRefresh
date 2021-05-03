@@ -10,6 +10,7 @@ namespace Jump
 /// <summary>
 /// Variables
 /// </summary>
+bool MSets::_fastTele = false;
 bool MSets::_weapons = false;
 bool MSets::_rocket = false;
 bool MSets::_hyperblaster = false;
@@ -19,7 +20,18 @@ int MSets::_gravity = 800;
 std::string MSets::_editedBy = "";
 
 /// <summary>
+/// True if teleports should not hold the user in place for a brief period of time.
+/// </summary>
+/// <returns></returns>
+bool MSets::GetFastTele()
+{
+    return _fastTele;
+}
+
+/// <summary>
 /// True to allow the player to fire all weapons.  TODO: probably should remove this, don't think it's ever needed
+/// TODO: this actually allows both RL and GL to be used as weapons (see map bja2).  It's easier to just change the
+/// map cfg file for this instead of implementing weapons mset.
 /// </summary>
 /// <returns></returns>
 bool MSets::GetWeapons()
@@ -149,6 +161,13 @@ void MSets::LoadMSets()
                         _weapons = true;
                     }
                 }
+                else if (StringCompareInsensitive(pieces[0], "fasttele"))
+                {
+                    if (pieces[1] != "0")
+                    {
+                        _fastTele = true;
+                    }
+                }
             }
         }
     }
@@ -159,6 +178,7 @@ void MSets::LoadMSets()
 /// </summary>
 void MSets::ResetMSets()
 {
+    _fastTele = false;
     _weapons = false;
     _rocket = false;
     _hyperblaster = false;

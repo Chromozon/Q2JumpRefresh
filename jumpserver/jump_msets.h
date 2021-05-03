@@ -11,6 +11,7 @@ class MSets
 {
 public:
 
+    static bool GetFastTele();
     static bool GetWeapons();
     static bool GetRocket();
     static bool GetHyperBlaster();
@@ -24,6 +25,7 @@ private:
 
     static void ResetMSets();
 
+    static bool _fastTele;
     static bool _weapons;
     static bool _rocket;
     static bool _hyperblaster;

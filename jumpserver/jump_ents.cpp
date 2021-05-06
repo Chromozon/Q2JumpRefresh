@@ -222,13 +222,29 @@ void Entities::TouchCpBox(edict_t* self, edict_t* other, cplane_t* /*plane*/, cs
         return;
     }
 
-    // TODO ordered CPs (if anyone actually uses those)
+    int64_t timeNowMs = Sys_Milliseconds();
+
+    if (StringCompareInsensitive(self->target, "ordered"))
+    {
+        int checkpointNum = self->count;
+        if (checkpointNum != (other->client->jumpdata->checkpoint_total + 1))
+        {
+            if ((other->client->jumpdata->timer_trigger_spam == 0) ||
+                ((timeNowMs - other->client->jumpdata->timer_trigger_spam) > 5000))
+            {
+                gi.cprintf(other, PRINT_HIGH,
+                    va("You must pick up this checkpoint in order. This is checkpoint %d.\n", checkpointNum));
+                other->client->jumpdata->timer_trigger_spam = timeNowMs;
+            }
+            return;
+        }
+    }
+
     bool firstCheckpoint = other->client->jumpdata->checkpoint_total == 0;
 
     other->client->jumpdata->checkpoint_total++;
     other->client->jumpdata->checkpoints_obtained.push_back(self);
-
-    int64_t timeNowMs = Sys_Milliseconds();
+    
     int checkpointTotal = MSets::GetCheckpointTotal();
     int checkpointCurrent = other->client->jumpdata->checkpoint_total;
     std::string overallTimeStr = GetCompletionTimeDisplayString(timeNowMs - other->client->jumpdata->timer_begin);

@@ -213,7 +213,9 @@ namespace Jump
 
         uint8_t checkpoint_total = 0;
         std::vector<edict_t*> checkpoints_obtained;
-        int64_t timer_checkpoint_split = 0;
+        int64_t timer_checkpoint_split = 0; // TODO rename from timer
+
+        int64_t timer_trigger_spam = 0; // TODO rename from timer
     };
 
     class server_data_t

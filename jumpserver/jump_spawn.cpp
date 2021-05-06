@@ -189,6 +189,7 @@ void Spawn::InitDefaultSpawnVariables(edict_t* ent)
     ent->client->jumpdata->checkpoint_total = 0;
     ent->client->jumpdata->checkpoints_obtained.clear();
     ent->client->jumpdata->timer_checkpoint_split = 0;
+    ent->client->jumpdata->timer_trigger_spam = 0;
 
     ent->svflags = 0;
     ent->solid = SOLID_TRIGGER;
@@ -473,6 +474,7 @@ void Spawn::InitAsSpectator(edict_t* ent)
     ent->client->jumpdata->checkpoint_total = 0;
     ent->client->jumpdata->checkpoints_obtained.clear();
     ent->client->jumpdata->timer_checkpoint_split = 0;
+    ent->client->jumpdata->timer_trigger_spam = 0;
 
     ent->svflags |= SVF_NOCLIENT;
     ent->solid = SOLID_NOT;
@@ -736,6 +738,7 @@ void Spawn::InitializeClientEnt(edict_t* ent)
     ent->client->jumpdata->checkpoint_total = 0;
     ent->client->jumpdata->checkpoints_obtained.clear();
     ent->client->jumpdata->timer_checkpoint_split = 0;
+    ent->client->jumpdata->timer_trigger_spam = 0;
 
     // Set the rest of ent fields
     ent->inuse = true;

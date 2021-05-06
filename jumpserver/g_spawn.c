@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump_local_database.h"
 #include "jump_logger.h"
 #include "jump_scores.h"
+#include "jump_msets.h"
 // Jump
 
 typedef struct
@@ -570,6 +571,7 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 		Jump::Logger::Warning(va("Map %s is not in the maplist, times will not be saved", mapname));
 	}
 	Jump::LocalScores::CalculateAllStatistics();
+	Jump::MSets::LoadMSets();
 
 	// g_edicts[0] is always worldspawn
 	// The next g_edicts are the clients

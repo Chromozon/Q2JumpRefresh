@@ -102,71 +102,72 @@ void MSets::LoadMSets()
             if (pieces.size() != 2)
             {
                 Logger::Warning(va("Invalid mset for map %s: %s", level.mapname, line.c_str()));
+                continue;
             }
-            else
+            std::string lineName = pieces[0];
+            std::string lineValue = TrimQuotes(pieces[1]);
+
+            if (StringCompareInsensitive(lineName, "checkpoint_total"))
             {
-                if (StringCompareInsensitive(pieces[0], "checkpoint_total"))
+                int num = 0;
+                if (StringToIntMaybe(lineValue, num))
                 {
-                    int num = 0;
-                    if (StringToIntMaybe(pieces[1], num))
-                    {
-                        _checkpointTotal = num;
-                    }
-                    else
-                    {
-                        Logger::Warning(va("Invalid checkpoint_total mset for map %s: %s", level.mapname, line.c_str()));
-                    }
+                    _checkpointTotal = num;
                 }
-                else if (StringCompareInsensitive(pieces[0], "edited_by"))
+                else
                 {
-                    _editedBy = pieces[1];
+                    Logger::Warning(va("Invalid checkpoint_total mset for map %s: %s", level.mapname, line.c_str()));
                 }
-                else if (StringCompareInsensitive(pieces[0], "rocket"))
+            }
+            else if (StringCompareInsensitive(lineName, "edited_by"))
+            {
+                _editedBy = lineValue;
+            }
+            else if (StringCompareInsensitive(lineName, "rocket"))
+            {
+                if (lineValue != "0")
                 {
-                    if (pieces[1] != "0")
-                    {
-                        _rocket = true;
-                    }
+                    _rocket = true;
                 }
-                else if (StringCompareInsensitive(pieces[0], "hyperblaster"))
+            }
+            else if (StringCompareInsensitive(lineName, "hyperblaster"))
+            {
+                if (lineValue != "0")
                 {
-                    if (pieces[1] != "0")
-                    {
-                        _rocket = true;
-                    }
+                    _hyperblaster = true;
                 }
-                else if (StringCompareInsensitive(pieces[0], "bfg"))
+            }
+            else if (StringCompareInsensitive(lineName, "bfg"))
+            {
+                if (lineValue != "0")
                 {
-                    if (pieces[1] != "0")
-                    {
-                        _bfg = true;
-                    }
+                    _bfg = true;
                 }
-                else if (StringCompareInsensitive(pieces[0], "gravity"))
+            }
+            else if (StringCompareInsensitive(lineName, "gravity"))
+            {
+                int num = 0;
+                if (StringToIntMaybe(lineValue, num))
                 {
-                    int num = 0;
-                    if (StringToIntMaybe(pieces[1], num))
-                    {
-                        _gravity = num;
-                    }
-                    else
-                    {
-                        Logger::Warning(va("Invalid gravity mset for map %s: %s", level.mapname, line.c_str()));
-                    }
+                    _gravity = num;
                 }
-                else if (StringCompareInsensitive(pieces[0], "weapons"))
+                else
                 {
-                    if (pieces[1] != "0")
-                    {
-                        _weapons = true;
-                    }
+                    Logger::Warning(va("Invalid gravity mset for map %s: %s", level.mapname, line.c_str()));
                 }
-                else if (StringCompareInsensitive(pieces[0], "fasttele"))
+            }
+            else if (StringCompareInsensitive(lineName, "weapons"))
+            {
+                if (lineValue != "0")
                 {
-                    if (pieces[1] != "0")
-                    {
-                        _fastTele = true;
-                    }
+                    _weapons = true;
+                }
+            }
+            else if (StringCompareInsensitive(lineName, "fasttele"))
+            {
+                if (lineValue != "0")
+                {
+                    _fastTele = true;
                 }
             }
         }

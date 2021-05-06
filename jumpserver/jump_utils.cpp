@@ -247,6 +247,25 @@ namespace Jump
         return tokens;
     }
 
+    // Removes leading and trailing "" marks if they are the first and last characters in the string.
+    std::string TrimQuotes(const std::string& str)
+    {
+        std::string trimmed;
+        for (size_t i = 0; i < str.size(); ++i)
+        {
+            if ((i == 0) && (str[i] == '\"')) // leading "
+            {
+                continue;
+            }
+            if ((i == (str.size() - 1)) && (str[i] == '\"')) // trailing "
+            {
+                continue;
+            }
+            trimmed.push_back(str[i]);
+        }
+        return trimmed;
+    }
+
     // Returns true if two strings are case-insensitive equal.
     bool StringCompareInsensitive(const std::string& left, const std::string& right)
     {

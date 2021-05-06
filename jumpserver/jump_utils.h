@@ -110,6 +110,9 @@ namespace Jump
     // Splits a string into pieces using the given delimiter.
     std::vector<std::string> SplitString(const std::string& str, char delim);
 
+    // Removes leading and trailing "" marks if they are the first and last characters in the string.
+    std::string TrimQuotes(const std::string& str);
+
     // Returns true if two strings are case-insensitive equal.
     bool StringCompareInsensitive(const std::string& left, const std::string& right);
 

@@ -18,12 +18,16 @@ private:
     static void SP_jumpbox_small(edict_t* ent);
     static void SP_jumpbox_medium(edict_t* ent);
     static void SP_jumpbox_large(edict_t* ent);
+    static void SP_cpbox_small(edict_t* ent);
+    static void SP_cpbox_medium(edict_t* ent);
+    static void SP_cpbox_large(edict_t* ent);
     static void SP_trigger_finish(edict_t* ent);
     static void SP_weapon_finish(edict_t* ent);
 
     // Touch functions
     static void TouchTriggerFinish(edict_t* self, edict_t* other, cplane_t* /*plane*/, csurface_t* /*surf*/);
     static void TouchWeaponFinish(edict_t* self, edict_t* other, cplane_t* /*plane*/, csurface_t* /*surf*/);
+    static void TouchCpBox(edict_t* self, edict_t* other, cplane_t* /*plane*/, csurface_t* /*surf*/);
 
     // Spawn table
     typedef void (*SpawnFunction)(edict_t* ent);

@@ -132,6 +132,11 @@ namespace Jump
 
     qboolean PickupWeapon(edict_t* weap, edict_t* ent)
     {
+        if (ent->client == nullptr || !ent->inuse)
+        {
+            return false;
+        }
+
         if (ent->client->jumpdata->timer_finished)
         {
             // If we have already completed the map, ignore any weapon pickups
@@ -272,7 +277,7 @@ namespace Jump
 
         frame.fps = static_cast<uint8_t>(ent->client->jumpdata->fps);
         frame.async = static_cast<uint8_t>(ent->client->jumpdata->async);
-        frame.checkpoints = 0; // TODO
+        frame.checkpoints = ent->client->jumpdata->checkpoint_total;
         
         frame.weapon_inven = 0; // TODO
         frame.weapon_equipped = 0; // TODO

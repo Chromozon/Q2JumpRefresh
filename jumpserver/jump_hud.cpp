@@ -4,6 +4,7 @@
 #include "jump_utils.h"
 #include "jump_voting.h"
 #include "jump_scores.h"
+#include "jump_msets.h"
 
 namespace Jump
 {
@@ -715,9 +716,41 @@ void HUD::SetStatFooter2(edict_t* ent)
 void HUD::SetStatFooter3(edict_t* ent)
 {
     std::string footer3;
+    int checkpointTotal = MSets::GetCheckpointTotal();
+
+    if (checkpointTotal <= 0)
+    {
+        // No checkpoints, do nothing
+    }
+    else if (ent->client->jumpdata->update_replay_spectating)
+    {
+        // Watching a replay
+        int checkpointCount =
+            ent->client->jumpdata->replay_spectating[ent->client->jumpdata->replay_spectating_framenum].checkpoints;
+        footer3 = va("Chkpts: %d/%d", checkpointCount, checkpointTotal);
+    }
+    else if (ent->client->chase_target != nullptr)
+    {
+        // Chasing another player
+        if (ent->client->chase_target->client->jumpdata->team == TeamEnum::Easy || 
+            ent->client->chase_target->client->jumpdata->team == TeamEnum::Hard)
+        {
+            int checkpointCount = ent->client->chase_target->client->jumpdata->checkpoint_total;
+            footer3 = va("Chkpts: %d/%d", checkpointCount, checkpointTotal);
+        }
+    }
+    else if (ent->client->jumpdata->team == TeamEnum::Spectator)
+    {
+        // Not chasing anyone, do nothing
+    }
+    else
+    {
+        // Playing
+        int checkpointCount = ent->client->jumpdata->checkpoint_total;
+        footer3 = va("Chkpts: %d/%d", checkpointCount, checkpointTotal);
+    }
 
     // Footer3
-    // if (replaying, playing, or spectating AND checkpoints) string = Chkpts: 1/5
     gi.WriteByte(svc_configstring);
     gi.WriteShort(CS_JUMP_KEY_HUD_FOOTER_3);
     gi.WriteString(const_cast<char*>(footer3.c_str()));

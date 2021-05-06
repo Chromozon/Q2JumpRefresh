@@ -210,6 +210,10 @@ namespace Jump
         std::string hud_footer4;
 
         bool show_jumpers = true;
+
+        uint8_t checkpoint_total = 0;
+        std::vector<edict_t*> checkpoints_obtained;
+        int64_t timer_checkpoint_split = 0;
     };
 
     class server_data_t

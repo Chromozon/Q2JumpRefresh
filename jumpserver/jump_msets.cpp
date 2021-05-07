@@ -18,6 +18,7 @@ bool MSets::_bfg = false;
 int MSets::_checkpointTotal = 0;
 int MSets::_gravity = 800;
 std::string MSets::_editedBy = "";
+bool MSets::_isGravitySet = false;
 
 /// <summary>
 /// True if teleports should not hold the user in place for a brief period of time.
@@ -82,6 +83,15 @@ int MSets::GetCheckpointTotal()
 int MSets::GetGravity()
 {
     return _gravity;
+}
+
+/// <summary>
+/// Returns true if there is a gravity mset value.
+/// </summary>
+/// <returns></returns>
+bool MSets::IsGravitySet()
+{
+    return _isGravitySet;
 }
 
 /// <summary>
@@ -150,6 +160,7 @@ void MSets::LoadMSets()
                 if (StringToIntMaybe(lineValue, num))
                 {
                     _gravity = num;
+                    _isGravitySet = true;
                 }
                 else
                 {
@@ -187,6 +198,7 @@ void MSets::ResetMSets()
     _checkpointTotal = 0;
     _gravity = 800;
     _editedBy = "";
+    _isGravitySet = false;
 }
 
 }

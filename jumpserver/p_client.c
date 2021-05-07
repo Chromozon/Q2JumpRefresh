@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "jump_local_database.h"
 #include "jump_spawn.h"
 #include "jump_types.h"
+#include "jump_msets.h"
 
 void SP_misc_teleporter_dest (edict_t *ent);
 
@@ -841,7 +842,26 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	else
 		client->ps.pmove.pm_type = PM_NORMAL;
 
-	client->ps.pmove.gravity = sv_gravity->value;
+	// Jump
+	int baseGravity = sv_gravity->value;
+	if (Jump::MSets::IsGravitySet())
+	{
+		baseGravity = Jump::MSets::GetGravity();
+	}
+
+	if (ent->gravity != 1.0f)
+	{
+		// If something has overriden the client gravity multiplier, apply the multiplier against
+		// the default base value of 800 because that is how most people think to use the override multiplier.
+		client->ps.pmove.gravity = 800 * ent->gravity;
+	}
+	else
+	{
+		// Nothing has overriden the ent gravity value, so use the world gravity value.
+		client->ps.pmove.gravity = baseGravity;
+	}
+	// Jump
+
 	pm.s = client->ps.pmove;
 
 	for (i=0 ; i<3 ; i++)

@@ -531,20 +531,36 @@ gravity for the level.
 
 void trigger_gravity_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	other->gravity = self->gravity;
+	// TODO: don't know exactly what these spawnflags mean, but they are a necessary check
+	// in order to avoid incorrectly applying trigger_gravity (for example, in the spawn area of castlejumps)
+	if ((self->spawnflags & 1) || (self->spawnflags & 2))
+	{
+		other->gravity = self->gravity;
+	}
 }
 
 void SP_trigger_gravity (edict_t *self)
 {
-	if (st.gravity == 0)
-	{
-		gi.dprintf("trigger_gravity without gravity set at %s\n", vtos(self->s.origin));
-		G_FreeEdict  (self);
-		return;
-	}
+	InitTrigger(self);
 
-	InitTrigger (self);
-	self->gravity = atoi(st.gravity);
+	// Mappers use gravity in two different ways.
+	// Values from -2.0 to 2.0 act as multipliers of the base value.
+	// Any other value is the exact value, not a multiplier.
+	const int DefaultGravity = 800;
+	float gravityValue = ::atof(st.gravity);
+	if (gravityValue == 0.0f)
+	{
+		// If a mapper sets a gravity of 0, we default to using the worldspawn gravity, so no override here.
+		self->gravity = 1.0;
+	}
+	else if (gravityValue <= 2.0f && gravityValue >= -2.0f)
+	{
+		self->gravity = gravityValue;
+	}
+	else
+	{
+		self->gravity = gravityValue / 800.0f;
+	}
 	self->touch = trigger_gravity_touch;
 }
 

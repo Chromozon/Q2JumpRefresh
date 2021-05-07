@@ -8,6 +8,7 @@
 #include "jump_ghost.h"
 #include "jump_local_database.h"
 #include "jump_spawn.h"
+#include "jump_msets.h"
 
 namespace Jump
 {
@@ -336,10 +337,36 @@ namespace Jump
 
             const replay_frame_t& frame = ent->client->jumpdata->replay_spectating[frame_num];
 
+            // Has the replay obtained a checkpoint?
+            if (frame_num > 0)
+            {
+                const replay_frame_t& prevFrame = ent->client->jumpdata->replay_spectating[frame_num - 1];
+                if (frame.checkpoints > prevFrame.checkpoints)
+                {
+                    int checkpointTotal = MSets::GetCheckpointTotal();
+                    if (frame.checkpoints == 1)
+                    {
+                        int64_t timeMs = static_cast<int64_t>(ent->client->jumpdata->replay_spectating_framenum) * 100;
+                        std::string overallTimeStr = GetCompletionTimeDisplayString(timeMs);
+                        gi.cprintf(ent, PRINT_HIGH, va("Replay reached checkpoint %d/%d in %s seconds.\n",
+                            frame.checkpoints, checkpointTotal, overallTimeStr.c_str()));
+                        ent->client->jumpdata->timer_checkpoint_split = timeMs;
+                    }
+                    else
+                    {
+                        int64_t timeMs = static_cast<int64_t>(ent->client->jumpdata->replay_spectating_framenum) * 100;
+                        std::string overallTimeStr = GetCompletionTimeDisplayString(timeMs);
+                        int64_t splitMs = timeMs - ent->client->jumpdata->timer_checkpoint_split;
+                        std::string splitTimeStr = GetCompletionTimeDisplayString(splitMs);
+                        gi.cprintf(ent, PRINT_HIGH, va("Replay reached checkpoint %d/%d in %s seconds. (split: %s)\n",
+                            frame.checkpoints, checkpointTotal, overallTimeStr.c_str(), splitTimeStr.c_str()));
+                    }
+                }
+            }
+
             VectorCopy(frame.pos, ent->s.origin);
             VectorCopy(frame.angles, ent->client->v_angle);
             VectorCopy(frame.angles, ent->client->ps.viewangles);
-            // TODO keys, fps
 
             // Since we only send a position update every server frame (10 fps),
             // the client needs to smoothen the movement between the two frames.

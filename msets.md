@@ -29,14 +29,14 @@ To enable this setting, set value = 1.
 ## rocket
 Allows a player to pick up and shoot rocket launchers instead of them acting as map finish.
 
-To enable this setting, set value = 1.
+To enable, set value = 1.
 
 ## hyperblaster
 Allows a player to pick up and shoot hyperblasters instead of them acting as map finish.
 
-To enable this setting, set value = 1.
+To enable, set value = 1.
 
 ## bfg
 Allows a player to pick up and shoot BFGs instead of them acting as map finish.
 
-To enable this setting, set value = 1.
+To enable, set value = 1.

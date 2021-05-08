@@ -33,6 +33,7 @@ public:
     static void PrintMapTimes(edict_t* ent);
     static void PrintMapsLeft(edict_t* ent);
     static void PrintMapsDone(edict_t* ent);
+    static void PrintMaplist(edict_t* ent, bool alphabetical);
 
 private:
     // Helper functions
@@ -40,6 +41,7 @@ private:
     static float CalculatePercentScore(int totalScore, int userMapCount);
     static bool GetMapsLeft(int userId, std::vector<std::string>& results);
     static bool GetMapsDone(int userId, std::vector<std::string>& results);
+    static bool GetFirstPlaceForMaplist(const std::string& mapname, std::string& username, int& timeMs);
 
     static std::vector<std::string> _maplistByName; // <mapnames sorted alphabetically>
     static std::vector<std::string> _maplistByAdded; // <mapnames sorted by date added>

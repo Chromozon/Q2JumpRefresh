@@ -268,6 +268,31 @@ int LocalScores::CalculateTotalScore(const std::array<int, 15>& highscores)
 }
 
 /// <summary>
+/// Retrieves the username and time for the first place on a given map.
+/// </summary>
+/// <param name="mapname"></param>
+/// <param name="username">Set on return</param>
+/// <param name="timeMs">Set on return</param>
+/// <returns>False if map does not exist or if there are no times set for the map.</returns>
+bool LocalScores::GetFirstPlaceForMaplist(const std::string& mapname, std::string& username, int& timeMs)
+{
+    auto it = _allMapTimes.find(mapname);
+    if (it == _allMapTimes.end())
+    {
+        // Map does not exist
+        return false;
+    }
+    if (it->second.empty())
+    {
+        // No time set for this map
+        return false;
+    }
+    username = GetUserName(it->second[0].userId);
+    timeMs = it->second[0].timeMs;
+    return true;
+}
+
+/// <summary>
 /// Calculates the percent score for a user.  
 /// This is how close a user is to being first in every map they have completed.
 /// </summary>
@@ -794,6 +819,89 @@ void LocalScores::PrintMapsDone(edict_t* ent)
     gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d maps). Use mapsdone %s <page>\n",
         page, totalPages, static_cast<int>(results.size()), username.c_str());
     gi.cprintf(ent, PRINT_HIGH, "-----------------------------------------\n");
+}
+
+/// <summary>
+/// Prints the maplist alphabetically or by date added oldest to newest.
+/// </summary>
+/// <param name="ent"></param>
+/// <param name="alphabetical"></param>
+void LocalScores::PrintMaplist(edict_t* ent, bool alphabetical)
+{
+    const std::vector<std::string>* maplist = &_maplistByAdded;
+    if (alphabetical)
+    {
+        maplist = &_maplistByName;
+    }
+    if (maplist->empty())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "There are no maps in the maplist.\n");
+        return;
+    }
+
+    int page = 1;
+    if (gi.argc() > 1)
+    {
+        StringToIntMaybe(gi.argv(1), page);
+    }
+    if (page < 1)
+    {
+        page = 1;
+    }
+    size_t index_start = (page - 1) * CONSOLE_HIGHSCORES_COUNT_PER_PAGE;
+    if (index_start >= maplist->size())
+    {
+        gi.cprintf(ent, PRINT_HIGH, "There are no maps for this page.\n");
+        return;
+    }
+    size_t index_end = std::min<size_t>(
+        maplist->size() - 1,
+        (page * CONSOLE_HIGHSCORES_COUNT_PER_PAGE) - 1);
+
+    // Header
+    gi.cprintf(ent, PRINT_HIGH, "---------------------------------------------------------\n");
+
+    for (size_t i = index_start; i <= index_end; ++i)
+    {
+        std::string mapname = (*maplist)[i];
+        std::string username;
+        int timeMs = 0;
+        bool hasTime = GetFirstPlaceForMaplist(mapname, username, timeMs);
+        if (mapname.size() > 16)
+        {
+            mapname = mapname.substr(0, 16);
+            mapname += "..."; // trim long mapnames
+        }
+        if (hasTime)
+        {
+            std::string timeStr = GetCompletionTimeDisplayString(timeMs);
+            gi.cprintf(ent, PRINT_HIGH, "%-4d  %-21s  %-16s  %10s\n",
+                static_cast<int>(i + 1),
+                mapname.c_str(),
+                username.c_str(),
+                timeStr.c_str()
+            );
+        }
+        else
+        {
+            // No time for map
+            gi.cprintf(ent, PRINT_HIGH, "%-4d  %-21s\n",
+                static_cast<int>(i + 1),
+                mapname.c_str()
+            );
+        }
+    }
+
+    // Footer
+    std::string command = "maplistnew";
+    if (alphabetical)
+    {
+        command = "maplist";
+    }
+    int totalPages = std::ceil(maplist->size() / (float)CONSOLE_HIGHSCORES_COUNT_PER_PAGE);
+    gi.cprintf(ent, PRINT_HIGH, "Page %d/%d (%d maps). Use %s <page>.\n",
+        page, totalPages, static_cast<int>(maplist->size()), command.c_str());
+    gi.cprintf(ent, PRINT_HIGH, "---------------------------------------------------------\n");
 }
 
 } // namespace Jump

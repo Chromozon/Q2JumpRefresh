@@ -45,6 +45,8 @@ namespace Jump
         { "mapsleft", Cmd_Jump_Mapsleft },
         { "mapsdone", Cmd_Jump_Mapsdone },
         { "jumpers", Cmd_Jump_Jumpers },
+        { "maplist", Cmd_Jump_Maplist },
+        { "maplistnew", Cmd_Jump_MaplistNew },
 
         { "votetime", Cmd_Jump_Vote_Time },
         { "timevote", Cmd_Jump_Vote_Time },
@@ -62,7 +64,6 @@ namespace Jump
         // TODO
         { "showtimes", Cmd_Jump_Void },
         { "timevote", Cmd_Jump_Void },
-        { "maplist", Cmd_Jump_Void },
         { "globaltimes", Cmd_Jump_Void },
         { "globalmaps", Cmd_Jump_Void },
         { "globalscores", Cmd_Jump_Void },
@@ -98,7 +99,6 @@ namespace Jump
     // A function used to test stuff for development
     void Cmd_Jump_Test(edict_t* ent)
     {
-
         std::string testDate = GetEuropeanShortDate("2020-12-23");
         //LocalDatabase::AddUser("atestname!!");
         //int size2 = sizeof(replay_frame_t);
@@ -881,6 +881,17 @@ namespace Jump
             }
             gi.cprintf(ent, PRINT_HIGH, "Player models are now OFF.\n");
         }
+    }
+
+
+    void Cmd_Jump_Maplist(edict_t* ent)
+    {
+        LocalScores::PrintMaplist(ent, true);
+    }
+
+    void Cmd_Jump_MaplistNew(edict_t* ent)
+    {
+        LocalScores::PrintMaplist(ent, false);
     }
 
 

@@ -118,7 +118,8 @@ void PlayerNoise(edict_t *who, vec3_t where, int type)
 qboolean Pickup_Weapon (edict_t *ent, edict_t *other)
 {
     // Jump
-    return Jump::PickupWeapon(ent, other);
+    Jump::PickupWeapon(ent, other);
+	return false; // do not take item
     // Jump
 
 	int			index;

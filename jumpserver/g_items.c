@@ -170,6 +170,11 @@ void SetRespawn (edict_t *ent, float delay)
 
 qboolean Pickup_Powerup (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+	// Jump
+
 	int		quantity;
 
 	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
@@ -208,6 +213,11 @@ void Drop_General (edict_t *ent, gitem_t *item)
 
 qboolean Pickup_Adrenaline (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+	// Jump
+
 	if (!deathmatch->value)
 		other->max_health += 1;
 
@@ -222,6 +232,11 @@ qboolean Pickup_Adrenaline (edict_t *ent, edict_t *other)
 
 qboolean Pickup_AncientHead (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+	// Jump
+
 	other->max_health += 2;
 
 	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
@@ -232,6 +247,11 @@ qboolean Pickup_AncientHead (edict_t *ent, edict_t *other)
 
 qboolean Pickup_Bandolier (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+	// Jump
+
 	gitem_t	*item;
 	int		index;
 
@@ -270,6 +290,11 @@ qboolean Pickup_Bandolier (edict_t *ent, edict_t *other)
 
 qboolean Pickup_Pack (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+	// Jump
+
 	gitem_t	*item;
 	int		index;
 
@@ -435,7 +460,7 @@ qboolean Pickup_Key (edict_t *ent, edict_t *other)
 {
 	// Jump
 	Jump::Entities::TouchCheckpoint(ent, other);
-	return false; // do not pickup item
+	return false; // do not take item
 	// Jump
 
 	if (coop->value)
@@ -499,6 +524,14 @@ qboolean Add_Ammo (edict_t *ent, gitem_t *item, int count)
 
 qboolean Pickup_Ammo (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+
+	// TODO: hand grenades as weapon (if anyone wants that, bleh!)
+
+	// Jump
+
 	int			oldcount;
 	int			count;
 	qboolean	weapon;
@@ -562,6 +595,11 @@ void MegaHealth_think (edict_t *self)
 
 qboolean Pickup_Health (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+	// Jump
+
 	if (!(ent->style & HEALTH_IGNORE_MAX))
 		if (other->health >= other->max_health)
 			return false;
@@ -623,6 +661,11 @@ int ArmorIndex (edict_t *ent)
 
 qboolean Pickup_Armor (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+	// Jump
+
 	int				old_armor_index;
 	gitem_armor_t	*oldinfo;
 	gitem_armor_t	*newinfo;
@@ -743,6 +786,11 @@ void Use_PowerArmor (edict_t *ent, gitem_t *item)
 
 qboolean Pickup_PowerArmor (edict_t *ent, edict_t *other)
 {
+	// Jump
+	Jump::Entities::TouchDoNothing(ent, other);
+	return false; // do not take item
+	// Jump
+
 	int		quantity;
 
 	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];

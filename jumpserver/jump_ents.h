@@ -14,6 +14,7 @@ public:
     static bool SpawnJumpEnt(edict_t* ent);
 
     static void TouchCheckpoint(edict_t* self, edict_t* other);
+    static void TouchDoNothing(edict_t* self, edict_t* other);
 
 private:
     // Spawn functions

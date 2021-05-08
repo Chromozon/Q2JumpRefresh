@@ -49,6 +49,16 @@ void Entities::TouchCheckpoint(edict_t* self, edict_t* other)
 }
 
 /// <summary>
+/// Touch function to use when the ent should take no actions.  Used for items that have no use in jump.
+/// </summary>
+/// <param name="self"></param>
+/// <param name="other"></param>
+void Entities::TouchDoNothing(edict_t* self, edict_t* other)
+{
+    // do nothing
+}
+
+/// <summary>
 /// Small box.
 /// </summary>
 /// <param name="ent"></param>

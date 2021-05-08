@@ -266,6 +266,23 @@ namespace Jump
         return trimmed;
     }
 
+    // Returns true if two strings are case-insensitive equal.  Correctly handles null values.
+    bool StringCompareInsensitive(const char* left, const char* right)
+    {
+        if (left == nullptr && right == nullptr)
+        {
+            return true;
+        }
+        else if (left == nullptr || right == nullptr)
+        {
+            return false;
+        }
+        else
+        {
+            return StringCompareInsensitive(std::string(left), std::string(right));
+        }
+    }
+
     // Returns true if two strings are case-insensitive equal.
     bool StringCompareInsensitive(const std::string& left, const std::string& right)
     {

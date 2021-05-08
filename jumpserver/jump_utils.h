@@ -113,6 +113,9 @@ namespace Jump
     // Removes leading and trailing "" marks if they are the first and last characters in the string.
     std::string TrimQuotes(const std::string& str);
 
+    // Returns true if two strings are case-insensitive equal.  Correctly handles null values.
+    bool StringCompareInsensitive(const char* left, const char* right);
+
     // Returns true if two strings are case-insensitive equal.
     bool StringCompareInsensitive(const std::string& left, const std::string& right);
 

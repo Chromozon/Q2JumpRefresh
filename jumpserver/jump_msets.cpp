@@ -18,6 +18,8 @@ bool MSets::_bfg = false;
 int MSets::_checkpointTotal = 0;
 int MSets::_gravity = 800;
 std::string MSets::_editedBy = "";
+bool MSets::_damage = true;
+
 bool MSets::_isGravitySet = false;
 
 /// <summary>
@@ -83,6 +85,15 @@ int MSets::GetCheckpointTotal()
 int MSets::GetGravity()
 {
     return _gravity;
+}
+
+/// <summary>
+/// If true, the player can take damage.  If false, always sets the T_Damage() value to 0.
+/// </summary>
+/// <returns></returns>
+bool MSets::GetDamage()
+{
+    return _damage;
 }
 
 /// <summary>
@@ -181,6 +192,13 @@ void MSets::LoadMSets()
                     _fastTele = true;
                 }
             }
+            else if (StringCompareInsensitive(lineName, "damage"))
+            {
+                if (lineValue == "0")
+                {
+                    _damage = false;
+                }
+            }
         }
     }
 }
@@ -198,6 +216,8 @@ void MSets::ResetMSets()
     _checkpointTotal = 0;
     _gravity = 800;
     _editedBy = "";
+    _damage = true;
+
     _isGravitySet = false;
 }
 

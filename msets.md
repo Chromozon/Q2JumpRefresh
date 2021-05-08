@@ -26,6 +26,11 @@ By default, whenever a player uses a teleporter, their movement speed is reset t
 
 To enable, set value = 1.
 
+## damage
+By default, things in the world are allowed to damage the player (trigger_hurt, etc.).  Set this value to 0 to prevent the player from taking any damage.  This mset is mainly used to fix old maps that have buggy or annoying death planes.
+
+To disable damage, set value = 0.
+
 ## rocket
 Allows a player to pick up and shoot rocket launchers instead of them acting as map finish.
 

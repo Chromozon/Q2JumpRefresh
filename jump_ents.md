@@ -25,6 +25,11 @@ Deals damage to the player equal to the "dmg" field value.
 
 In Jump, if "dmg = 1", it removes all weapons from the player's inventory.
 
+## trigger_push
+If you set the "target" property to "checkpoint" and the "count" property to the number of checkpoints, the player will be affected by the push if they do not meet the reqired number of checkpoints.  If the player has the checkpoints, they pass through this ent and do not take any push.  This can be used as a barrier to block (or push away) the player from being able to enter an area of the map.
+
+It is not recommended to use this as a checkpoint barrier.  Use cp_wall instead.
+
 
 ## Checkpoints
 All `key_` ents can be used as checkpoints except for `key_commander_head`.  The commander head is the same model as our store/recall marker.

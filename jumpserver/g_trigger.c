@@ -393,6 +393,31 @@ static int windsound;
 
 void trigger_push_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
+	// Jump
+	if (self->target != nullptr) 
+	{
+		if (strncmp(self->target, "checkpoint", strlen("checkpoint")) == 0 && (other->client != nullptr))
+		{
+			if (other->client->jumpdata->checkpoint_total >= self->count)
+			{
+				// Allows the player to pass through this barrier and does not apply a push.
+				return;
+			}
+			else
+			{
+				int64_t timeNowMs = Sys_Milliseconds();
+				if ((other->client->jumpdata->timer_trigger_spam == 0) ||
+					((timeNowMs - other->client->jumpdata->timer_trigger_spam) > 5000))
+				{
+					// The player is affected by the push if they do not meet the checkpoint requirement.
+					gi.cprintf(other, PRINT_HIGH, "You need %d checkpoint(s) to pass this barrier.\n", self->count);
+					other->client->jumpdata->timer_trigger_spam = timeNowMs;
+				}
+			}
+		}
+	}
+	// Jump
+
 	if (strcmp(other->classname, "grenade") == 0)
 	{
 		VectorScale (self->movedir, self->speed * 10, other->velocity);

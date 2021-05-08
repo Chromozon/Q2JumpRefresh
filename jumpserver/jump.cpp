@@ -145,6 +145,22 @@ namespace Jump
             // TODO: make sure recall on easy mode resets timer_finished
         }
 
+        // Checkpoint check
+        int totalCheckpoints = MSets::GetCheckpointTotal();
+        if ((totalCheckpoints > 0) && (ent->client->jumpdata->checkpoint_total < totalCheckpoints))
+        {
+            int64_t timeNowMs = Sys_Milliseconds();
+            if ((ent->client->jumpdata->timer_trigger_spam == 0) ||
+                ((timeNowMs - ent->client->jumpdata->timer_trigger_spam) > 5000))
+            {
+                gi.cprintf(ent, PRINT_HIGH,
+                    va("You need %d checkpoint(s) before being able to finish the map. You currently have %d.\n",
+                        totalCheckpoints, ent->client->jumpdata->checkpoint_total));
+                ent->client->jumpdata->timer_trigger_spam = timeNowMs;
+            }
+            return false;
+        }
+
         // TODO
         // If rocket, grenade launcher, BFG
         // and mset enabled, don't finish timer

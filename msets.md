@@ -24,7 +24,7 @@ TODO: will a value of 0 work here?
 ## fasttele
 By default, whenever a player uses a teleporter, their movement speed is reset to 0 and they are held in place briefly.  Some maps require smooth teleports that do not reset player movement.
 
-To enable this setting, set value = 1.
+To enable, set value = 1.
 
 ## rocket
 Allows a player to pick up and shoot rocket launchers instead of them acting as map finish.

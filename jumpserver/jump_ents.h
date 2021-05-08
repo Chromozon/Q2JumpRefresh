@@ -13,6 +13,8 @@ public:
     // Returns true if successfully spawns the desired ent, else false
     static bool SpawnJumpEnt(edict_t* ent);
 
+    static void TouchCheckpoint(edict_t* self, edict_t* other);
+
 private:
     // Spawn functions
     static void SP_jumpbox_small(edict_t* ent);

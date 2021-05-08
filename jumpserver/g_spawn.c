@@ -629,13 +629,13 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 
 		// Remove entities that we don't need
 		// TODO: add back in the checkpoint ents (but only allow a few of them)
-		if (strstr(ent->classname, "ammo_") != NULL ||
-			strstr(ent->classname, "key_") != NULL ||
-			strstr(ent->classname, "item_") != NULL)
-		{
-			G_FreeEdict(ent);
-			continue;
-		}
+		//if (strstr(ent->classname, "ammo_") != NULL ||
+		//	strstr(ent->classname, "key_") != NULL ||
+		//	strstr(ent->classname, "item_") != NULL)
+		//{
+		//	G_FreeEdict(ent);
+		//	continue;
+		//}
 
 		// Spawn the ent
 		ED_CallSpawn(ent);

@@ -39,6 +39,16 @@ bool Entities::SpawnJumpEnt(edict_t* ent)
 }
 
 /// <summary>
+/// General checkpoint touch function that can be used for all checkpoints (keys, items, cpboxes).
+/// </summary>
+/// <param name="self">Checkpoint ent</param>
+/// <param name="other">Player</param>
+void Entities::TouchCheckpoint(edict_t* self, edict_t* other)
+{
+    TouchCpBox(self, other, nullptr, nullptr);
+}
+
+/// <summary>
 /// Small box.
 /// </summary>
 /// <param name="ent"></param>

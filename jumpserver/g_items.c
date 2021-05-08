@@ -459,7 +459,15 @@ void	Use_Silencer (edict_t *ent, gitem_t *item)
 qboolean Pickup_Key (edict_t *ent, edict_t *other)
 {
 	// Jump
-	Jump::Entities::TouchCheckpoint(ent, other);
+	if (strcmp(ent->classname, "key_commander_head") == 0)
+	{
+		// The commander head is used as our store/recall model, so don't use these as checkpoints.
+		Jump::Entities::TouchDoNothing(ent, other);
+	}
+	else
+	{
+		Jump::Entities::TouchCheckpoint(ent, other);
+	}
 	return false; // do not take item
 	// Jump
 

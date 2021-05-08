@@ -490,6 +490,14 @@ void hurt_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *sur
 		dflags = DAMAGE_NO_PROTECTION;
 	else
 		dflags = 0;
+
+	// Jump
+	if ((self->dmg == 1) && (other->client != nullptr))
+	{
+		Jump::RemoveAllPlayerWeapons(other);
+	}
+	// Jump
+
 	T_Damage (other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, self->dmg, dflags, MOD_TRIGGER_HURT);
 }
 

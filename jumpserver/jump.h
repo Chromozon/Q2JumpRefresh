@@ -37,4 +37,6 @@ namespace Jump
     void AdvanceRacingSpark(edict_t* ent);
 
     void InitializeClientEnt(edict_t* ent);
+
+    void RemoveAllPlayerWeapons(edict_t* ent);
 }

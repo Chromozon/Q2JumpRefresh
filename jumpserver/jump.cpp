@@ -443,6 +443,40 @@ namespace Jump
         }
     }
 
+    void RemoveAllPlayerWeapons(edict_t* ent)
+    {
+        if (ent->client == nullptr || !ent->inuse)
+        {
+            return;
+        }
+        gitem_t* item = nullptr;
+        item = FindItem("Blaster");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("Shotgun");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("Super Shotgun");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("Machinegun");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("Chaingun");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("Grenades");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("Grenade Launcher");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("Rocket Launcher");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("HyperBlaster");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("Railgun");
+        ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
+        item = FindItem("BFG10K");
+        ent->client->newweapon = nullptr;
+        ChangeWeapon(ent);
+        // TODO: does this work correctly with hand grenades?
+        // TODO: does this work correctly by setting newweapon to nullptr?
+    }
+
     void DoStuffOnMapChange()
     {
         jump_server.replay_now_recording.clear();

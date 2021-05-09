@@ -8,8 +8,9 @@ Here is an example mset file:
 checkpoint_total "5"
 gravity "400"
 fasttele "1"
-edited_by "slippery"
 ```
+
+Mappers can also set msets themselves by adding a "mset" field in the `worldspawn` ent.  The field value is key followed by value.  Example: `checkpoint_total 3 rocket 1 bfg 1`.  Server msets always override mapper msets.
 
 ## checkpoint_count
 For checkpoints to work on a map, this variable must be set.  This is the number of checkpoints that must be picked up before the player can finish the map.  Valid values are integers from 1 to 255.
@@ -61,6 +62,7 @@ To enable, set value = 1.
 - `blaster`: allows a player to fire the blaster; not needed for any map
 - `cmsg`: hides center_print messages to the player; seems useless
 - `droptofloor`
+- `edited_by`: not a good way to store who made changes to the cfg file
 - `ezmode`: useless, mappers just use trigger_teleports now
 - `falldamage`: useless, no need to ever enable fall damage
 - `fast_firing`: unused

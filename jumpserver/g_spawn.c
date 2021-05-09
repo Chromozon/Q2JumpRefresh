@@ -571,7 +571,6 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 		Jump::Logger::Warning(va("Map %s is not in the maplist, times will not be saved", mapname));
 	}
 	Jump::LocalScores::CalculateAllStatistics();
-	Jump::MSets::LoadMSets();
 
 	// g_edicts[0] is always worldspawn
 	// The next g_edicts are the clients
@@ -648,6 +647,10 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 
 	// Link together ents that go together
 	G_FindTeams();
+
+	// Fully initialize MSets
+	Jump::MSets::LoadAdminMSets();
+	Jump::MSets::ApplyAllMSets();
 }
 
 //===================================================================
@@ -713,6 +716,10 @@ void SP_worldspawn (edict_t *ent)
 		gi.cvar_set("sv_gravity", "800");
 	else
 		gi.cvar_set("sv_gravity", st.gravity);
+
+	// Jump
+	Jump::MSets::LoadMapperMSets(st.mset);
+	// Jump
 
 	snd_fry = gi.soundindex ("player/fry.wav");	// standing in lava / slime
 

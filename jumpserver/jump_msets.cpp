@@ -11,17 +11,18 @@ namespace Jump
 /// Variables
 /// </summary>
 bool MSets::_fastTele = false;
-bool MSets::_weapons = false;
+bool MSets::_grenadelauncher = false;
 bool MSets::_rocket = false;
 bool MSets::_hyperblaster = false;
 bool MSets::_bfg = false;
 int MSets::_checkpointTotal = 0;
 int MSets::_gravity = 800;
-std::string MSets::_editedBy = "";
 bool MSets::_damage = true;
-bool MSets::_grenadelauncher = false;
 
 bool MSets::_isGravitySet = false;
+
+std::map<std::string, std::string> MSets::_mapperMSets;
+std::map<std::string, std::string> MSets:: _adminMSets;
 
 /// <summary>
 /// True if teleports should not hold the user in place for a brief period of time.
@@ -33,18 +34,16 @@ bool MSets::GetFastTele()
 }
 
 /// <summary>
-/// True to allow the player to fire all weapons.  TODO: probably should remove this, don't think it's ever needed
-/// TODO: this actually allows both RL and GL to be used as weapons (see map bja2).  It's easier to just change the
-/// map cfg file for this instead of implementing weapons mset.
+/// If true, allows the player to pick up the grenade launcher and fire it.
 /// </summary>
 /// <returns></returns>
-bool MSets::GetWeapons()
+bool MSets::GetGrenadeLauncher()
 {
-    return _weapons;
+    return _grenadelauncher;
 }
+
 /// <summary>
-/// True if rocket launcher AND grenade launcher can be used as a weapon by the player.
-/// TODO
+/// True if rocket launcher can be used as a weapon by the player.
 /// </summary>
 /// <returns></returns>
 bool MSets::GetRocket()
@@ -67,7 +66,7 @@ bool MSets::GetHyperBlaster()
 /// <returns></returns>
 bool MSets::GetBfg()
 {
-    return _bfg;;
+    return _bfg;
 }
 
 /// <summary>
@@ -98,15 +97,6 @@ bool MSets::GetDamage()
 }
 
 /// <summary>
-/// If true, allows the player to pick up the grenade launcher and fire it.
-/// </summary>
-/// <returns></returns>
-bool MSets::GetGrenadeLauncher()
-{
-    return _grenadelauncher;
-}
-
-/// <summary>
 /// Returns true if there is a gravity mset value.
 /// </summary>
 /// <returns></returns>
@@ -118,10 +108,43 @@ bool MSets::IsGravitySet()
 /// <summary>
 /// Resets all msets and loads the ones for the current map.
 /// </summary>
-void MSets::LoadMSets()
+void MSets::ApplyAllMSets()
 {
     ResetMSets();
+    ApplyMSets(_mapperMSets);
+    ApplyMSets(_adminMSets);
+}
 
+/// <summary>
+/// Load the msets that the mapper has set in the worldspawn "mset" field.
+/// Example: "mset" "checkpoint_total 3 rocket 1 bfg 1"
+/// </summary>
+/// <param name="args"></param>
+void MSets::LoadMapperMSets(const char* args)
+{
+    _mapperMSets.clear();
+    if (args == nullptr)
+    {
+        return;
+    }
+    auto pieces = SplitString(args, ' ');
+    if (pieces.empty() || ((pieces.size() % 2) != 0))
+    {
+        Logger::Warning(va("Invalid mset worldspawn value for map %s: %s", level.mapname, args));
+        return;
+    }
+    for (size_t i = 0; i < pieces.size(); i += 2)
+    {
+        _mapperMSets.insert({ pieces[i], pieces[i + 1] });
+    }
+}
+
+/// <summary>
+/// Load the msets from the jump/ent/mapname.cfg file
+/// </summary>
+void MSets::LoadAdminMSets()
+{
+    _adminMSets.clear();
     std::string filename = GetModDir() + "/ent/" + level.mapname + ".cfg";
     std::ifstream file(filename.c_str());
     if (file.is_open())
@@ -135,87 +158,9 @@ void MSets::LoadMSets()
                 Logger::Warning(va("Invalid mset for map %s: %s", level.mapname, line.c_str()));
                 continue;
             }
-            std::string lineName = pieces[0];
-            std::string lineValue = TrimQuotes(pieces[1]);
-
-            if (StringCompareInsensitive(lineName, "checkpoint_total"))
-            {
-                int num = 0;
-                if (StringToIntMaybe(lineValue, num))
-                {
-                    _checkpointTotal = num;
-                }
-                else
-                {
-                    Logger::Warning(va("Invalid checkpoint_total mset for map %s: %s", level.mapname, line.c_str()));
-                }
-            }
-            else if (StringCompareInsensitive(lineName, "edited_by"))
-            {
-                _editedBy = lineValue;
-            }
-            else if (StringCompareInsensitive(lineName, "rocket"))
-            {
-                if (lineValue != "0")
-                {
-                    _rocket = true;
-                }
-            }
-            else if (StringCompareInsensitive(lineName, "hyperblaster"))
-            {
-                if (lineValue != "0")
-                {
-                    _hyperblaster = true;
-                }
-            }
-            else if (StringCompareInsensitive(lineName, "bfg"))
-            {
-                if (lineValue != "0")
-                {
-                    _bfg = true;
-                }
-            }
-            else if (StringCompareInsensitive(lineName, "gravity"))
-            {
-                int num = 0;
-                if (StringToIntMaybe(lineValue, num))
-                {
-                    _gravity = num;
-                    _isGravitySet = true;
-                }
-                else
-                {
-                    Logger::Warning(va("Invalid gravity mset for map %s: %s", level.mapname, line.c_str()));
-                }
-            }
-            else if (StringCompareInsensitive(lineName, "weapons"))
-            {
-                if (lineValue != "0")
-                {
-                    _weapons = true;
-                }
-            }
-            else if (StringCompareInsensitive(lineName, "fasttele"))
-            {
-                if (lineValue != "0")
-                {
-                    _fastTele = true;
-                }
-            }
-            else if (StringCompareInsensitive(lineName, "damage"))
-            {
-                if (lineValue == "0")
-                {
-                    _damage = false;
-                }
-            }
-            else if (StringCompareInsensitive(lineName, "grenadelauncher"))
-            {
-                if (lineValue != "0")
-                {
-                    _grenadelauncher = true;
-                }
-            }
+            std::string key = pieces[0];
+            std::string value = TrimQuotes(pieces[1]);
+            _adminMSets.insert({ key, value });
         }
     }
 }
@@ -226,17 +171,94 @@ void MSets::LoadMSets()
 void MSets::ResetMSets()
 {
     _fastTele = false;
-    _weapons = false;
     _rocket = false;
     _hyperblaster = false;
     _bfg = false;
     _checkpointTotal = 0;
     _gravity = 800;
-    _editedBy = "";
     _damage = true;
     _grenadelauncher = false;
 
     _isGravitySet = false;
+}
+
+/// <summary>
+/// Parses the mset key-value pairs and sets the appropriate variables.
+/// </summary>
+/// <param name="msets"></param>
+void Jump::MSets::ApplyMSets(const std::map<std::string, std::string>& msets)
+{
+    for (const auto& keyValue : msets)
+    {
+        if (StringCompareInsensitive(keyValue.first, "checkpoint_total"))
+        {
+            int num = 0;
+            if (StringToIntMaybe(keyValue.second, num))
+            {
+                _checkpointTotal = num;
+            }
+            else
+            {
+                Logger::Warning(va("Invalid checkpoint_total mset for map %s: %s",
+                    level.mapname, keyValue.second.c_str()));
+            }
+        }
+        else if (StringCompareInsensitive(keyValue.first, "rocket"))
+        {
+            if (keyValue.second != "0")
+            {
+                _rocket = true;
+            }
+        }
+        else if (StringCompareInsensitive(keyValue.first, "hyperblaster"))
+        {
+            if (keyValue.second != "0")
+            {
+                _hyperblaster = true;
+            }
+        }
+        else if (StringCompareInsensitive(keyValue.first, "bfg"))
+        {
+            if (keyValue.second != "0")
+            {
+                _bfg = true;
+            }
+        }
+        else if (StringCompareInsensitive(keyValue.first, "gravity"))
+        {
+            int num = 0;
+            if (StringToIntMaybe(keyValue.second, num))
+            {
+                _gravity = num;
+                _isGravitySet = true;
+            }
+            else
+            {
+                Logger::Warning(va("Invalid gravity mset for map %s: %s", level.mapname, keyValue.second.c_str()));
+            }
+        }
+        else if (StringCompareInsensitive(keyValue.first, "fasttele"))
+        {
+            if (keyValue.second != "0")
+            {
+                _fastTele = true;
+            }
+        }
+        else if (StringCompareInsensitive(keyValue.first, "damage"))
+        {
+            if (keyValue.second == "0")
+            {
+                _damage = false;
+            }
+        }
+        else if (StringCompareInsensitive(keyValue.first, "grenadelauncher"))
+        {
+            if (keyValue.second != "0")
+            {
+                _grenadelauncher = true;
+            }
+        }
+    }
 }
 
 }

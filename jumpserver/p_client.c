@@ -992,6 +992,7 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
     // and that value is sent to the server.  So we need to figure out key states here.
     // Note: although the client can hold down forward/back or left/right at the same time,
     // only one of the keys is actually registered.
+	uint8_t old_key_states = ent->client->jumpdata->key_states;
     ent->client->jumpdata->key_states = 0;
 
     if (ucmd->forwardmove > 10)
@@ -1025,6 +1026,8 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	{
 		ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Attack);
 	}
+
+	Jump::AdjustReplaySpeed(ent, old_key_states, ent->client->jumpdata->key_states);
 
 	// Apply a health regen rate of 10/frame (equal to 100/s)
 	if (ent->health > 0)

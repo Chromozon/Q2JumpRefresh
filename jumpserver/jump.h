@@ -39,4 +39,8 @@ namespace Jump
     void InitializeClientEnt(edict_t* ent);
 
     void RemoveAllPlayerWeapons(edict_t* ent);
+
+    void AdjustReplaySpeed(edict_t* ent, uint8_t oldKeyStates, uint8_t newKeyStates);
+    const char* GetReplaySpeedString(ReplaySpeed speed);
+    void FixAngles(vec3_t& angles);
 }

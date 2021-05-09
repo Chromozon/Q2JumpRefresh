@@ -344,6 +344,8 @@ namespace Jump
         // Set to replay state
         ent->client->jumpdata->replay_spectating_framenum = 0;
         ent->client->jumpdata->update_replay_spectating = true;
+        ent->client->jumpdata->replay_repeating = false;
+        ent->client->jumpdata->replay_speed = ReplaySpeed::Pos_1;
     }
 
     void Cmd_Jump_Void(edict_t * ent)

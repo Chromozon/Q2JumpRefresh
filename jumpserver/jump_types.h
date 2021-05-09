@@ -48,28 +48,29 @@ namespace Jump
         Attack = 64,
     };
 
-    typedef enum
+    // TODO remove this and just make an array of double like current version
+    enum class ReplaySpeed
     {
-        REPLAY_SPEED_NEG_100 = -10000,
-        REPLAY_SPEED_NEG_25 = -2500,
-        REPLAY_SPEED_NEG_10 = -1000,
-        REPLAY_SPEED_NEG_5 = -500,
-        REPLAY_SPEED_NEG_2 = -200,
-        REPLAY_SPEED_NEG_1 = -100,
-        REPLAY_SPEED_NEG_HALF = -50,
-        REPLAY_SPEED_NEG_FIFTH = -20,
-        REPLAY_SPEED_NEG_TENTH = -10,
-        REPLAY_SPEED_0 = 0,
-        REPLAY_SPEED_TENTH = 10,
-        REPLAY_SPEED_FIFTH = 20,
-        REPLAY_SPEED_HALF = 50,
-        REPLAY_SPEED_1 = 100,
-        REPLAY_SPEED_2 = 200,
-        REPLAY_SPEED_5 = 500,
-        REPLAY_SPEED_10 = 1000,
-        REPLAY_SPEED_25 = 2500,
-        REPLAY_SPEED_100 = 10000,
-    } replay_speed_t;
+        Neg_100 = -10000,
+        Neg_25 = -2500,
+        Neg_10 = -1000,
+        Neg_5 = -500,
+        Neg_2 = -200,
+        Neg_1 = -100,
+        Neg_Half = -50,
+        Neg_Fifth = -20,
+        Neg_Tenth = -10,
+        Paused = 0,
+        Pos_Tenth = 10,
+        Pos_Fifth = 20,
+        Pos_Half = 50,
+        Pos_1 = 100,
+        Pos_2 = 200,
+        Pos_5 = 500,
+        Pos_10 = 1000,
+        Pos_25 = 2500,
+        Pos_100 = 10000,
+    };
 
     enum class ScoresMenuEnum
     {
@@ -175,10 +176,13 @@ namespace Jump
     {
     public:
         std::vector<replay_frame_t> replay_recording;
+
         std::vector<replay_frame_t> replay_spectating;
         int replay_spectating_framenum = 0;
         bool update_replay_spectating = false;
         std::string replay_spectating_hud_string; // describes who we are currently replaying (now, self, 1, 2, etc.)
+        ReplaySpeed replay_speed = ReplaySpeed::Pos_1;
+        bool replay_repeating = false;
 
         int localUserId = -1;
         int fps = 0;

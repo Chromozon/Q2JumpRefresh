@@ -338,70 +338,210 @@ namespace Jump
         VoteSystem::OnFrame();
     }
 
+    // TODO: for fractional replays, we use the level.framenum which causes snapping issues when adjusting speeds
+    // The current version of jump keeps track of the fractional framenum so it has smooth transitions
+    // See jumpmod.c, Replay_Recording()
     void AdvanceSpectatingReplayFrame(edict_t* ent)
     {
-        if (ent->client->jumpdata->update_replay_spectating)
+        if (!ent->client->jumpdata->update_replay_spectating)
         {
-            int frame_num = ent->client->jumpdata->replay_spectating_framenum;
-            if (frame_num >= ent->client->jumpdata->replay_spectating.size())
+            return;
+        }
+
+        int currentFrameNum = ent->client->jumpdata->replay_spectating_framenum;
+        int maxFrameNum = static_cast<int>(ent->client->jumpdata->replay_spectating.size()) - 1;
+        if (currentFrameNum < 0 || currentFrameNum > maxFrameNum)
+        {
+            Logger::Error(va("Replay out of range, frame %d, max %d", currentFrameNum, maxFrameNum));
+            ent->client->jumpdata->update_replay_spectating = false;
+            ent->client->jumpdata->replay_spectating_framenum = 0;
+            return;
+        }
+
+        vec3_t newPos = {};
+        vec3_t newAngles = {};
+        bool noChange = false;
+        bool endReplay = false;
+        int nextFrameNum = currentFrameNum;
+
+        ReplaySpeed speed = ent->client->jumpdata->replay_speed;
+        if (speed == ReplaySpeed::Paused)
+        {
+            noChange = true;
+        }
+        else if ((speed <= ReplaySpeed::Pos_Half) && (speed >= ReplaySpeed::Neg_Half))
+        {
+            // Fractional speed
+            nextFrameNum = (int)speed < 0 ? (currentFrameNum - 1) : (currentFrameNum + 1);
+            if (nextFrameNum < 0 || nextFrameNum > maxFrameNum)
             {
-                Logger::Error("Replay advanced past the end of the replay spectating buffer");
-                ent->client->jumpdata->update_replay_spectating = false;
-                ent->client->jumpdata->replay_spectating_framenum = 0;
-                return;
+                endReplay = true;
             }
-
-            const replay_frame_t& frame = ent->client->jumpdata->replay_spectating[frame_num];
-
-            // Has the replay obtained a checkpoint?
-            if (frame_num > 0)
+            else
             {
-                const replay_frame_t& prevFrame = ent->client->jumpdata->replay_spectating[frame_num - 1];
-                if (frame.checkpoints > prevFrame.checkpoints)
+                double fraction = 0.0;
+                bool partial = false;
+                if (speed == ReplaySpeed::Neg_Tenth || speed == ReplaySpeed::Pos_Tenth)
                 {
-                    int checkpointTotal = MSets::GetCheckpointTotal();
-                    if (frame.checkpoints == 1)
+                    int remainder = level.framenum % 10;
+                    if (remainder != 0)
                     {
-                        int64_t timeMs = static_cast<int64_t>(ent->client->jumpdata->replay_spectating_framenum) * 100;
-                        std::string overallTimeStr = GetCompletionTimeDisplayString(timeMs);
-                        gi.cprintf(ent, PRINT_HIGH, va("Replay reached checkpoint %d/%d in %s seconds.\n",
-                            frame.checkpoints, checkpointTotal, overallTimeStr.c_str()));
-                        ent->client->jumpdata->timer_checkpoint_split = timeMs;
-                    }
-                    else
-                    {
-                        int64_t timeMs = static_cast<int64_t>(ent->client->jumpdata->replay_spectating_framenum) * 100;
-                        std::string overallTimeStr = GetCompletionTimeDisplayString(timeMs);
-                        int64_t splitMs = timeMs - ent->client->jumpdata->timer_checkpoint_split;
-                        std::string splitTimeStr = GetCompletionTimeDisplayString(splitMs);
-                        gi.cprintf(ent, PRINT_HIGH, va("Replay reached checkpoint %d/%d in %s seconds. (split: %s)\n",
-                            frame.checkpoints, checkpointTotal, overallTimeStr.c_str(), splitTimeStr.c_str()));
+                        partial = true;
+                        fraction = remainder * 0.1;
                     }
                 }
+                else if (speed == ReplaySpeed::Neg_Fifth || speed == ReplaySpeed::Pos_Fifth)
+                {
+                    int remainder = level.framenum % 5;
+                    if (remainder != 0)
+                    {
+                        partial = true;
+                        fraction = remainder * 0.2;
+                    }
+                }
+                else // speed == half
+                {
+                    int remainder = level.framenum % 2;
+                    if (remainder != 0)
+                    {
+                        partial = true;
+                        fraction = remainder * 0.5;
+                    }
+                }
+
+                if (partial)
+                {
+                    // In order to maintain a smooth replay, we need to linear interpolate the position.
+                    vec3_t diffPos = {};
+                    vec3_t diffAngles = {};
+                    VectorSubtract(
+                        ent->client->jumpdata->replay_spectating[nextFrameNum].pos,
+                        ent->client->jumpdata->replay_spectating[currentFrameNum].pos,
+                        diffPos);
+                    VectorSubtract(
+                        ent->client->jumpdata->replay_spectating[nextFrameNum].angles,
+                        ent->client->jumpdata->replay_spectating[currentFrameNum].angles,
+                        diffAngles);
+                    FixAngles(diffAngles);
+                    diffPos[0] = diffPos[0] * fraction;
+                    diffPos[1] = diffPos[1] * fraction;
+                    diffPos[2] = diffPos[2] * fraction;
+                    diffAngles[0] = diffAngles[0] * fraction;
+                    diffAngles[1] = diffAngles[1] * fraction;
+                    diffAngles[2] = diffAngles[2] * fraction;
+                    VectorAdd(ent->client->jumpdata->replay_spectating[currentFrameNum].pos, diffPos, newPos);
+                    VectorAdd(ent->client->jumpdata->replay_spectating[currentFrameNum].angles, diffAngles, newAngles);
+                    nextFrameNum = currentFrameNum; // stay on current frame until we reach a whole frame advancement
+                }
+                else
+                {
+                    // Whole frame advancement
+                    VectorCopy(ent->client->jumpdata->replay_spectating[nextFrameNum].pos, newPos);
+                    VectorCopy(ent->client->jumpdata->replay_spectating[nextFrameNum].angles, newAngles);
+                }
             }
-
-            VectorCopy(frame.pos, ent->s.origin);
-            VectorCopy(frame.angles, ent->client->v_angle);
-            VectorCopy(frame.angles, ent->client->ps.viewangles);
-
-            // Since we only send a position update every server frame (10 fps),
-            // the client needs to smoothen the movement between the two frames.
-            // Setting these flags will do this.
-            ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
-            ent->client->ps.pmove.pm_type = PM_FREEZE;
-
-            for (int i = 0; i < 3; i++)
+        }
+        else // Non-fractional speed
+        {
+            int framesToAdvance = (int)speed / 100;
+            nextFrameNum = currentFrameNum + framesToAdvance;
+            if (nextFrameNum < 0 || nextFrameNum > maxFrameNum)
             {
-                ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
+                endReplay = true;
             }
-
-            ent->client->jumpdata->replay_spectating_framenum++;
-            if (ent->client->jumpdata->replay_spectating_framenum >= ent->client->jumpdata->replay_spectating.size())
+            else
             {
+                VectorCopy(ent->client->jumpdata->replay_spectating[nextFrameNum].pos, newPos);
+                VectorCopy(ent->client->jumpdata->replay_spectating[nextFrameNum].angles, newAngles);
+            }
+        }
+
+        if (endReplay)
+        {
+            if (ent->client->jumpdata->replay_repeating)
+            {
+                // If the user has replay repeating, just reset back to first frame.
+                ent->client->jumpdata->replay_spectating_framenum = 0;
+                ent->client->jumpdata->replay_speed = ReplaySpeed::Pos_1;
+            }
+            else
+            {
+                // No replay repeating, so just end the replay.
                 ent->client->ps.pmove.pm_flags = 0;
                 ent->client->ps.pmove.pm_type = PM_SPECTATOR;
                 ent->client->jumpdata->update_replay_spectating = false;
                 ent->client->jumpdata->replay_spectating_framenum = 0;
+            }
+        }
+        else
+        {
+            if (!noChange)
+            {
+                VectorCopy(newPos, ent->s.origin);
+                VectorCopy(newAngles, ent->client->v_angle);
+                VectorCopy(newAngles, ent->client->ps.viewangles);
+
+                // Since we only send a position update every server frame (10 fps),
+                // the client needs to smoothen the movement between the two frames.
+                // Setting these flags will do this.
+                ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
+                ent->client->ps.pmove.pm_type = PM_FREEZE;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    ent->client->ps.pmove.delta_angles[i] =
+                        ANGLE2SHORT(ent->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
+                }
+
+                if (currentFrameNum != nextFrameNum)
+                {
+                    int currentCheckpoints = ent->client->jumpdata->replay_spectating[currentFrameNum].checkpoints;
+                    int nextCheckpoints = ent->client->jumpdata->replay_spectating[nextFrameNum].checkpoints;
+                    if (currentCheckpoints != nextCheckpoints)
+                    {
+                        int checkpointTotal = MSets::GetCheckpointTotal();
+                        if (nextCheckpoints == 1)
+                        {
+                            int timeMs = nextFrameNum * 100;
+                            std::string overallTimeStr = GetCompletionTimeDisplayString(timeMs);
+                            gi.cprintf(ent, PRINT_HIGH, va("Replay reached checkpoint %d/%d in %s seconds.\n",
+                                nextCheckpoints, checkpointTotal, overallTimeStr.c_str()));
+                            ent->client->jumpdata->timer_checkpoint_split = timeMs;
+                        }
+                        else
+                        {
+                            int timeMs = nextFrameNum * 100;
+                            std::string overallTimeStr = GetCompletionTimeDisplayString(timeMs);
+                            int64_t splitMs = timeMs - ent->client->jumpdata->timer_checkpoint_split;
+                            std::string splitTimeStr = GetCompletionTimeDisplayString(::abs(splitMs));
+                            if (splitMs < 0)
+                            {
+                                splitTimeStr.insert(splitTimeStr.begin(), '-');
+                            }
+                            gi.cprintf(ent, PRINT_HIGH, va("Replay reached checkpoint %d/%d in %s seconds. (split: %s)\n",
+                                nextCheckpoints, checkpointTotal, overallTimeStr.c_str(), splitTimeStr.c_str()));
+                            ent->client->jumpdata->timer_checkpoint_split = timeMs;
+                        }
+                    }
+                }
+
+                // Finally, update the frame number
+                ent->client->jumpdata->replay_spectating_framenum = nextFrameNum;
+            }
+        }
+    }
+
+    void FixAngles(vec3_t& angles)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            if (angles[i] > 180.0f)
+            {
+                angles[i] -= 360.0f;
+            }
+            else if (angles[i] < -180.0f)
+            {
+                angles[i] += 360.0f;
             }
         }
     }
@@ -491,6 +631,166 @@ namespace Jump
         ChangeWeapon(ent);
         // TODO: does this work correctly with hand grenades?
         // TODO: does this work correctly by setting newweapon to nullptr?
+    }
+
+    void AdjustReplaySpeed(edict_t* ent, uint8_t oldKeyStates, uint8_t newKeyStates)
+    {
+        //static const std::array<std::pair<ReplaySpeed, const char*>, 19> speeds2 =
+        //{
+        //    std::make_pair(ReplaySpeed::Neg_100, "-100.0"),
+        //    // TODO
+        //};
+
+        static const std::array<ReplaySpeed, 19> speeds = {
+            ReplaySpeed::Neg_100,
+            ReplaySpeed::Neg_25,
+            ReplaySpeed::Neg_10,
+            ReplaySpeed::Neg_5,
+            ReplaySpeed::Neg_2,
+            ReplaySpeed::Neg_1,
+            ReplaySpeed::Neg_Half,
+            ReplaySpeed::Neg_Fifth,
+            ReplaySpeed::Neg_Tenth,
+            ReplaySpeed::Paused,
+            ReplaySpeed::Pos_Tenth,
+            ReplaySpeed::Pos_Fifth,
+            ReplaySpeed::Pos_Half,
+            ReplaySpeed::Pos_1,
+            ReplaySpeed::Pos_2,
+            ReplaySpeed::Pos_5,
+            ReplaySpeed::Pos_10,
+            ReplaySpeed::Pos_25,
+            ReplaySpeed::Pos_100,
+        };
+
+        if (ent->client == nullptr || !ent->inuse)
+        {
+            return;
+        }
+        if (!ent->client->jumpdata->update_replay_spectating)
+        {
+            return;
+        }
+        if (oldKeyStates == newKeyStates)
+        {
+            return;
+        }
+
+        int currentSpeedIndex = -1;
+        for (size_t i = 0; i < speeds.size(); ++i)
+        {
+            if (speeds[i] == ent->client->jumpdata->replay_speed)
+            {
+                currentSpeedIndex = static_cast<int>(i);
+                break;
+            }
+        }
+        if (currentSpeedIndex == -1)
+        {
+            // Should never happen...
+            Logger::Error(va("Player has invalid replay speed of %d",
+                static_cast<int>(ent->client->jumpdata->replay_speed)));
+            ent->client->jumpdata->replay_speed = ReplaySpeed::Pos_1;
+            return;
+        }
+
+        bool oldJump = (oldKeyStates & static_cast<uint8_t>(Jump::KeyStateEnum::Jump)) != 0;
+        bool newJump = (newKeyStates & static_cast<uint8_t>(Jump::KeyStateEnum::Jump)) != 0;
+        if (!oldJump && newJump)
+        {
+            ent->client->jumpdata->replay_repeating = !ent->client->jumpdata->replay_repeating;
+            gi.cprintf(ent, PRINT_HIGH, "Replay repeating is %s\n",
+                ent->client->jumpdata->replay_repeating ? "ON" : "OFF");
+        }
+
+        bool oldForward = (oldKeyStates & static_cast<uint8_t>(Jump::KeyStateEnum::Forward)) != 0;
+        bool newForward = (newKeyStates & static_cast<uint8_t>(Jump::KeyStateEnum::Forward)) != 0;
+        if (!oldForward && newForward)
+        {
+            if (currentSpeedIndex < (speeds.size() - 1))
+            {
+                currentSpeedIndex++;
+            }
+            ent->client->jumpdata->replay_speed = speeds[currentSpeedIndex];
+            if (ent->client->jumpdata->replay_speed == ReplaySpeed::Paused)
+            {
+                gi.cprintf(ent, PRINT_HIGH, "%s\n", GetReplaySpeedString(ent->client->jumpdata->replay_speed));
+            }
+            else
+            {
+                gi.cprintf(ent, PRINT_HIGH, "Replaying at %s speed\n",
+                    GetReplaySpeedString(ent->client->jumpdata->replay_speed));
+            }
+            return;
+        }
+
+        bool oldBack = (oldKeyStates & static_cast<uint8_t>(Jump::KeyStateEnum::Back)) != 0;
+        bool newBack = (newKeyStates & static_cast<uint8_t>(Jump::KeyStateEnum::Back)) != 0;
+        if (!oldBack && newBack)
+        {
+            if (currentSpeedIndex > 0)
+            {
+                currentSpeedIndex--;
+            }
+            ent->client->jumpdata->replay_speed = speeds[currentSpeedIndex];
+            if (ent->client->jumpdata->replay_speed == ReplaySpeed::Paused)
+            {
+                gi.cprintf(ent, PRINT_HIGH, "%s\n", GetReplaySpeedString(ent->client->jumpdata->replay_speed));
+            }
+            else
+            {
+                gi.cprintf(ent, PRINT_HIGH, "Replaying at %s speed\n",
+                    GetReplaySpeedString(ent->client->jumpdata->replay_speed));
+            }
+            return;
+        }
+    }
+
+    const char* GetReplaySpeedString(ReplaySpeed speed)
+    {
+        switch (speed)
+        {
+        case ReplaySpeed::Neg_100:
+            return "-100.0";
+        case ReplaySpeed::Neg_25:
+            return "-25.0";
+        case ReplaySpeed::Neg_10:
+            return "-10.0";
+        case ReplaySpeed::Neg_5:
+            return "-5.0";
+        case ReplaySpeed::Neg_2:
+            return "-2.0";
+        case ReplaySpeed::Neg_1:
+            return "-1.0";
+        case ReplaySpeed::Neg_Half:
+            return "-0.5";
+        case ReplaySpeed::Neg_Fifth:
+            return "-0.2";
+        case ReplaySpeed::Neg_Tenth:
+            return "-0.1";
+        case ReplaySpeed::Paused:
+            return "Paused";
+        case ReplaySpeed::Pos_Tenth:
+            return "0.1";
+        case ReplaySpeed::Pos_Fifth:
+            return "0.2";
+        case ReplaySpeed::Pos_Half:
+            return "0.5";
+        case ReplaySpeed::Pos_1:
+            return "1.0";
+        case ReplaySpeed::Pos_2:
+            return "2.0";
+        case ReplaySpeed::Pos_5:
+            return "5.0";
+        case ReplaySpeed::Pos_10:
+            return "10.0";
+        case ReplaySpeed::Pos_25:
+            return "25.0";
+        case ReplaySpeed::Pos_100:
+            return "100.0";
+        default:
+            return "";
+        }
     }
 
     void DoStuffOnMapChange()

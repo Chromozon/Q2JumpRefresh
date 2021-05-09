@@ -1026,6 +1026,16 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 		ent->client->jumpdata->key_states |= static_cast<uint8_t>(Jump::KeyStateEnum::Attack);
 	}
 
+	// Apply a health regen rate of 10/frame (equal to 100/s)
+	if (ent->health > 0)
+	{
+		ent->health += 10;
+		if (ent->health > ent->max_health)
+		{
+			ent->health = ent->max_health;
+		}
+	}
+
     // Jump
     gi.unicast(ent, true);
 }

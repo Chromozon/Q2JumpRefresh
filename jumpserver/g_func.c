@@ -1159,6 +1159,11 @@ void SP_func_door (edict_t *ent)
 	if (deathmatch->value)
 		ent->speed *= 2;
 
+	// Jump
+	// We always want fast doors.
+	ent->speed = 1000;
+	// Jump
+
 	if (!ent->accel)
 		ent->accel = ent->speed;
 	if (!ent->decel)

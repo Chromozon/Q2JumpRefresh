@@ -19,6 +19,7 @@ public:
     static int GetCheckpointTotal();
     static int GetGravity();
     static bool GetDamage();
+    static bool GetGrenadeLauncher();
 
     static bool IsGravitySet();
 
@@ -37,6 +38,7 @@ private:
     static int _gravity;
     static std::string _editedBy;
     static bool _damage;
+    static bool _grenadelauncher;
 
     static bool _isGravitySet;
 };

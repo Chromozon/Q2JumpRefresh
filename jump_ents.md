@@ -78,3 +78,9 @@ In Jump, weapons always have unlimited ammo.  These ents have no behavior in Jum
 - `ammo_rockets`
 - `ammo_shells`
 - `ammo_slugs`
+
+## Unused and not implemented
+- `cp_clear`: seems like a bad idea to have an ent that clears checkpoints
+- `trigger_single_cp_clear`: seems like a bad idea to have an ent that clears checkpoints
+- `trigger_quad`: unused as far as I can tell
+- `trigger_quad_clear`: unused as far as I can tell

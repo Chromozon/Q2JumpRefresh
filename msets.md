@@ -45,3 +45,33 @@ To enable, set value = 1.
 Allows a player to pick up and shoot BFGs instead of them acting as map finish.
 
 To enable, set value = 1.
+
+## grenadelauncher
+Allows a player to pick up and shoot the grenade launcher instead of it acting as a map finish.
+
+To enable, set value = 1.
+
+## TODO
+- `droptofloor`: need to find if any maps actually need this or if it's set randomly
+- `rocketjump_fix`: used to make rocket jumps more consistent; need to do a deeper dive into this
+
+## Unused and not implemented
+- `addedtimeoverride`: useless
+- `allowsrj`: anti super rocket jump; don't know what this is for; seems unused
+- `blaster`: allows a player to fire the blaster; not needed for any map
+- `cmsg`: hides center_print messages to the player; seems useless
+- `droptofloor`
+- `ezmode`: useless, mappers just use trigger_teleports now
+- `falldamage`: useless, no need to ever enable fall damage
+- `fast_firing`: unused
+- `fastdoors`: doors are always fast now, don't see a reason to let them be slow
+- `ghost`
+- `ghost_model`
+- `health`: useless, we always have 1000 health
+- `lap_total`: yea... no.
+- `quad_damage`: unused
+- `regen`: useless, regen is always a high enough value
+- `singlespawn`: only creates the first `info_player_deathmatch`; does not seem to be used
+- `slowdoors`: unused
+- `timelimit`: no need to override time, can just vote more
+- `weapons`: replaced with grenadelauncher, TODO: add grenadelauncher to pyrrhic and bja2

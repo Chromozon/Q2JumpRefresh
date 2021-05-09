@@ -19,6 +19,7 @@ int MSets::_checkpointTotal = 0;
 int MSets::_gravity = 800;
 std::string MSets::_editedBy = "";
 bool MSets::_damage = true;
+bool MSets::_grenadelauncher = false;
 
 bool MSets::_isGravitySet = false;
 
@@ -94,6 +95,15 @@ int MSets::GetGravity()
 bool MSets::GetDamage()
 {
     return _damage;
+}
+
+/// <summary>
+/// If true, allows the player to pick up the grenade launcher and fire it.
+/// </summary>
+/// <returns></returns>
+bool MSets::GetGrenadeLauncher()
+{
+    return _grenadelauncher;
 }
 
 /// <summary>
@@ -199,6 +209,13 @@ void MSets::LoadMSets()
                     _damage = false;
                 }
             }
+            else if (StringCompareInsensitive(lineName, "grenadelauncher"))
+            {
+                if (lineValue != "0")
+                {
+                    _grenadelauncher = true;
+                }
+            }
         }
     }
 }
@@ -217,6 +234,7 @@ void MSets::ResetMSets()
     _gravity = 800;
     _editedBy = "";
     _damage = true;
+    _grenadelauncher = false;
 
     _isGravitySet = false;
 }

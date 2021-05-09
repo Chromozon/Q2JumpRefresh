@@ -597,6 +597,7 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 	}
 
 	bool first_ent = true;
+	bool first_deathmatch_spawn = false;
 
 	// Parse ents one-by-one
 	while (1)
@@ -627,15 +628,19 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 		// Parse this data into ent and remove it from the list of entities
 		entities_all = ED_ParseEdict(entities_all, ent);
 
-		// Remove entities that we don't need
-		// TODO: add back in the checkpoint ents (but only allow a few of them)
-		//if (strstr(ent->classname, "ammo_") != NULL ||
-		//	strstr(ent->classname, "key_") != NULL ||
-		//	strstr(ent->classname, "item_") != NULL)
-		//{
-		//	G_FreeEdict(ent);
-		//	continue;
-		//}
+		// We only keep the first deathmatch spawn on a map because mappers long ago liked to place multiple spawns
+		if (strstr(ent->classname, "info_player_deathmatch") != nullptr)
+		{
+			if (!first_deathmatch_spawn)
+			{
+				first_deathmatch_spawn = true;
+			}
+			else
+			{
+				G_FreeEdict(ent);
+				continue;
+			}
+		}
 
 		// Spawn the ent
 		ED_CallSpawn(ent);

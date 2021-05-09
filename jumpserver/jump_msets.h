@@ -24,7 +24,7 @@ public:
 
     static void ApplyAllMSets();
     static void LoadMapperMSets(const char* args);
-    static void LoadAdminMSets();
+    static void LoadServerMSets();
 
 private:
 
@@ -43,7 +43,7 @@ private:
     static bool _isGravitySet;
 
     static std::map<std::string, std::string> _mapperMSets; // <mset name, value>
-    static std::map<std::string, std::string> _adminMSets; // <mset name, value>
+    static std::map<std::string, std::string> _serverMSets; // <mset name, value>
 };
 
 }

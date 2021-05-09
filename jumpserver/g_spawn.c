@@ -649,7 +649,7 @@ void SpawnEntities(char* mapname, char* entities, char* spawnpoint)
 	G_FindTeams();
 
 	// Fully initialize MSets
-	Jump::MSets::LoadAdminMSets();
+	Jump::MSets::LoadServerMSets();
 	Jump::MSets::ApplyAllMSets();
 }
 

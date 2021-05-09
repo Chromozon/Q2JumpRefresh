@@ -22,7 +22,7 @@ bool MSets::_damage = true;
 bool MSets::_isGravitySet = false;
 
 std::map<std::string, std::string> MSets::_mapperMSets;
-std::map<std::string, std::string> MSets:: _adminMSets;
+std::map<std::string, std::string> MSets::_serverMSets;
 
 /// <summary>
 /// True if teleports should not hold the user in place for a brief period of time.
@@ -112,7 +112,7 @@ void MSets::ApplyAllMSets()
 {
     ResetMSets();
     ApplyMSets(_mapperMSets);
-    ApplyMSets(_adminMSets);
+    ApplyMSets(_serverMSets);
 }
 
 /// <summary>
@@ -142,9 +142,9 @@ void MSets::LoadMapperMSets(const char* args)
 /// <summary>
 /// Load the msets from the jump/ent/mapname.cfg file
 /// </summary>
-void MSets::LoadAdminMSets()
+void MSets::LoadServerMSets()
 {
-    _adminMSets.clear();
+    _serverMSets.clear();
     std::string filename = GetModDir() + "/ent/" + level.mapname + ".cfg";
     std::ifstream file(filename.c_str());
     if (file.is_open())
@@ -160,7 +160,7 @@ void MSets::LoadAdminMSets()
             }
             std::string key = pieces[0];
             std::string value = TrimQuotes(pieces[1]);
-            _adminMSets.insert({ key, value });
+            _serverMSets.insert({ key, value });
         }
     }
 }

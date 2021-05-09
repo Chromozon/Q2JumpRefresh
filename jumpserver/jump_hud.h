@@ -29,13 +29,13 @@ namespace Jump
 #define STAT_JUMP_HUD_FOOTER_4          17 // (configstring) 
 #define STAT_JUMP_CLIENT_TRACE          18 // (configstring) set client-specific string for the name of the player in the crosshairs
 #define STAT_JUMP_SPEED                 19 // (int) speed in units/s
-#define STAT_JUMP_KEY_FORWARD           20 // (bool) visible or not, TODO: can change to those ugly ugly brown pcx
-#define STAT_JUMP_KEY_BACK              21 // (bool) visible or not
-#define STAT_JUMP_KEY_LEFT              22 // (bool) visible or not
-#define STAT_JUMP_KEY_RIGHT             23 // (bool) visible or not
-#define STAT_JUMP_KEY_JUMP              24 // (bool) visible or not
-#define STAT_JUMP_KEY_CROUCH            25 // (bool) visible or not
-#define STAT_JUMP_KEY_ATTACK            26 // (bool) visible or not
+#define STAT_JUMP_KEY_FORWARD           20 // (pcx) visible icon or not
+#define STAT_JUMP_KEY_BACK              21 // (pcx) visible icon or not
+#define STAT_JUMP_KEY_LEFT              22 // (pcx) visible icon or not
+#define STAT_JUMP_KEY_RIGHT             23 // (pcx) visible icon or not
+#define STAT_JUMP_KEY_JUMP              24 // (pcx) visible icon or not
+#define STAT_JUMP_KEY_CROUCH            25 // (pcx) visible icon or not
+#define STAT_JUMP_KEY_ATTACK            26 // (pcx) visible icon or not
 #define STAT_JUMP_FPS                   27 // (int) FPS
 #define STAT_JUMP_TIMER_SECONDS         28 // (int) timer (seconds) 
 #define STAT_JUMP_TIMER_MS              29 // (int) timer (milliseconds)
@@ -43,6 +43,7 @@ namespace Jump
 #define STAT_JUMP_TIME_LEFT             31 // (int) time left in map (minutes)
 // MaxStats is currently set to 32 in q_shared.h, can only use 0-31.
 // To enable more, we would need to update the client as well.
+// TODO: can also combine left/right, forward/back, and jump/crouch to free up space
 
 // Config strings IDs
 #define CS_JUMP_KEY_EMPTY               (CS_GENERAL + 0)

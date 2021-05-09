@@ -849,6 +849,15 @@ void SP_worldspawn (edict_t *ent)
 
     // Jump
     Jump::HUD::SetConfigStrings();
+
+	// Keystate icons
+	gi.imageindex("forward");
+	gi.imageindex("back");
+	gi.imageindex("left");
+	gi.imageindex("right");
+	gi.imageindex("duck");
+	gi.imageindex("jump");
+	gi.imageindex("attack");
     // Jump
 }
 

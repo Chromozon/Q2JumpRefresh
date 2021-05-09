@@ -55,47 +55,37 @@ const char* HUD::_hudLayoutString =
     "xv 312 "
     "string2 \"Health\" "
     "endif "
+    ""
+    // Keystates
+    "xl 2 "
+    "yb -42 "
     // Attack key
     "if " XSTRINGIFY(STAT_JUMP_KEY_ATTACK) " "
-    "xl 16 "
-    "yb -56 "
-    "string \"Attack\" "
+    "pic " XSTRINGIFY(STAT_JUMP_KEY_ATTACK) " "
     "endif "
     // Jump key
     "if " XSTRINGIFY(STAT_JUMP_KEY_JUMP) " "
-    "xl 24 "
-    "yb -48 "
-    "string \"JUMP!\" "
+    "pic " XSTRINGIFY(STAT_JUMP_KEY_JUMP) " "
     "endif "
     // Forward key
     "if " XSTRINGIFY(STAT_JUMP_KEY_FORWARD) " "
-    "xl 16 "
-    "yb -40 "
-    "string \"Forward\" "
+    "pic " XSTRINGIFY(STAT_JUMP_KEY_FORWARD) " "
     "endif "
     // Left key
     "if " XSTRINGIFY(STAT_JUMP_KEY_LEFT) " "
-    "xl 0 "
-    "yb -32 "
-    "string \"Left\" "
+    "pic " XSTRINGIFY(STAT_JUMP_KEY_LEFT) " "
     "endif "
     // Right key
     "if " XSTRINGIFY(STAT_JUMP_KEY_RIGHT) " "
-    "xl 48 "
-    "yb -32 "
-    "string \"Right\" "
+    "pic " XSTRINGIFY(STAT_JUMP_KEY_RIGHT) " "
     "endif "
     // Back key
     "if " XSTRINGIFY(STAT_JUMP_KEY_BACK) " "
-    "xl 24 "
-    "yb -24 "
-    "string \"Back\" "
+    "pic " XSTRINGIFY(STAT_JUMP_KEY_BACK) " "
     "endif "
     // Crouch key
     "if " XSTRINGIFY(STAT_JUMP_KEY_CROUCH) " "
-    "xl 8 "
-    "yb -16 "
-    "string \"DUCK DUCK\" "
+    "pic " XSTRINGIFY(STAT_JUMP_KEY_CROUCH) " "
     "endif "
     ""
     // Timer
@@ -443,44 +433,44 @@ void HUD::SetStatKeyStates(edict_t* ent)
         keyStates = ent->client->jumpdata->key_states;
     }
 
-    ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = false;
-    ent->client->ps.stats[STAT_JUMP_KEY_BACK] = false;
-    ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = false;
-    ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = false;
-    ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = false;
-    ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = false;
-    ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = false;
+    ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = 0;
+    ent->client->ps.stats[STAT_JUMP_KEY_BACK] = 0;
+    ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = 0;
+    ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = 0;
+    ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = 0;
+    ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = 0;
+    ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = 0;
 
     if (keyStates & static_cast<uint8_t>(KeyStateEnum::Forward))
     {
-        ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = true;
+        ent->client->ps.stats[STAT_JUMP_KEY_FORWARD] = gi.imageindex("forward");
     }
     else if (keyStates & static_cast<uint8_t>(KeyStateEnum::Back))
     {
-        ent->client->ps.stats[STAT_JUMP_KEY_BACK] = true;
+        ent->client->ps.stats[STAT_JUMP_KEY_BACK] = gi.imageindex("back");
     }
 
     if (keyStates & static_cast<uint8_t>(KeyStateEnum::Left))
     {
-        ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = true;
+        ent->client->ps.stats[STAT_JUMP_KEY_LEFT] = gi.imageindex("left");
     }
     else if (keyStates & static_cast<uint8_t>(KeyStateEnum::Right))
     {
-        ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = true;
+        ent->client->ps.stats[STAT_JUMP_KEY_RIGHT] = gi.imageindex("right");
     }
 
     if (keyStates & static_cast<uint8_t>(KeyStateEnum::Jump))
     {
-        ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = true;
+        ent->client->ps.stats[STAT_JUMP_KEY_JUMP] = gi.imageindex("jump");
     }
     else if (keyStates & static_cast<uint8_t>(KeyStateEnum::Crouch))
     {
-        ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = true;
+        ent->client->ps.stats[STAT_JUMP_KEY_CROUCH] = gi.imageindex("duck");
     }
 
     if (keyStates & static_cast<uint8_t>(KeyStateEnum::Attack))
     {
-        ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = true;
+        ent->client->ps.stats[STAT_JUMP_KEY_ATTACK] = gi.imageindex("attack");
     }
 }
 

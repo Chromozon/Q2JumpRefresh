@@ -3,6 +3,8 @@
 #include "jump_utils.h"
 #include "jump_scores.h"
 #include <cassert>
+#include <fstream>
+#include <filesystem>
 
 namespace Jump
 {
@@ -13,6 +15,7 @@ namespace Jump
 std::vector<replay_frame_t> GhostReplay::_replay;
 size_t GhostReplay::_replayFrame = 0;
 edict_t* GhostReplay::_ghost = nullptr;
+std::vector<std::string> GhostReplay::_ghostModels;
 
 /// <summary>
 /// Creates a new entity for the ghost.  Does not load the replay data.
@@ -32,7 +35,10 @@ void GhostReplay::Init()
 	_ghost->dmg = 0;
 	_ghost->classname = "ghost";
 
-	_ghost->s.modelindex = gi.modelindex("players/ghost/penguin.md2");
+	std::string model = PickRandomGhostModel();
+	std::string modelPath = std::string("players/ghost/") + model + ".md2";
+
+	_ghost->s.modelindex = gi.modelindex(const_cast<char*>(modelPath.c_str()));
 	_ghost->s.modelindex2 = 0;
 	_ghost->s.modelindex3 = 0;
 	_ghost->s.modelindex4 = 0;
@@ -80,6 +86,43 @@ void GhostReplay::RunFrame()
 	gi.linkentity(_ghost);
 
 	_replayFrame++;
+}
+
+/// <summary>
+/// Load all the ghost models from the jump/27910/ghost_models.cfg file.
+/// </summary>
+void GhostReplay::LoadGhostModels()
+{
+	_ghostModels.clear();
+	std::string filename = GetModPortDir() + "/ghost_models.cfg";
+	std::ifstream file(filename);
+	if (file.is_open())
+	{
+		std::string line;
+		while (std::getline(file, line))
+		{
+			std::string modelPath = GetModDir() + "/players/ghost/" + line + ".md2";
+			if (std::filesystem::exists(modelPath))
+			{
+				_ghostModels.push_back(line);
+			}
+		}
+	}
+}
+
+/// <summary>
+/// Chooses a random ghost model from the full loaded list.
+/// </summary>
+/// <returns></returns>
+std::string GhostReplay::PickRandomGhostModel()
+{
+	std::string model = "penguin"; // default if nothing is loaded
+	if (_ghostModels.size() > 0)
+	{
+		int index = ::rand() % _ghostModels.size();
+		model = _ghostModels[index];
+	}
+	return model;
 }
 
 }

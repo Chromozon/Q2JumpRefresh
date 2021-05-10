@@ -354,6 +354,7 @@ namespace Jump
         LocalScores::LoadMaplist();
         jump_server.global_database_thread = std::thread(ThreadMainGlobal);
         VoteSystem::Init();
+        GhostReplay::LoadGhostModels();
     }
 
     void JumpRunFrame()

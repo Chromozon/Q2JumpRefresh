@@ -56,6 +56,12 @@ const char* HUD::_hudLayoutString =
     "string2 \"Health\" "
     "endif "
     ""
+    // Equipped weapon
+    "if " XSTRINGIFY(STAT_JUMP_WEAPON_ICON) " "
+    "yb	-32 "
+    "xv	280 "
+    "pic " XSTRINGIFY(STAT_JUMP_WEAPON_ICON) " "
+    "endif "
     // Keystates
     "xl 2 "
     "yb -42 "
@@ -312,23 +318,14 @@ void HUD::SetStatHealth(edict_t* ent)
 /// <param name="ent"></param>
 void HUD::SetStatWeapon(edict_t* ent)
 {
-    //if (ent->client->pers.weapon && ent->client->pers.weapon->ammo)
-    //#define WEAP_BLASTER			1 
-    //#define WEAP_SHOTGUN			2 
-    //#define WEAP_SUPERSHOTGUN		3 
-    //#define WEAP_MACHINEGUN			4 
-    //#define WEAP_CHAINGUN			5 
-    //#define WEAP_GRENADES			6 
-    //#define WEAP_GRENADELAUNCHER	7 
-    //#define WEAP_ROCKETLAUNCHER		8 
-    //#define WEAP_HYPERBLASTER		9 
-    //#define WEAP_RAILGUN			10
-    //#define WEAP_BFG				11
-
-    //if (ent->client->pers.weapon && ent->client->pers.weapon->ammo)
-    //    ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex(ent->client->pers.weapon->icon);
-    //else
-    //    ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
+    if (ent->client->pers.weapon && ent->client->pers.weapon->ammo)
+    {
+        ent->client->ps.stats[STAT_JUMP_WEAPON_ICON] = gi.imageindex(ent->client->pers.weapon->icon);
+    }
+    else
+    {
+        ent->client->ps.stats[STAT_JUMP_WEAPON_ICON] = 0;
+    }
 }
 
 /// <summary>

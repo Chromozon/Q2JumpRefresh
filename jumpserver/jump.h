@@ -20,7 +20,8 @@ namespace Jump
     void JoinTeamHardCommand(edict_t* ent, pmenuhnd_t* hnd);
     void JoinChaseCamCommand(edict_t* ent, pmenuhnd_t* hnd);
 
-    qboolean PickupWeapon(edict_t* weap, edict_t* ent);
+    bool PickupWeaponForFiring(edict_t* weap, edict_t* ent, const char* weaponClassname);
+    void PickupWeapon(edict_t* weap, edict_t* ent);
 
     void SaveReplayFrame(edict_t* ent);
     void ClearReplayData(edict_t* ent);

@@ -131,17 +131,48 @@ namespace Jump
         }
     }
 
-    qboolean PickupWeapon(edict_t* weap, edict_t* ent)
+    bool PickupWeaponForFiring(edict_t* weap, edict_t* ent, const char* weaponClassname)
+    {
+        if (weap != nullptr && StringCompareInsensitive(weap->classname, weaponClassname))
+        {
+            // Add to inventory
+            int index = ITEM_INDEX(weap->item);
+            ent->client->pers.inventory[index] = 1;
+
+            // Give unlimited ammo
+            gitem_t* ammo = FindItem(weap->item->ammo);
+            Add_Ammo(ent, ammo, MaxHealthAndAmmo);
+
+            // Auto-equip if not holding a weapon
+            if (ent->client->pers.weapon == nullptr)
+            {
+                ent->client->newweapon = weap->item;
+                ChangeWeapon(ent);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    void PickupWeapon(edict_t* weap, edict_t* ent)
     {
         if (ent->client == nullptr || !ent->inuse)
         {
-            return false;
+            return;
+        }
+
+        if ((MSets::GetGrenadeLauncher() && PickupWeaponForFiring(weap, ent, "weapon_grenadelauncher")) ||
+            (MSets::GetRocket() && PickupWeaponForFiring(weap, ent, "weapon_rocketlauncher")) ||
+            (MSets::GetHyperBlaster() && PickupWeaponForFiring(weap, ent, "weapon_hyperblaster")) ||
+            (MSets::GetBfg() && PickupWeaponForFiring(weap, ent, "weapon_bfg")))
+        {
+            return;
         }
 
         if (ent->client->jumpdata->timer_finished)
         {
             // If we have already completed the map, ignore any weapon pickups
-            return false;
+            return;
             // TODO: make sure recall on easy mode resets timer_finished
         }
 
@@ -158,12 +189,8 @@ namespace Jump
                         totalCheckpoints, ent->client->jumpdata->checkpoint_total));
                 ent->client->jumpdata->timer_trigger_spam = timeNowMs;
             }
-            return false;
+            return;
         }
-
-        // TODO
-        // If rocket, grenade launcher, BFG
-        // and mset enabled, don't finish timer
 
         if (!ent->client->jumpdata->timer_finished)
         {
@@ -180,8 +207,6 @@ namespace Jump
             }
             ent->client->jumpdata->timer_finished = true;
         }
-
-        return false; // leave the weapon there
     }
 
     void HandleMapCompletion(edict_t* ent)

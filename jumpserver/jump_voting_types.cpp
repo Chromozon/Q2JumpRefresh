@@ -57,6 +57,9 @@ namespace Jump
             return std::string(va("Change map to %s", map_name.c_str()));
         }
 
+        //
+        // Arguments: <map name> | random
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
             if (gi.argc() < 2)
@@ -121,6 +124,9 @@ namespace Jump
             return std::string(va("Extend map by %i minutes", (int)extend_amount));
         }
 
+        //
+        // Arguments: <extend time in minutes (can be negative)>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
             // TODO: Finish this
@@ -174,6 +180,9 @@ namespace Jump
             return std::string(va("Nominate map %s to voting list", map_name.c_str()));
         }
 
+        //
+        // Arguments: <map name>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
             if (jump_server.maplist.find(arguments) != jump_server.maplist.end())
@@ -228,9 +237,6 @@ namespace Jump
                 assert(0);
                 break;
             }
-             
-
-
         }
 
         virtual std::string GetShortDescription() const override
@@ -251,6 +257,9 @@ namespace Jump
             return 4;
         }
 
+        //
+        // Arguments: <map name 1> <map name 2> <map name 3>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
             auto names = SplitString(arguments, ' ');
@@ -403,8 +412,6 @@ namespace Jump
             assert(GetTargets().size() == 1);
 
             int player_num = GetTargets()[0].player_index;
-
-            auto* player = g_edicts + player_num;
 
             gi.AddCommandString(va("kick %d\n", player_num));
 

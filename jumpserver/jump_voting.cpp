@@ -129,9 +129,12 @@ namespace Jump
             if (!player->inuse || !client)
                 continue;
 
-            if (Q_stricmp(client->pers.netname, (char*)arguments.c_str()) == 0)
+            if (Q_stricmp(client->pers.netname, (char*)arguments.c_str()) == 0 && CanTarget(caster, player))
             {
                 AddTarget(player);
+
+                if (TargetsSinglePlayer())
+                    break;
             }
         }
 

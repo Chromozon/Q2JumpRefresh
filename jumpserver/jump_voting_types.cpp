@@ -353,19 +353,23 @@ namespace Jump
             return TargetPlayerVoteType::GetYesPercentage();
         }
 
+        virtual bool TargetsSinglePlayer() const override
+        {
+            return true;
+        }
+
+        virtual bool CanTarget(edict_t* caster, edict_t* target) const override
+        {
+            // TODO: Take into account admin levels. You shouldn't be able to target player's with higher levels.
+            return TargetPlayerVoteType::CanTarget(caster, target);
+        }
+
+        //
+        // Arguments: <player name>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
-            auto ret = TargetPlayerVoteType::ParseArguments(caster, arguments);
-            if (!ret)
-                return false;
-
-            if (GetTargets().size() > 1)
-            {
-                gi.cprintf(caster, PRINT_HIGH, "You may only target a single player!\n");
-                return false;
-            }
-
-            return true;
+            return TargetPlayerVoteType::ParseArguments(caster, arguments);
         }
     };
 
@@ -413,19 +417,23 @@ namespace Jump
             return TargetPlayerVoteType::GetYesPercentage();
         }
 
+        virtual bool TargetsSinglePlayer() const override
+        {
+            return true;
+        }
+
+        virtual bool CanTarget(edict_t* caster, edict_t* target) const override
+        {
+            // TODO: Take into account admin levels. You shouldn't be able to target player's with higher levels.
+            return TargetPlayerVoteType::CanTarget(caster, target);
+        }
+
+        //
+        // Arguments: <player name>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
-            auto ret = TargetPlayerVoteType::ParseArguments(caster, arguments);
-            if (!ret)
-                return false;
-
-            if (GetTargets().size() > 1)
-            {
-                gi.cprintf(caster, PRINT_HIGH, "You may only target a single player!\n");
-                return false;
-            }
-
-            return true;
+            return TargetPlayerVoteType::ParseArguments(caster, arguments);
         }
     };
 

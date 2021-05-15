@@ -36,11 +36,21 @@ namespace Jump
 
         virtual std::string GetShortDescription() const override
         {
+            if (is_random)
+            {
+                return std::string(va("Random map: %s", map_name.c_str()));
+            }
+
             return std::string(va("Change map: %s", map_name.c_str()));
         }
 
         virtual std::string GetDescription() const override
         {
+            if (is_random)
+            {
+                return std::string(va("Change map to %s (random)", map_name.c_str()));
+            }
+
             return std::string(va("Change map to %s", map_name.c_str()));
         }
 

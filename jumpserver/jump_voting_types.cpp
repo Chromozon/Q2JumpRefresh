@@ -14,6 +14,9 @@ namespace Jump
     char vote_options[10][64];
 
 
+#define MAX_EXTEND_AMOUNT       1000
+
+
     //
     // Change to a specific map. A simple yes/no vote.
     //
@@ -129,7 +132,7 @@ namespace Jump
 
             extend_amount = atoi(arguments.c_str());
 
-            if (extend_amount == 0)
+            if (extend_amount == 0 || abs(extend_amount) > MAX_EXTEND_AMOUNT)
             {
                 gi.cprintf(caster, PRINT_HIGH, "Please give a valid value.\n");
                 return false;

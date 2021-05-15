@@ -24,6 +24,19 @@ bool MSets::_isGravitySet = false;
 std::map<std::string, std::string> MSets::_mapperMSets;
 std::map<std::string, std::string> MSets::_serverMSets;
 
+// List of all the msets and their data.
+MSets::MSetData MSets::_msets[] = {
+    { &MSets::_fastTele, MSets::MSETTYPE_BOOLEAN, "fasttele", nullptr },
+    { &MSets::_grenadelauncher, MSets::MSETTYPE_BOOLEAN, "grenadelauncher", nullptr },
+    { &MSets::_rocket, MSets::MSETTYPE_BOOLEAN, "rocket", nullptr },
+    { &MSets::_hyperblaster, MSets::MSETTYPE_BOOLEAN, "hyperblaster", nullptr },
+    { &MSets::_bfg, MSets::MSETTYPE_BOOLEAN, "bfg", nullptr },
+    { &MSets::_checkpointTotal, MSets::MSETTYPE_INTEGER, "checkpoints", nullptr },
+    { &MSets::_gravity, MSets::MSETTYPE_INTEGER, "gravity", GravityChanged },
+    { &MSets::_damage, MSets::MSETTYPE_BOOLEAN, "damage", nullptr },
+};
+
+
 /// <summary>
 /// True if teleports should not hold the user in place for a brief period of time.
 /// </summary>
@@ -166,6 +179,47 @@ void MSets::LoadServerMSets()
 }
 
 /// <summary>
+/// Get mset data by name.
+/// </summary>
+/// <param name="mset_name">Name of the mset.</param>
+/// <returns>Returns the pointer to the mset data if one is found. Nullptr otherwise.</returns>
+MSets::MSetData* MSets::GetMSetByName(const std::string& mset_name)
+{
+    for (auto& mset : _msets)
+    {
+        if (StringCompareInsensitive(mset_name, mset.name))
+        {
+            return &mset;
+        }
+    }
+    
+    return nullptr;
+}
+
+/// <summary>
+/// Get the value of an mset as a string.
+/// </summary>
+/// <param name="mset">Pointer to the mset.</param>
+/// <returns>Value of the mset as a string.</returns>
+std::string MSets::GetMSetValue(const MSetData* mset)
+{
+    assert(mset != nullptr);
+
+    switch (mset->type) {
+    case MSETTYPE_INTEGER:
+        return va("%i", *(int*)mset->value);
+    case MSETTYPE_BOOLEAN:
+        return va("%s", *(bool*)mset->value ? "true" : "false");
+    case MSETTYPE_REAL:
+        return va("%.1f", *(float*)mset->value);
+    case MSETTYPE_STRING:
+        assert(0); // TODO: Implement me.
+    default:
+        return "";
+    }
+}
+
+/// <summary>
 /// Sets all the mset variables to default values.
 /// </summary>
 void MSets::ResetMSets()
@@ -190,75 +244,132 @@ void Jump::MSets::ApplyMSets(const std::map<std::string, std::string>& msets)
 {
     for (const auto& keyValue : msets)
     {
-        if (StringCompareInsensitive(keyValue.first, "checkpoint_total"))
+        auto mset = GetMSetByName(keyValue.first);
+        if (mset)
         {
-            int num = 0;
-            if (StringToIntMaybe(keyValue.second, num))
+            bool success = SetMSetSafe(mset, keyValue.second);
+
+            if (!success)
             {
-                _checkpointTotal = num;
-            }
-            else
-            {
-                Logger::Warning(va("Invalid checkpoint_total mset for map %s: %s",
-                    level.mapname, keyValue.second.c_str()));
-            }
-        }
-        else if (StringCompareInsensitive(keyValue.first, "rocket"))
-        {
-            if (keyValue.second != "0")
-            {
-                _rocket = true;
-            }
-        }
-        else if (StringCompareInsensitive(keyValue.first, "hyperblaster"))
-        {
-            if (keyValue.second != "0")
-            {
-                _hyperblaster = true;
-            }
-        }
-        else if (StringCompareInsensitive(keyValue.first, "bfg"))
-        {
-            if (keyValue.second != "0")
-            {
-                _bfg = true;
-            }
-        }
-        else if (StringCompareInsensitive(keyValue.first, "gravity"))
-        {
-            int num = 0;
-            if (StringToIntMaybe(keyValue.second, num))
-            {
-                _gravity = num;
-                _isGravitySet = true;
-            }
-            else
-            {
-                Logger::Warning(va("Invalid gravity mset for map %s: %s", level.mapname, keyValue.second.c_str()));
-            }
-        }
-        else if (StringCompareInsensitive(keyValue.first, "fasttele"))
-        {
-            if (keyValue.second != "0")
-            {
-                _fastTele = true;
-            }
-        }
-        else if (StringCompareInsensitive(keyValue.first, "damage"))
-        {
-            if (keyValue.second == "0")
-            {
-                _damage = false;
-            }
-        }
-        else if (StringCompareInsensitive(keyValue.first, "grenadelauncher"))
-        {
-            if (keyValue.second != "0")
-            {
-                _grenadelauncher = true;
+                Logger::Warning(va("Invalid mset for map %s! (%s: %s)",
+                                   level.mapname,
+                                   keyValue.first.c_str(),
+                                   keyValue.second.c_str()));
             }
         }
     }
+}
+
+/// <summary>
+/// Sets an mset and checks for errors.
+/// </summary>
+/// <param name="mset"></param>
+/// <param name="value"></param>
+/// <returns>True if value was valid and mset was set. False otherwise.</returns>
+bool MSets::SetMSetSafe(MSetData* mset, const std::string value)
+{
+    int i_value = 0;
+    float fl_value = 0;
+    //std::string str_value;
+
+    bool i_failed = !StringToIntMaybe(value, i_value);
+    bool fl_failed = !StringToFloatMaybe(value, fl_value);
+
+    bool failed = false;
+
+    switch (mset->type)
+    {
+    case MSETTYPE_BOOLEAN:
+        if (i_failed) {
+            failed = true;
+            break;
+        }
+
+        *((bool*)mset->value) = i_value ? true : false;
+        break;
+    case MSETTYPE_INTEGER:
+        if (i_failed) {
+            failed = true;
+            break;
+        }
+
+        *((int*)mset->value) = i_value;
+        break;
+    case MSETTYPE_REAL:
+        if (fl_failed) {
+            failed = true;
+            break;
+        }
+
+        *((float*)mset->value) = fl_value ? true : false;
+        break;
+    case MSETTYPE_STRING:
+        assert(0); // TODO: Implement.
+        break;
+    default:
+        assert(0); // Should not happen.
+        break;
+    }
+
+    if (!failed)
+    {
+        // Call the callback function if one exists.
+        if (mset->change_cb_post)
+        {
+            mset->change_cb_post();
+        }
+    }
+
+    return !failed;
+}
+
+/// <summary>
+/// Sets an mset value from a command. Useful for debugging.
+/// </summary>
+/// <param name="ent">Player or the server entity.</param>
+/// <param name="mset_name">Name of the mset.</param>
+/// <param name="value">New value of the mset.</param>
+/// <returns>True if value was valid and mset was set. False otherwise.</returns>
+bool MSets::SetMSetSafe_Cmd(edict_t *ent, const std::string mset_name, const std::string& value)
+{
+    auto mset = GetMSetByName(mset_name);
+    if (!mset)
+    {
+        gi.cprintf(ent, PRINT_HIGH, "Mset '%s' does not exist!\n", mset_name.c_str());
+        return false;
+    }
+
+    
+    bool success = SetMSetSafe(mset, value);
+    if (!success)
+    {
+        gi.cprintf(ent, PRINT_HIGH, "Failed to set mset value to '%s'!\n", value.c_str());
+        return false;
+    }
+
+    gi.cprintf(ent, PRINT_HIGH, "%s = %s\n", mset_name.c_str(), value.c_str());
+
+    return true;
+}
+
+/// <summary>
+/// Prints the list of msets to player. Useful for debugging.
+/// </summary>
+/// <param name="ent">Player entity.</param>
+void MSets::PrintMSetList(edict_t* ent)
+{
+    for (auto& mset : _msets)
+    {
+        gi.cprintf(ent, PRINT_HIGH, "%s = %s\n", mset.name.c_str(), GetMSetValue(&mset).c_str());
+    }
+}
+
+/// <summary>
+/// Callback for 'gravity'-mset.
+/// </summary>
+void MSets::GravityChanged()
+{
+    _isGravitySet = true;
 }
 
 }

@@ -14,6 +14,7 @@
 #include "rapidjson/document.h"
 #include "jump_local_database.h"
 #include "jump_spawn.h"
+#include "jump_msets.h"
 
 namespace Jump
 {
@@ -47,7 +48,9 @@ namespace Jump
         { "jumpers", Cmd_Jump_Jumpers },
         { "maplist", Cmd_Jump_Maplist },
         { "maplistnew", Cmd_Jump_MaplistNew },
-
+        { "mset", Cmd_Jump_MSet },
+        { "msetlist", Cmd_Jump_MSetList },
+        
         { "votetime", Cmd_Jump_Vote_Time },
         { "timevote", Cmd_Jump_Vote_Time },
         { "nominate", Cmd_Jump_Vote_Nominate },
@@ -896,7 +899,33 @@ namespace Jump
         LocalScores::PrintMaplist(ent, false);
     }
 
+    void Cmd_Jump_MSet(edict_t* ent)
+    {
+        // TODO: Check admin level.
+        if (!sv_cheats->value)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "Cheats must be enabled!\n");
+            return;
+        }
 
+        std::string mset_name = gi.argv(1);
+        std::string value = gi.argv(2);
+
+        MSets::SetMSetSafe_Cmd(ent, mset_name, value);
+    }
+
+    void Cmd_Jump_MSetList(edict_t* ent)
+    {
+        // TODO: Check admin level.
+        if (!sv_cheats->value)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "Cheats must be enabled!\n");
+            return;
+        }
+
+        MSets::PrintMSetList(ent);
+    }
+    
 
 
 

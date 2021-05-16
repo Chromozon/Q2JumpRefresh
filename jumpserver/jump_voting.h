@@ -125,6 +125,10 @@ namespace Jump
     public:
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override;
 
+        virtual bool TargetsSinglePlayer() const { return false; }
+
+        virtual bool CanTarget(edict_t* caster, edict_t* target) const { return true; }
+
     protected:
         TargetPlayerVoteType(vote_type_t type, vote_cast_type_t vote_cast);
 

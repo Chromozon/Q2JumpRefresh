@@ -11,6 +11,7 @@ namespace Jump
     static BaseVoteType* cur_vote_type;
     static float cur_vote_end_time;
     static std::vector<pmenu_t> cur_vote_menu;
+    static std::string cur_caster_name = "N/A";
 
     static pmenuhnd_t* cur_pmenu_handle;
 
@@ -129,9 +130,12 @@ namespace Jump
             if (!player->inuse || !client)
                 continue;
 
-            if (Q_stricmp(client->pers.netname, (char*)arguments.c_str()) == 0)
+            if (Q_stricmp(client->pers.netname, (char*)arguments.c_str()) == 0 && CanTarget(caster, player))
             {
                 AddTarget(player);
+
+                if (TargetsSinglePlayer())
+                    break;
             }
         }
 
@@ -277,6 +281,7 @@ namespace Jump
         assert(cur_vote_type != nullptr);
 
         cur_vote_end_time = level.time + cur_vote_type->GetVoteTime();
+        cur_caster_name = caster ? caster->client->pers.netname : "Server";
 
 
         voted.clear();
@@ -463,14 +468,14 @@ namespace Jump
 
         if ((is_yesnovote && option == VOTEOPTION_YES) || (!is_yesnovote && option != VOTEOPTION_NONE) || (force_apply && is_yesnovote))
         {
-            gi.bprintf(PRINT_HIGH, "Vote passed!\n");
+            gi.bprintf(PRINT_HIGH, "%s's vote has passed!\n", cur_caster_name.c_str());
 
 
             cur_vote_type->ApplyVote(option);
         }
         else
         {
-            gi.bprintf(PRINT_HIGH, "Vote failed!\n");
+            gi.bprintf(PRINT_HIGH, "%s's vote has failed!\n", cur_caster_name.c_str());
         }
 
 

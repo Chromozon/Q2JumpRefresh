@@ -14,6 +14,9 @@ namespace Jump
     char vote_options[10][64];
 
 
+#define MAX_EXTEND_AMOUNT       1000
+
+
     //
     // Change to a specific map. A simple yes/no vote.
     //
@@ -36,14 +39,27 @@ namespace Jump
 
         virtual std::string GetShortDescription() const override
         {
+            if (is_random)
+            {
+                return std::string(va("Random map: %s", map_name.c_str()));
+            }
+
             return std::string(va("Change map: %s", map_name.c_str()));
         }
 
         virtual std::string GetDescription() const override
         {
+            if (is_random)
+            {
+                return std::string(va("Change map to %s (random)", map_name.c_str()));
+            }
+
             return std::string(va("Change map to %s", map_name.c_str()));
         }
 
+        //
+        // Arguments: <map name> | random
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
             if (gi.argc() < 2)
@@ -108,6 +124,9 @@ namespace Jump
             return std::string(va("Extend map by %i minutes", (int)extend_amount));
         }
 
+        //
+        // Arguments: <extend time in minutes (can be negative)>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
             // TODO: Finish this
@@ -119,7 +138,7 @@ namespace Jump
 
             extend_amount = atoi(arguments.c_str());
 
-            if (extend_amount == 0)
+            if (extend_amount == 0 || abs(extend_amount) > MAX_EXTEND_AMOUNT)
             {
                 gi.cprintf(caster, PRINT_HIGH, "Please give a valid value.\n");
                 return false;
@@ -161,6 +180,9 @@ namespace Jump
             return std::string(va("Nominate map %s to voting list", map_name.c_str()));
         }
 
+        //
+        // Arguments: <map name>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
             if (jump_server.maplist.find(arguments) != jump_server.maplist.end())
@@ -215,9 +237,6 @@ namespace Jump
                 assert(0);
                 break;
             }
-             
-
-
         }
 
         virtual std::string GetShortDescription() const override
@@ -238,6 +257,9 @@ namespace Jump
             return 4;
         }
 
+        //
+        // Arguments: <map name 1> <map name 2> <map name 3>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
             auto names = SplitString(arguments, ' ');
@@ -353,19 +375,23 @@ namespace Jump
             return TargetPlayerVoteType::GetYesPercentage();
         }
 
+        virtual bool TargetsSinglePlayer() const override
+        {
+            return true;
+        }
+
+        virtual bool CanTarget(edict_t* caster, edict_t* target) const override
+        {
+            // TODO: Take into account admin levels. You shouldn't be able to target player's with higher levels.
+            return TargetPlayerVoteType::CanTarget(caster, target);
+        }
+
+        //
+        // Arguments: <player name>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
-            auto ret = TargetPlayerVoteType::ParseArguments(caster, arguments);
-            if (!ret)
-                return false;
-
-            if (GetTargets().size() > 1)
-            {
-                gi.cprintf(caster, PRINT_HIGH, "You may only target a single player!\n");
-                return false;
-            }
-
-            return true;
+            return TargetPlayerVoteType::ParseArguments(caster, arguments);
         }
     };
 
@@ -386,8 +412,6 @@ namespace Jump
             assert(GetTargets().size() == 1);
 
             int player_num = GetTargets()[0].player_index;
-
-            auto* player = g_edicts + player_num;
 
             gi.AddCommandString(va("kick %d\n", player_num));
 
@@ -413,19 +437,23 @@ namespace Jump
             return TargetPlayerVoteType::GetYesPercentage();
         }
 
+        virtual bool TargetsSinglePlayer() const override
+        {
+            return true;
+        }
+
+        virtual bool CanTarget(edict_t* caster, edict_t* target) const override
+        {
+            // TODO: Take into account admin levels. You shouldn't be able to target player's with higher levels.
+            return TargetPlayerVoteType::CanTarget(caster, target);
+        }
+
+        //
+        // Arguments: <player name>
+        //
         virtual bool ParseArguments(edict_t* caster, const std::string& arguments) override
         {
-            auto ret = TargetPlayerVoteType::ParseArguments(caster, arguments);
-            if (!ret)
-                return false;
-
-            if (GetTargets().size() > 1)
-            {
-                gi.cprintf(caster, PRINT_HIGH, "You may only target a single player!\n");
-                return false;
-            }
-
-            return true;
+            return TargetPlayerVoteType::ParseArguments(caster, arguments);
         }
     };
 

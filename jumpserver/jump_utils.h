@@ -143,4 +143,14 @@ namespace Jump
 
     // Shortens a date (with time optional) string to the European format of MM/DD/YY.
     std::string GetEuropeanShortDate(const std::string& datetime);
+
+    // Returns a string of the value (presumably a real number) with specific number of decimals.
+    template <typename T>
+    std::string to_string_with_precision(const T value, const int decimals)
+    {
+        std::ostringstream out;
+        out.precision(decimals);
+        out << std::fixed << value;
+        return out.str();
+    }
 }

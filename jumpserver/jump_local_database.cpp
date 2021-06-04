@@ -674,6 +674,81 @@ int LocalDatabase::GetMapTime(const std::string& mapname, const std::string& use
 }
 
 /// <summary>
+/// Gets the completions for a given user and map.
+/// </summary>
+/// <param name="mapname"></param>
+/// <param name="username"></param>
+/// <returns>Completions, or 0 if not set</returns>
+int LocalDatabase::GetPlayerCompletions(const std::string& mapname, const std::string& username)
+{
+    int completions = 0;
+    const char* sql = ""
+        "SELECT Completions FROM MapTimes "
+        "WHERE "
+        "MapId = (SELECT MapId FROM Maps WHERE MapName = @mapname) "
+        "AND "
+        "UserId = (SELECT UserId FROM Users WHERE UserName = @username) "
+    ;
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting player's completions, mapname %s, user %s, error: %d, %s",
+            mapname.c_str(), username.c_str(), error, sqlite3_errmsg(_db)));
+        sqlite3_finalize(prepared);
+        return completions;
+    }
+    int index = sqlite3_bind_parameter_index(prepared, "@mapname");
+    sqlite3_bind_text(prepared, index, mapname.c_str(), -1, SQLITE_STATIC);
+
+    index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        completions = sqlite3_column_int(prepared, 0);
+    }
+    sqlite3_finalize(prepared);
+    return completions;
+}
+
+/// <summary>
+/// Gets the completion count for a given user.
+/// </summary>
+/// <param name="username"></param>
+/// <returns>Number of maps the player has completed, or 0 if not set</returns>
+int LocalDatabase::GetPlayerMapsCompletedCount(const std::string& username)
+{
+    int completions = 0;
+    const char* sql = ""
+        "SELECT COUNT(*) FROM MapTimes "
+        "WHERE "
+        "UserId = (SELECT UserId FROM Users WHERE UserName = @username) "
+    ;
+    sqlite3_stmt* prepared = nullptr;
+    int error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error getting player's map completed count, user %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(_db)));
+        sqlite3_finalize(prepared);
+        return completions;
+    }
+
+    int index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        completions = sqlite3_column_int(prepared, 0);
+    }
+    sqlite3_finalize(prepared);
+    return completions;
+}
+
+/// <summary>
 /// Gets the replay for a given user and map.
 /// </summary>
 /// <param name="mapname"></param>

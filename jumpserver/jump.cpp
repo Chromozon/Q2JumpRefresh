@@ -299,6 +299,22 @@ namespace Jump
         }
         Logger::Completion(ent->client->pers.netname, ent->client->jumpdata->ip, level.mapname, timeMs);
 
+        // Update game's database cache
+        ent->client->jumpdata->cached_completions++;
+
+        if (ent->client->jumpdata->cached_time_msec > 0)
+        {
+            if (timeMs < ent->client->jumpdata->cached_time_msec)
+            {
+                ent->client->jumpdata->cached_time_msec = timeMs;
+            }
+        }
+        else
+        {
+            ent->client->jumpdata->cached_time_msec = timeMs;
+            ent->client->jumpdata->cached_maps_completed++;
+        }
+
         // TODO: need to automatically update the replays of anyone racing
         // The could be the first race replay or whatever else position they are racing
         // People usually only race the first place replay

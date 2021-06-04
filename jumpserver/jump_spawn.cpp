@@ -1,5 +1,6 @@
 #include "jump_spawn.h"
 #include "jump_menu.h"
+#include "jump_local_database.h"
 
 namespace Jump
 {
@@ -372,6 +373,11 @@ void Spawn::ClientOnEnterMap(edict_t* ent)
     gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
     gi.linkentity(ent);
     ClientEndServerFrame(ent);
+
+    // TODO: Put this somewhere else?
+    ent->client->jumpdata->cached_time_msec = LocalDatabase::GetMapTime(level.mapname, ent->client->pers.netname);
+    ent->client->jumpdata->cached_completions = LocalDatabase::GetPlayerCompletions(level.mapname, ent->client->pers.netname);
+    ent->client->jumpdata->cached_maps_completed = LocalDatabase::GetPlayerMapsCompletedCount(ent->client->pers.netname);
 }
 
 /// <summary>
@@ -739,6 +745,9 @@ void Spawn::InitializeClientEnt(edict_t* ent)
     ent->client->jumpdata->checkpoints_obtained.clear();
     ent->client->jumpdata->timer_checkpoint_split = 0;
     ent->client->jumpdata->timer_trigger_spam = 0;
+    ent->client->jumpdata->cached_time_msec = 0;
+    ent->client->jumpdata->cached_completions = 0;
+    ent->client->jumpdata->cached_maps_completed = 0;
 
     // Set the rest of ent fields
     ent->inuse = true;

@@ -52,6 +52,8 @@ public:
     static void GetMapTimes(std::vector<MapTimesEntry>& results, const std::string& mapname, int limit = -1, int offset = 0);
     static void GetLastSeen(std::vector<LastSeenEntry>& results, int limit = -1, int offset = 0);
     static int GetMapTime(const std::string& mapname, const std::string& username);
+    static int GetPlayerCompletions(const std::string& mapname, const std::string& username);
+    static int GetPlayerMapsCompletedCount(const std::string& username);
     static bool GetReplayByUser(const std::string& mapname, const std::string& username,
         std::vector<replay_frame_t>& replay, int& timeMs);
     static bool GetReplayByPosition(const std::string& mapname, int position,

@@ -220,6 +220,11 @@ namespace Jump
         int64_t timer_checkpoint_split = 0; // TODO rename from timer
 
         int64_t timer_trigger_spam = 0; // TODO rename from timer
+
+        // Cache from local database.
+        int cached_time_msec; // Player's team hard time.
+        int cached_completions;
+        int cached_maps_completed;
     };
 
     class server_data_t

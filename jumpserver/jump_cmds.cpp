@@ -50,6 +50,7 @@ namespace Jump
         { "maplistnew", Cmd_Jump_MaplistNew },
         { "mset", Cmd_Jump_MSet },
         { "msetlist", Cmd_Jump_MSetList },
+        { "team", Cmd_Jump_Team },
         
         { "votetime", Cmd_Jump_Vote_Time },
         { "timevote", Cmd_Jump_Vote_Time },
@@ -926,6 +927,27 @@ namespace Jump
         MSets::PrintMSetList(ent);
     }
     
+    void Cmd_Jump_Team(edict_t* ent)
+    {
+        const char* team_name = gi.argv(1);
+
+        if (StringCompareInsensitive(team_name, "easy"))
+        {
+            Spawn::JoinTeamEasy(ent);
+        }
+        else if (StringCompareInsensitive(team_name, "hard"))
+        {
+            Spawn::JoinTeamHard(ent);
+        }
+        else if (StringCompareInsensitive(team_name, "spectator"))
+        {
+            Spawn::JoinTeamSpectator(ent);
+        }
+        else
+        {
+            gi.cprintf(ent, PRINT_HIGH, "Team '%s' does not exist! Valid teams: easy, hard, spectator\n", team_name);
+        }
+    }
 
 
 

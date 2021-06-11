@@ -103,6 +103,8 @@ namespace Jump
 		// TODO: split into multiple menus or implement a separate shorter one
 		const int MAX_PLAYERS_DISPLAYED = 14;
 
+		const int num_maps = jump_server.maplist.size();
+
 		std::vector<edict_t*> clients_hard;
 		std::vector<edict_t*> clients_easy;
 		std::vector<edict_t*> clients_spec;
@@ -134,34 +136,43 @@ namespace Jump
 
 		int yv_offset = 16;
 		int players_added = 0;
-		//for (size_t i = 0; i < clients_hard.size(); ++i)
-		for (size_t i = 0; i < 4; ++i)
+		for (size_t i = 0; i < clients_hard.size(); ++i)
 		{
 			players_added++;
 			if (players_added >= MAX_PLAYERS_DISPLAYED)
 			{
 				break;
 			}
-			//edict_t* player = clients_hard[i];
+			edict_t* player = clients_hard[i];
 
-			//std::string ping = std::to_string(player->client->ping);
-			//std::string username = player->client->pers.netname;
-			//if (player == ent)
-			//{
-			//	ping = GetGreenConsoleText(ping);
-			//	username = GetGreenConsoleText(username);
-			//}
+			float completion_frac = 0;
+			if (num_maps > 0)
+				completion_frac = player->client->jumpdata->cached_maps_completed / num_maps;
 
+			float best_time_msec = player->client->jumpdata->cached_time_msec;
+			int num_completions = player->client->jumpdata->cached_completions;
+
+
+			std::string ping = std::to_string(player->client->ping);
+			std::string username = player->client->pers.netname;
+			std::string time_string = best_time_msec > 0 ? GetCompletionTimeDisplayString(best_time_msec) : "------";
+			std::string completions = num_completions > 0 ? std::to_string(num_completions) : "----";
+			std::string num_maps_completed = std::to_string(player->client->jumpdata->cached_maps_completed);
+			std::string completions_percentage = to_string_with_precision(completion_frac * 100, 1);
+			if (player == ent)
+			{
+				ping = GetGreenConsoleText(ping);
+				username = GetGreenConsoleText(username);
+			}
+			
 			int yv = yv_offset + (i * 10);
 			ss << "yv " << yv << " string \"";
-			//ss << std::right << std::setw(4) << ping << " ";
-			//ss << std::left << std::setw(15) << username << " ";
-			ss << std::right << std::setw(4) << i * 20 << " ";
-			ss << std::left << std::setw(15) << "SomeName" << " ";
-			ss << std::right << std::setw(10) << "56.023" << " "; // TODO completion time
-			ss << std::right << std::setw(4) << "23" << " "; // TODO completions
-			ss << std::right << std::setw(4) << "2760" << "  "; // TODO maps
-			ss << std::right << std::setw(4) << "97.1" << "  "; // TODO percentage
+			ss << std::right << std::setw(4) << ping << " ";
+			ss << std::left << std::setw(15) << username << " ";
+			ss << std::right << std::setw(10) << time_string << " ";
+			ss << std::right << std::setw(4) << completions << " ";
+			ss << std::right << std::setw(4) << num_maps_completed << "  ";
+			ss << std::right << std::setw(4) << completions_percentage << "  ";
 			ss << "Hard" << "\" ";
 		}
 
@@ -175,34 +186,43 @@ namespace Jump
 			yv_offset = 16;
 		}
 
-		//for (size_t i = 0; i < clients_easy.size(); ++i)
-		for (size_t i = 0; i < 4; ++i)
+		for (size_t i = 0; i < clients_easy.size(); ++i)
 		{
 			players_added++;
 			if (players_added >= MAX_PLAYERS_DISPLAYED)
 			{
 				break;
 			}
-			//edict_t* player = clients_easy[i];
+			edict_t* player = clients_easy[i];
 
-			//std::string ping = std::to_string(player->client->ping);
-			//std::string username = player->client->pers.netname;
-			//if (player == ent)
-			//{
-			//	ping = GetGreenConsoleText(ping);
-			//	username = GetGreenConsoleText(username);
-			//}
+			float completion_frac = 0;
+			if (num_maps > 0)
+				completion_frac = player->client->jumpdata->cached_maps_completed / num_maps;
+
+			float best_time_msec = player->client->jumpdata->cached_time_msec;
+			int num_completions = player->client->jumpdata->cached_completions;
+
+
+			std::string ping = std::to_string(player->client->ping);
+			std::string username = player->client->pers.netname;
+			std::string time_string = best_time_msec > 0 ? GetCompletionTimeDisplayString(best_time_msec) : "------";
+			std::string completions = num_completions > 0 ? std::to_string(num_completions) : "----";
+			std::string num_maps_completed = std::to_string(player->client->jumpdata->cached_maps_completed);
+			std::string completions_percentage = to_string_with_precision(completion_frac * 100, 1);
+			if (player == ent)
+			{
+				ping = GetGreenConsoleText(ping);
+				username = GetGreenConsoleText(username);
+			}
 
 			int yv = yv_offset + (i * 10);
 			ss << "yv " << yv << " string \"";
-			//ss << std::right << std::setw(4) << ping << " ";
-			//ss << std::left << std::setw(15) << username << " ";
-			ss << std::right << std::setw(4) << i * 20 << " ";
-			ss << std::left << std::setw(15) << "SomeName" << " ";
-			ss << std::right << std::setw(10) << "" << " ";
-			ss << std::right << std::setw(4) << "" << " ";
-			ss << std::right << std::setw(4) << "" << "  ";
-			ss << std::right << std::setw(4) << "" << "  ";
+			ss << std::right << std::setw(4) << ping << " ";
+			ss << std::left << std::setw(15) << username << " ";
+			ss << std::right << std::setw(10) << time_string << " ";
+			ss << std::right << std::setw(4) << completions << " ";
+			ss << std::right << std::setw(4) << num_maps_completed << "  ";
+			ss << std::right << std::setw(4) << completions_percentage << "  ";
 			ss << "Easy" << "\" ";
 		}
 
@@ -225,30 +245,27 @@ namespace Jump
 		}
 
 		yv_offset += 8;
-		//for (size_t i = 0; i < clients_spec.size(); ++i)
-		for (size_t i = 0; i < 3; ++i)
+		for (size_t i = 0; i < clients_spec.size(); ++i)
 		{
 			players_added++;
 			if (players_added >= MAX_PLAYERS_DISPLAYED)
 			{
 				break;
 			}
-			//edict_t* player = clients_spec[i];
+			edict_t* player = clients_spec[i];
 
-			//std::string ping = std::to_string(player->client->ping);
-			//std::string username = player->client->pers.netname;
-			//if (player == ent)
-			//{
-			//	ping = GetGreenConsoleText(ping);
-			//	username = GetGreenConsoleText(username);
-			//}
+			std::string ping = std::to_string(player->client->ping);
+			std::string username = player->client->pers.netname;
+			if (player == ent)
+			{
+				ping = GetGreenConsoleText(ping);
+				username = GetGreenConsoleText(username);
+			}
 
 			int yv = yv_offset + (i * 8);
 			ss << "yv " << yv << " string \"";
-			//ss << std::right << std::setw(4) << ping << " ";
-			//ss << std::left << std::setw(15) << username << " ";
-			ss << std::right << std::setw(4) << i * 20 << " ";
-			ss << std::left << std::setw(15) << "SomeName" << " ";
+			ss << std::right << std::setw(4) << ping << " ";
+			ss << std::left << std::setw(15) << username << " ";
 			// TODO: idle, who you are speccing, what replay you are watching
 			ss << "\" ";
 		}

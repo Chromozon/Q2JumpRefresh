@@ -25,7 +25,7 @@ std::map<std::string, std::string> MSets::_mapperMSets;
 std::map<std::string, std::string> MSets::_serverMSets;
 
 // List of all the msets and their data.
-MSets::MSetData MSets::_msets[] = {
+Jump::MSets::MSetData Jump::MSets::_msets[] = {
     { &MSets::_fastTele, MSets::MSETTYPE_BOOLEAN, "fasttele", nullptr },
     { &MSets::_grenadelauncher, MSets::MSETTYPE_BOOLEAN, "grenadelauncher", nullptr },
     { &MSets::_rocket, MSets::MSETTYPE_BOOLEAN, "rocket", nullptr },

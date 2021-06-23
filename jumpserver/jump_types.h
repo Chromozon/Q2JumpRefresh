@@ -121,7 +121,7 @@ namespace Jump
         // todo weapons
     } store_data_t;
 
-    typedef std::string username_key; // The username key is the username in lowercase
+    typedef std::string username_key_t; // The username key is the username in lowercase
 
     class store_buffer_t
     {
@@ -146,7 +146,7 @@ namespace Jump
         }
 
         std::string filepath;
-        username_key username_key;
+        username_key_t username_key;
         int64_t time_ms;
         std::string date;
         int32_t completions;
@@ -245,7 +245,7 @@ namespace Jump
         std::string last_map2;
         std::string last_map3;
 
-        std::unordered_set<username_key> fresh_times;
+        std::unordered_set<username_key_t> fresh_times;
 
         std::vector<replay_frame_t> replay_now_recording;
         std::string replay_now_username;
@@ -260,18 +260,18 @@ namespace Jump
 
         // List of all user highscores sorted by score best to worst.
         // Only updated on map change.
-        std::vector<std::pair<username_key, user_highscores_t>> all_local_highscores;
+        std::vector<std::pair<username_key_t, user_highscores_t>> all_local_highscores;
 
         // List of all user map count sorted best to worst
         // Only updated on map change.
-        std::vector<std::pair<username_key, int>> all_local_mapcounts;
+        std::vector<std::pair<username_key_t, int>> all_local_mapcounts;
 
         // List of all user mapscores (%) sorted best to worst
         // Only updated on map change.
-        std::vector<std::pair<username_key, user_highscores_t>> all_local_mapscores;
+        std::vector<std::pair<username_key_t, user_highscores_t>> all_local_mapscores;
 
         // Links the username_key (all lowercase) to the display username
-        std::unordered_map<username_key, std::string> all_local_usernames; // TODO!! calc when doing maptimes
+        std::unordered_map<username_key_t, std::string> all_local_usernames; // TODO!! calc when doing maptimes
 
         // List of last seen times sorted newest to oldest
         std::vector<std::pair<std::string /*username*/, int64_t>> last_seen;

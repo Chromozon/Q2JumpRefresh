@@ -70,7 +70,7 @@ namespace Jump
             }
             std::string arg = gi.argv(1);
 
-            if (stricmp(arg.c_str(), "random") == 0)
+            if (Q_stricmp((char*)arg.c_str(), "random") == 0)
             {
                 map_name = LocalScores::GetRandomMap();
                 return !map_name.empty();

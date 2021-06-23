@@ -2,6 +2,8 @@
 #include "jump_utils.h"
 #include "jump_msets.h"
 
+#include <algorithm>
+
 namespace Jump
 {
 

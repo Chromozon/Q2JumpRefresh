@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include "jump_logger.h"
 #include "jump_utils.h"
 #include "jump.h"

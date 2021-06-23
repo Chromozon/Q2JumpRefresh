@@ -11,6 +11,7 @@
 #include <map>
 #include <array>
 #include <set>
+#include <algorithm>
 
 namespace Jump
 {

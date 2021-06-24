@@ -15,6 +15,24 @@ A reimplementation of Quake 2 jump mod.  The code currently compiles with C++17.
   - Log file `completions.txt` stores a record of every time a client completes a map.
 - Map completion times and demos are stored in `C:/Quake2/jump/<port>/local_db.sqlite3`.
 
+## Development
+
+- Open `jump.sln` with Visual Studio 2019.
+- Game library project requires `MSVC v142` and `Windows SDK 10.0`.
+- Database projects require `.NET Core 3.1`.
+
+### Compiling the game library on Linux
+
+- Run `make` inside `jumpserver`-directory.
+
+### Using Premake
+
+Premake enables us to generate project files easily for wide variety of platforms.
+
+- Download and install Premake [here](https://premake.github.io/download).
+- Run `premake5 vs2019` if you're on Windows, `premake5 gmake2` on Linux.
+- You can now open `jump.sln`, or run make inside `jumpserver`-directory.
+
 ## TODO
 - Weapons:
     - Mset for weapon maps

@@ -31,11 +31,13 @@ newoption {
 }
 
 -- Append slash to the end of Quake 2 path.
-if _OPTIONS["q2path"] then
+if _OPTIONS["q2path"] and #_OPTIONS["q2path"] > 0 then
     local lastchar = string.sub(_OPTIONS["q2path"], #_OPTIONS["q2path"])
     if lastchar ~= "/" and lastchar ~= "\\" then
         _OPTIONS["q2path"] = _OPTIONS["q2path"] .. "/"
     end
+else
+    _OPTIONS["q2path"] = nil
 end
 
 workspace "jump"
@@ -54,8 +56,10 @@ project "jumpserver"
     targetname "gamex86"
     architecture "x86"
 
-    debugcommand (_OPTIONS["q2path"] .. _OPTIONS["q2exe"])
-    debugargs { _OPTIONS["q2args"] }
+    if _OPTIONS["q2path"] then
+        debugcommand (_OPTIONS["q2path"] .. _OPTIONS["q2exe"])
+        debugargs { _OPTIONS["q2args"] }
+    end
 
     files { "jumpserver/**.h", "jumpserver/**.c", "jumpserver/**.cpp" }
 
@@ -89,10 +93,12 @@ project "jumpserver"
     -- Post-build commands
     filter "system:Windows"
         -- Move game library + debug symbols to game folder.
-        postbuildcommands {
-            "copy /B /Y \"$(OutDir)$(TargetFileName)\" \"" .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. "\"",
-            "copy /B /Y \"$(OutDir)$(TargetName).pdb\" \"" .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. "\""
-        }
+        if _OPTIONS["q2path"] then
+            postbuildcommands {
+                "copy /B /Y \"$(OutDir)$(TargetFileName)\" \"" .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. "\"",
+                "copy /B /Y \"$(OutDir)$(TargetName).pdb\" \"" .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. "\""
+            }
+        end
 
 --[[
 Jump Database

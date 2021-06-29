@@ -30,8 +30,12 @@ A reimplementation of Quake 2 jump mod.  The code currently compiles with C++17.
 Premake enables us to generate project files easily for wide variety of platforms.
 
 - Download and install Premake [here](https://premake.github.io/download).
-- Run `premake5 vs2019` if you're on Windows, `premake5 gmake2` on Linux.
+- Run `premake5 vs2019 --q2path="C:\Quake2\" --q2exe="q2pro.exe"` if you're on Windows, `premake5 gmake2` on Linux.
 - You can now open `jump.sln`, or run make inside `jumpserver`-directory.
+
+### Debugging the game library
+
+You need to generate the project files with Premake, and `--q2path` and `--q2exe` arguments. See above.
 
 ## TODO
 - Weapons:

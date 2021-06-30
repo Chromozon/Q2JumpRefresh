@@ -53,6 +53,7 @@ project "jumpserver"
     language "C++"
     compileas "C++"
     cppdialect "C++17"
+    targetprefix ""
     targetname "gamex86"
     architecture "x86"
 
@@ -64,6 +65,13 @@ project "jumpserver"
     files { "jumpserver/**.h", "jumpserver/**.c", "jumpserver/**.cpp" }
 
     includedirs { "packages/tencent.rapidjson.1.1.1/lib/native/include" }
+
+    -- Linux configurations
+    filter { "system:linux", "architecture:x86" }
+        targetname "gamei386"
+
+    filter "architecture:x86_64"
+        targetname "gamex86_64"
 
     filter { "files:**.c" }
         compileas "C++"

@@ -63,48 +63,45 @@ project "jumpserver"
     end
 
     files { "jumpserver/**.h", "jumpserver/**.c", "jumpserver/**.cpp" }
-
     includedirs { "packages/tencent.rapidjson.1.1.1/lib/native/include" }
 
-    -- Linux configurations
-    filter { "system:linux", "architecture:x86" }
-        targetname "gamei386"
-
-    filter "architecture:x86_64"
-        targetname "gamex86_64"
-
-    filter { "files:**.c" }
+    filter "files:**.c"
         compileas "C++"
 
     -- SQLite has to be compiled as C.
-    filter { "files:jumpserver/sqlite3.c" }
-        compileas "C"
-    filter { "files:jumpserver/shell.c" }
+    filter { "files:jumpserver/sqlite3.c or jumpserver/shell.c" }
         compileas "C"
 
+    -- Specific targetnames
+    filter { "system:linux", "architecture:x86" }
+        targetname "gamei386"
+    filter "architecture:x86_64"
+        targetname "gamex86_64"
+
+    -- Configuration specific
     filter "configurations:Debug"
-        defines { "DEBUG" }
-
+        defines { "_DEBUG" }
     filter "configurations:Release"
         defines { "NDEBUG" }
         optimize "On"
-
-    filter "system:Windows"
-        defines { "WIN32" }
-
-    -- Warnings
+        
+    -- System specific
     filter "system:linux"
         disablewarnings "write-strings"
+        -- Move game library to game folder.
+        if _OPTIONS["q2path"] then
+            postbuildcommands {
+                '{COPYFILE} "%{cfg.buildtarget.directory}/%{cfg.buildtarget.name}" "' .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. '"'
+            }
+        end
     filter "system:Windows"
+        defines { "_WIN32" }
         disablewarnings "4996"
-
-    -- Post-build commands
-    filter "system:Windows"
         -- Move game library + debug symbols to game folder.
         if _OPTIONS["q2path"] then
             postbuildcommands {
-                "copy /B /Y \"$(OutDir)$(TargetFileName)\" \"" .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. "\"",
-                "copy /B /Y \"$(OutDir)$(TargetName).pdb\" \"" .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. "\""
+                '{COPYFILE} "%{cfg.buildtarget.directory}%{cfg.buildtarget.name}" "' .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. '"',
+                '{COPYFILE} "%{cfg.buildtarget.directory}%{cfg.buildtarget.basename}.pdb" "' .. _OPTIONS["q2path"] .. _OPTIONS["q2jumpdir"] .. '"'
             }
         end
 

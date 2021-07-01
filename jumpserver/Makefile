@@ -38,7 +38,7 @@ ifeq ($(config),debug)
 TARGETDIR = bin/Debug
 TARGET = $(TARGETDIR)/gamei386.so
 OBJDIR = obj/Debug
-DEFINES += -DDEBUG
+DEFINES += -D_DEBUG
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -fPIC -Wno-write-strings
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -fPIC -std=c++17 -Wno-write-strings
 

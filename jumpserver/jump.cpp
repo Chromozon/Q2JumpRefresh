@@ -730,7 +730,7 @@ namespace Jump
             client->jumppers->idle_msec += ucmd->msec;
         }
 
-        if (!moved && client->jumppers->idle_msec >= max_idletime_msec)
+        if (!moved && max_idletime_msec != 0 && client->jumppers->idle_msec >= max_idletime_msec)
         {
             new_state = IdleStateEnum::Auto;
         }

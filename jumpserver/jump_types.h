@@ -311,7 +311,7 @@ namespace Jump
         // MapId in the local database for the current level
         int local_map_id;
 
-        // How long the player needs to be idle for, in seconds, before they are set as idle.
+        // How long the player needs to be idle for, in seconds, before they are set as idle. 0 = no auto-idling
         cvar_t* cvar_idle_time;
     };
 

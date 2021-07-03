@@ -36,6 +36,7 @@ namespace Jump
     void Cmd_Jump_MSet(edict_t* ent);
     void Cmd_Jump_MSetList(edict_t* ent);
     void Cmd_Jump_Team(edict_t* ent);
+    void Cmd_Jump_Idle(edict_t* ent);
 
     // Global database cmd responses
     void HandleGlobalCmdResponse(const global_cmd_response& response);

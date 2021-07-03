@@ -51,6 +51,7 @@ namespace Jump
         { "mset", Cmd_Jump_MSet },
         { "msetlist", Cmd_Jump_MSetList },
         { "team", Cmd_Jump_Team },
+        { "idle", Cmd_Jump_Idle },
         
         { "votetime", Cmd_Jump_Vote_Time },
         { "timevote", Cmd_Jump_Vote_Time },
@@ -949,6 +950,23 @@ namespace Jump
         }
     }
 
+    void Cmd_Jump_Idle(edict_t* ent)
+    {
+        auto prev_state = ent->client->jumppers->idle_state;
+
+        ent->client->jumppers->idle_msec = 0;
+
+        if (prev_state != IdleStateEnum::None)
+        {
+            ent->client->jumppers->idle_state = IdleStateEnum::None;
+        }
+        else
+        {
+            ent->client->jumppers->idle_state = IdleStateEnum::Self;
+        }
+
+        NotifyPlayerIdleChange(ent, prev_state, ent->client->jumppers->idle_state);
+    }
 
 
     void HandleGlobalCmdResponse(const global_cmd_response& response)

@@ -28,6 +28,7 @@ namespace Jump
 
     void JumpClientConnect(edict_t* ent);
     void JumpClientDisconnect(edict_t* ent);
+    void JumpInitCvars();
     void JumpInitGame();
     void JumpRunFrame();
 
@@ -40,6 +41,10 @@ namespace Jump
     void InitializeClientEnt(edict_t* ent);
 
     void RemoveAllPlayerWeapons(edict_t* ent);
+
+    void UpdatePlayerIdleState(edict_t* ent, usercmd_t* ucmd);
+    void ForcePlayerIdleStateWakeup(edict_t* ent);
+    void NotifyPlayerIdleChange(edict_t* ent, IdleStateEnum prev_state, IdleStateEnum new_state);
 
     void AdjustReplaySpeed(edict_t* ent, uint8_t oldKeyStates, uint8_t newKeyStates);
     const char* GetReplaySpeedString(ReplaySpeed speed);

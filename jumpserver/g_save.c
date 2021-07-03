@@ -151,6 +151,10 @@ void InitGame()
 	// dm map list
 	//sv_maplist = gi.cvar ("sv_maplist", "", 0);
 
+	// Jump
+	Jump::JumpInitCvars();
+	// Jump
+
 	// items
 	InitItems();
 

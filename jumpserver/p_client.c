@@ -1029,6 +1029,8 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
 	Jump::AdjustReplaySpeed(ent, old_key_states, ent->client->jumpdata->key_states);
 
+	Jump::UpdatePlayerIdleState(ent, ucmd);
+
 	// Apply a health regen rate of 10/frame (equal to 100/s)
 	if (ent->health > 0)
 	{

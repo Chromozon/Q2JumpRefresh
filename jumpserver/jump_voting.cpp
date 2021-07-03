@@ -304,10 +304,12 @@ namespace Jump
                 continue;
             }
 
-            if (!cur_vote_type->CanParticipate(player))
+            // Idlers can't participate!
+            if (client->jumppers->idle_state != IdleStateEnum::None)
                 continue;
 
-            // TODO: Check idle
+            if (!cur_vote_type->CanParticipate(player))
+                continue;
 
 
             int player_num = player - g_edicts;
@@ -510,6 +512,11 @@ namespace Jump
             return false;
         }
 
+        if (player->client->jumppers->idle_state != IdleStateEnum::None)
+        {
+            gi.cprintf(player, PRINT_HIGH, "You cannot start a vote while being idle!\n");
+            return false;
+        }
 
         auto vote = GetVoteType(vote_type);
         if (!vote)

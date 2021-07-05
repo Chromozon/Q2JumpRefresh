@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,7 +19,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
+    <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
@@ -58,9 +58,10 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>_DEBUG;_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\packages\tencent.rapidjson.1.1.1\lib\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -74,13 +75,14 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PreprocessorDefinitions>NDEBUG;_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\packages\tencent.rapidjson.1.1.1\lib\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
       <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -96,7 +98,6 @@
     <ClInclude Include="g_chase.h" />
     <ClInclude Include="g_local.h" />
     <ClInclude Include="game.h" />
-    <ClInclude Include="httplib.h" />
     <ClInclude Include="jump.h" />
     <ClInclude Include="jump_cmds.h" />
     <ClInclude Include="jump_ents.h" />
@@ -116,7 +117,43 @@
     <ClInclude Include="p_menu.h" />
     <ClInclude Include="platform.h" />
     <ClInclude Include="q_shared.h" />
-    <ClInclude Include="sqlite3.h" />
+    <ClInclude Include="thirdparty\cpp-httplib\httplib.h" />
+    <ClInclude Include="thirdparty\rapidjson\allocators.h" />
+    <ClInclude Include="thirdparty\rapidjson\document.h" />
+    <ClInclude Include="thirdparty\rapidjson\encodedstream.h" />
+    <ClInclude Include="thirdparty\rapidjson\encodings.h" />
+    <ClInclude Include="thirdparty\rapidjson\error\en.h" />
+    <ClInclude Include="thirdparty\rapidjson\error\error.h" />
+    <ClInclude Include="thirdparty\rapidjson\filereadstream.h" />
+    <ClInclude Include="thirdparty\rapidjson\filewritestream.h" />
+    <ClInclude Include="thirdparty\rapidjson\fwd.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\biginteger.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\diyfp.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\dtoa.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\ieee754.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\itoa.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\meta.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\pow10.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\regex.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\stack.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\strfunc.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\strtod.h" />
+    <ClInclude Include="thirdparty\rapidjson\internal\swap.h" />
+    <ClInclude Include="thirdparty\rapidjson\istreamwrapper.h" />
+    <ClInclude Include="thirdparty\rapidjson\memorybuffer.h" />
+    <ClInclude Include="thirdparty\rapidjson\memorystream.h" />
+    <ClInclude Include="thirdparty\rapidjson\msinttypes\inttypes.h" />
+    <ClInclude Include="thirdparty\rapidjson\msinttypes\stdint.h" />
+    <ClInclude Include="thirdparty\rapidjson\ostreamwrapper.h" />
+    <ClInclude Include="thirdparty\rapidjson\pointer.h" />
+    <ClInclude Include="thirdparty\rapidjson\prettywriter.h" />
+    <ClInclude Include="thirdparty\rapidjson\rapidjson.h" />
+    <ClInclude Include="thirdparty\rapidjson\reader.h" />
+    <ClInclude Include="thirdparty\rapidjson\schema.h" />
+    <ClInclude Include="thirdparty\rapidjson\stream.h" />
+    <ClInclude Include="thirdparty\rapidjson\stringbuffer.h" />
+    <ClInclude Include="thirdparty\rapidjson\writer.h" />
+    <ClInclude Include="thirdparty\sqlite\sqlite3.h" />
     <ClInclude Include="thread_queue.h" />
   </ItemGroup>
   <ItemGroup>
@@ -212,10 +249,10 @@
     <ClCompile Include="q_shared.c">
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
-    <ClCompile Include="shell.c">
+    <ClCompile Include="thirdparty\sqlite\shell.c">
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="sqlite3.c">
+    <ClCompile Include="thirdparty\sqlite\sqlite3.c">
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
   </ItemGroup>

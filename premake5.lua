@@ -63,13 +63,13 @@ project "jumpserver"
     end
 
     files { "jumpserver/**.h", "jumpserver/**.c", "jumpserver/**.cpp" }
-    includedirs { "packages/tencent.rapidjson.1.1.1/lib/native/include" }
+    includedirs { "jumpserver/thirdparty" }
 
     filter "files:**.c"
         compileas "C++"
 
     -- SQLite has to be compiled as C.
-    filter { "files:jumpserver/sqlite3.c or jumpserver/shell.c" }
+    filter { "files:jumpserver/thirdparty/sqlite/*.c" }
         compileas "C"
 
     -- Specific targetnames
@@ -81,9 +81,11 @@ project "jumpserver"
     -- Configuration specific
     filter "configurations:Debug"
         defines { "_DEBUG" }
+        runtime "Debug"
     filter "configurations:Release"
         defines { "NDEBUG" }
         optimize "On"
+        runtime "Release"
         
     -- System specific
     filter "system:linux"
@@ -95,7 +97,7 @@ project "jumpserver"
             }
         end
     filter "system:Windows"
-        defines { "_WIN32" }
+        defines { "WIN32" }
         disablewarnings "4996"
         -- Move game library + debug symbols to game folder.
         if _OPTIONS["q2path"] then

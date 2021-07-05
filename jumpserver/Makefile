@@ -19,7 +19,7 @@ endif
 # #############################################
 
 RESCOMP = windres
-INCLUDES += -I../packages/tencent.rapidjson.1.1.1/lib/native/include
+INCLUDES += -Ithirdparty
 FORCE_INCLUDE +=
 ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
 ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
@@ -339,10 +339,10 @@ $(OBJDIR)/p_weapon.o: p_weapon.c
 $(OBJDIR)/q_shared.o: q_shared.c
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/shell.o: shell.c
+$(OBJDIR)/shell.o: thirdparty/sqlite/shell.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/sqlite3.o: sqlite3.c
+$(OBJDIR)/sqlite3.o: thirdparty/sqlite/sqlite3.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

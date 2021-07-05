@@ -14,7 +14,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
-#include "httplib.h"
+#include <cpp-httplib/httplib.h>
 #include "jump_types.h"
 
 namespace Jump

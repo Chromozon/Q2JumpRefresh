@@ -4,6 +4,7 @@
 #include "jump_utils.h"
 
 #include <sstream>
+#include <algorithm>
 
 
 namespace Jump

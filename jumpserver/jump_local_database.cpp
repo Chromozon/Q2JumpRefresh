@@ -11,6 +11,7 @@
 #include <map>
 #include <array>
 #include <set>
+#include <algorithm>
 
 namespace Jump
 {
@@ -1109,7 +1110,7 @@ void LocalDatabase::MigrateMapTimes(const std::string& folder)
             continue;
         }
         std::string mapname = RemoveFileExtension(std::filesystem::path(entry).filename().string());
-        std::ifstream file(entry);
+        std::ifstream file(entry.path().c_str());
         if (!file.is_open())
         {
             Logger::Error(va("Migration: Could not open maptime file %s", entry.path().c_str()));

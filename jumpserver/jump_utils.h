@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <sstream>
+#include <iostream>
 
 namespace Jump
 {

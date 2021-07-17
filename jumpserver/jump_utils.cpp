@@ -5,6 +5,7 @@
 #include <fstream>
 #include <time.h>
 #include <sstream>
+#include <algorithm>
 
 namespace Jump
 {

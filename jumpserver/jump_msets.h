@@ -73,7 +73,7 @@ private:
     static std::map<std::string, std::string> _mapperMSets; // <mset name, value>
     static std::map<std::string, std::string> _serverMSets; // <mset name, value>
 
-    static MSetData MSets::_msets[];
+    static MSetData _msets[];
 
 
     static void GravityChanged();

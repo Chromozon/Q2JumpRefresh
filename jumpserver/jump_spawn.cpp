@@ -22,6 +22,8 @@ void Spawn::JoinTeamEasy(edict_t* ent)
 
     InitDefaultSpawnVariables(ent);
 
+    ForcePlayerIdleStateWakeup(ent);
+
     if (ent->client->jumpdata->stores.HasStore())
     {
         store_data_t data = ent->client->jumpdata->stores.GetStore(1);
@@ -48,6 +50,8 @@ void Spawn::JoinTeamHard(edict_t* ent)
     AssignTeamSkin(ent);
 
     InitDefaultSpawnVariables(ent);
+
+    ForcePlayerIdleStateWakeup(ent);
 
     edict_t* spawn = SelectPlayerSpawn();
     MovePlayerToSpawn(ent, spawn, true);

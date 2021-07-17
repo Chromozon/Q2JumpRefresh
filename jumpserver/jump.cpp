@@ -351,17 +351,37 @@ namespace Jump
         ent->client->jumpdata->replay_recording.clear();
     }
 
+    /// <summary>
+    // Every time a player joins the game. This does NOT get called between level changes.
+    /// </summary>
+    /// <param name="ent">Player entity</param>
     void JumpClientConnect(edict_t* ent)
     {
         ent->client->jumpdata = new client_data_t();
+
+        // Only init persistent data here.
+        ent->client->jumppers = new client_pers_data_t();
     }
 
+    /// <summary>
+    /// Every time a player leaves the game. This does NOT get called between level changes.
+    /// </summary>
+    /// <param name="ent"></param>
     void JumpClientDisconnect(edict_t* ent)
     {
         delete ent->client->jumpdata;
         ent->client->jumpdata = NULL;
 
         VoteSystem::RemoveParticipant(ent);
+
+        assert(ent->client->jumppers != nullptr);
+        delete ent->client->jumppers;
+        ent->client->jumppers = nullptr;
+    }
+
+    void JumpInitCvars()
+    {
+        jump_server.cvar_idle_time = gi.cvar("jump_idle_time", "60", 0);
     }
 
     void JumpInitGame()
@@ -673,6 +693,97 @@ namespace Jump
         ChangeWeapon(ent);
         // TODO: does this work correctly with hand grenades?
         // TODO: does this work correctly by setting newweapon to nullptr?
+    }
+
+    void UpdatePlayerIdleState(edict_t* ent, usercmd_t* ucmd)
+    {
+        auto client = ent->client;
+
+        auto prev_state = client->jumppers->idle_state;
+        auto new_state = IdleStateEnum::None;
+
+        const uint64_t max_idletime_msec = jump_server.cvar_idle_time->value * 1000;
+
+        bool moved = false;
+
+        auto moved_func = [&]()
+        {
+            // Never count spectator moving if already idle.
+            if (prev_state != IdleStateEnum::None && client->jumpdata->team == TeamEnum::Spectator)
+            {
+                return false;
+            }
+
+            return  ucmd->forwardmove != client->jumppers->prev_idle_forwardmove ||
+                    ucmd->sidemove != client->jumppers->prev_idle_sidemove ||
+                    ucmd->upmove != client->jumppers->prev_idle_upmove;
+        };
+
+        if (moved_func())
+        {
+            client->jumppers->idle_msec = 0;
+
+            moved = true;
+        }
+        else
+        {
+            client->jumppers->idle_msec += ucmd->msec;
+        }
+
+        if (!moved && max_idletime_msec != 0 && client->jumppers->idle_msec >= max_idletime_msec)
+        {
+            new_state = IdleStateEnum::Auto;
+        }
+
+        if (!moved && prev_state == IdleStateEnum::Self)
+        {
+            new_state = IdleStateEnum::Self;
+        }
+        
+        if (prev_state != new_state)
+        {
+            Logger::Debug(va("Player's %s idle state changed from %i to %i.", ent->client->pers.netname, prev_state, new_state));
+
+            NotifyPlayerIdleChange(ent, prev_state, new_state);
+        }
+
+        client->jumppers->idle_state = new_state;
+        client->jumppers->prev_idle_forwardmove = ucmd->forwardmove;
+        client->jumppers->prev_idle_sidemove = ucmd->sidemove;
+        client->jumppers->prev_idle_upmove = ucmd->upmove;
+    }
+
+    void ForcePlayerIdleStateWakeup(edict_t* ent)
+    {
+        if (ent->client->jumppers->idle_state != IdleStateEnum::None)
+        {
+            Logger::Debug(va("Player's %s idle state was changed by forcing a wake up!", ent->client->pers.netname));
+
+            NotifyPlayerIdleChange(ent, ent->client->jumppers->idle_state, IdleStateEnum::None);
+        }
+
+        ent->client->jumppers->idle_msec = 0;
+        ent->client->jumppers->idle_state = IdleStateEnum::None;
+    }
+
+    void NotifyPlayerIdleChange(edict_t* ent, IdleStateEnum prev_state, IdleStateEnum new_state)
+    {
+        if (prev_state == new_state)
+            return;
+
+
+        if (new_state == IdleStateEnum::Auto)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "You are now marked as idle for being inactive for too long.\n");
+        }
+        else if (new_state == IdleStateEnum::Self)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "You are now marked as idle.\n");
+        }
+        else if (new_state == IdleStateEnum::None)
+        {
+            gi.cprintf(ent, PRINT_HIGH, "You are no longer marked as idle!\n");
+        }
     }
 
     void AdjustReplaySpeed(edict_t* ent, uint8_t oldKeyStates, uint8_t newKeyStates)

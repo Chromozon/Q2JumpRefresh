@@ -86,6 +86,13 @@ namespace Jump
         Zero = 2,
     };
 
+    enum class IdleStateEnum : int
+    {
+        None = 0, // Player not idle.
+        Auto, // Player was idle for too long.
+        Self // Player used 'idle' command and set themselves idle.
+    };
+
     // How much disk space is required to store a replay:
     // 48 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 480 bytes/s
     // 15 seconds = 7.2 kB
@@ -171,6 +178,26 @@ namespace Jump
         int map_count;
     };
 
+    // Data unique to each client that is persists between level changes.
+    class client_pers_data_t
+    {
+    public:
+        client_pers_data_t()
+        {
+            prev_idle_upmove = 0;
+            prev_idle_forwardmove = 0;
+            prev_idle_sidemove = 0;
+            idle_state = IdleStateEnum::None;
+            idle_msec = 0;
+        }
+
+        int prev_idle_upmove;
+        int prev_idle_forwardmove;
+        int prev_idle_sidemove;
+        IdleStateEnum idle_state;
+        uint64_t idle_msec;
+    };
+
     // Data unique to each client
     class client_data_t
     {
@@ -236,6 +263,8 @@ namespace Jump
             time_added_mins = 0;
             replay_now_time_ms = INT64_MAX;
             local_map_id = -1;
+
+            cvar_idle_time = nullptr;
         }
 
         LevelStateEnum level_state;    // freeplay, voting, or intermission
@@ -281,6 +310,9 @@ namespace Jump
 
         // MapId in the local database for the current level
         int local_map_id;
+
+        // How long the player needs to be idle for, in seconds, before they are set as idle. 0 = no auto-idling
+        cvar_t* cvar_idle_time;
     };
 
     // Converts a replay buffer into a byte array

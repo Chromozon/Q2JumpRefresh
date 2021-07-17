@@ -105,6 +105,8 @@ namespace Jump
 
 		const int num_maps = jump_server.maplist.size();
 
+		const std::string idle_postfix = " (idle)";
+
 		std::vector<edict_t*> clients_hard;
 		std::vector<edict_t*> clients_easy;
 		std::vector<edict_t*> clients_spec;
@@ -151,6 +153,7 @@ namespace Jump
 
 			float best_time_msec = player->client->jumpdata->cached_time_msec;
 			int num_completions = player->client->jumpdata->cached_completions;
+			auto idle_state = player->client->jumppers->idle_state;
 
 
 			std::string ping = std::to_string(player->client->ping);
@@ -159,6 +162,7 @@ namespace Jump
 			std::string completions = num_completions > 0 ? std::to_string(num_completions) : "----";
 			std::string num_maps_completed = std::to_string(player->client->jumpdata->cached_maps_completed);
 			std::string completions_percentage = to_string_with_precision(completion_frac * 100, 1);
+			std::string team = idle_state != IdleStateEnum::None ? "Idle" : "Hard";
 			if (player == ent)
 			{
 				ping = GetGreenConsoleText(ping);
@@ -173,7 +177,7 @@ namespace Jump
 			ss << std::right << std::setw(4) << completions << " ";
 			ss << std::right << std::setw(4) << num_maps_completed << "  ";
 			ss << std::right << std::setw(4) << completions_percentage << "  ";
-			ss << "Hard" << "\" ";
+			ss << team << "\" ";
 		}
 
 		// If there are no hard players, shift team easy players to the top, else add padding between the groups.
@@ -201,7 +205,7 @@ namespace Jump
 
 			float best_time_msec = player->client->jumpdata->cached_time_msec;
 			int num_completions = player->client->jumpdata->cached_completions;
-
+			auto idle_state = player->client->jumppers->idle_state;
 
 			std::string ping = std::to_string(player->client->ping);
 			std::string username = player->client->pers.netname;
@@ -209,6 +213,7 @@ namespace Jump
 			std::string completions = num_completions > 0 ? std::to_string(num_completions) : "----";
 			std::string num_maps_completed = std::to_string(player->client->jumpdata->cached_maps_completed);
 			std::string completions_percentage = to_string_with_precision(completion_frac * 100, 1);
+			std::string team = idle_state != IdleStateEnum::None ? "Idle" : "Easy";
 			if (player == ent)
 			{
 				ping = GetGreenConsoleText(ping);
@@ -223,7 +228,7 @@ namespace Jump
 			ss << std::right << std::setw(4) << completions << " ";
 			ss << std::right << std::setw(4) << num_maps_completed << "  ";
 			ss << std::right << std::setw(4) << completions_percentage << "  ";
-			ss << "Easy" << "\" ";
+			ss << team << "\" ";
 		}
 
 		if (players_added == 0)
@@ -254,6 +259,8 @@ namespace Jump
 			}
 			edict_t* player = clients_spec[i];
 
+			auto idle_state = player->client->jumppers->idle_state;
+
 			std::string ping = std::to_string(player->client->ping);
 			std::string username = player->client->pers.netname;
 			if (player == ent)
@@ -262,10 +269,15 @@ namespace Jump
 				username = GetGreenConsoleText(username);
 			}
 
+			if (idle_state != IdleStateEnum::None)
+			{
+				username += idle_postfix;
+			}
+
 			int yv = yv_offset + (i * 8);
 			ss << "yv " << yv << " string \"";
 			ss << std::right << std::setw(4) << ping << " ";
-			ss << std::left << std::setw(15) << username << " ";
+			ss << std::left << std::setw(22) << username << " "; // offset: 15 + 7 = 22
 			// TODO: idle, who you are speccing, what replay you are watching
 			ss << "\" ";
 		}

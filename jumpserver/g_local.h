@@ -978,6 +978,8 @@ struct gclient_s
 
     // Jump
 	Jump::client_data_t* jumpdata;
+    // persistent data (between level changes)
+    Jump::client_pers_data_t* jumppers;
     // Jump
 };
 

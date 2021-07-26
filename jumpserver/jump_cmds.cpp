@@ -15,6 +15,7 @@
 #include "jump_local_database.h"
 #include "jump_spawn.h"
 #include "jump_msets.h"
+#include "jump_admin.h"
 
 namespace Jump
 {
@@ -52,6 +53,8 @@ namespace Jump
         { "msetlist", Cmd_Jump_MSetList },
         { "team", Cmd_Jump_Team },
         { "idle", Cmd_Jump_Idle },
+        { "adminlogin", Cmd_Jump_AdminLogin },
+        { "adminlogout", Cmd_Jump_AdminLogout },
         
         { "votetime", Cmd_Jump_Vote_Time },
         { "timevote", Cmd_Jump_Vote_Time },
@@ -966,6 +969,16 @@ namespace Jump
         }
 
         NotifyPlayerIdleChange(ent, prev_state, ent->client->jumppers->idle_state);
+    }
+
+    void Cmd_Jump_AdminLogin(edict_t* ent)
+    {
+        AdminSystem::Login(ent, gi.argv(1));
+    }
+
+    void Cmd_Jump_AdminLogout(edict_t* ent)
+    {
+        AdminSystem::Logout(ent);
     }
 
 

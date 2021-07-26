@@ -93,6 +93,29 @@ namespace Jump
         Self // Player used 'idle' command and set themselves idle.
     };
 
+    enum class AdminFlagEnum : int
+    {
+        ADMIN_FLAG_NONE             = 0,
+        ADMIN_FLAG_GENERIC          = (1 << 0),
+        ADMIN_FLAG_KICK             = (1 << 1),
+        ADMIN_FLAG_BAN              = (1 << 2),
+        ADMIN_FLAG_PERMABAN         = (1 << 3),
+        ADMIN_FLAG_MAPCHANGE        = (1 << 4),
+
+        ADMIN_FLAG_VOTE_KICK        = (1 << 5),
+        ADMIN_FLAG_VOTE_BAN         = (1 << 6),
+        ADMIN_FLAG_VOTE_MAPCHANGE   = (1 << 7),
+
+        ADMIN_FLAG_ADMINS           = (1 << 8), // Add or remove admins and admin flags
+    };
+
+    typedef struct
+    {
+        bool authenticated;
+
+        AdminFlagEnum admin_flags;
+    } admin_data_t;
+
     // How much disk space is required to store a replay:
     // 48 bytes per replay frame, 10 frames per second (because server runs at 10 frames/s) = 480 bytes/s
     // 15 seconds = 7.2 kB
@@ -189,6 +212,8 @@ namespace Jump
             prev_idle_sidemove = 0;
             idle_state = IdleStateEnum::None;
             idle_msec = 0;
+            admin.authenticated = false;
+            admin.admin_flags = AdminFlagEnum::ADMIN_FLAG_NONE;
         }
 
         int prev_idle_upmove;
@@ -196,6 +221,7 @@ namespace Jump
         int prev_idle_sidemove;
         IdleStateEnum idle_state;
         uint64_t idle_msec;
+        admin_data_t admin;
     };
 
     // Data unique to each client

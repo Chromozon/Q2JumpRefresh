@@ -62,6 +62,12 @@ public:
     static int GetMapId(const std::string& mapname);
     static std::string GetUserName(int userId);
     static void GetTotalCompletions(const std::string& mapname, int& totalPlayers, int& totalCompletions);
+    
+    static bool AdminAuthenticate(const std::string& username, const std::string& password, AdminFlagEnum* flags = nullptr);
+    static bool AddAdmin(const std::string& username, const std::string& password);
+    static bool RemoveAdmin(const std::string& username);
+    static bool AddAdminFlags(const std::string& username, AdminFlagEnum flags);
+    static bool RemoveAdminFlags(const std::string& username, AdminFlagEnum flags);
 
     static void MigrateAll();
 
@@ -70,6 +76,7 @@ private:
     static void CreateTableMaps();
     static void CreateTableUsers();
     static void CreateTableMapTimes();
+    static void CreateTableAdmins();
 
     // Misc helpers
     static bool GetReplay(int mapId, int userId, std::vector<replay_frame_t>& replay, int& timeMs);
@@ -82,8 +89,11 @@ private:
     static void MigrateReplays(const std::string& folder);
     static bool MigrateReplay(const std::string& mapname, int userid, const std::vector<replay_frame_t>& replay);
     static bool ConvertOldReplay(const std::string& demoFile, std::vector<replay_frame_t>& newReplay);
+
+    static std::string SaltString(const std::string& str);
     
     static sqlite3* _db;
+    static std::string _adminPasswordSalt;
 };
 
 }

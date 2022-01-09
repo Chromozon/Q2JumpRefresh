@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -90,6 +90,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ConformanceMode>Default</ConformanceMode>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -100,8 +101,8 @@
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /B /Y "$(OutDir)$(TargetFileName)" "G:\Quake2Dev\jumprefresh";
-copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
+      <Command>copy /B /Y "$(OutDir)$(TargetFileName)" "D:\_q2\jumprefresh";
+copy /B /Y "$(OutDir)$(TargetName).pdb" "D:\_q2\jumprefresh";</Command>
       <Message>Copying binaries to q2 jumprefresh folder</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -114,6 +115,7 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ConformanceMode>Default</ConformanceMode>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -127,8 +129,8 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>copy /B /Y "$(OutDir)$(TargetFileName)" "G:\Quake2Dev\jumprefresh";
-copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
+      <Command>copy /B /Y "$(OutDir)$(TargetFileName)" "D:\_q2\jumprefresh";
+copy /B /Y "$(OutDir)$(TargetName).pdb" "D:\_q2\jumprefresh";</Command>
       <Message>Copying binaries to q2 jumprefresh folder</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -137,6 +139,7 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <WarningLevel>EnableAllWarnings</WarningLevel>
+      <ConformanceMode>Default</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -144,6 +147,7 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <WarningLevel>Level3</WarningLevel>
+      <ConformanceMode>Default</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -165,6 +169,7 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
     <ClCompile Include="g_utils.c" />
     <ClCompile Include="g_weapon.c" />
     <ClCompile Include="jump.cpp" />
+    <ClCompile Include="jump_admin.cpp" />
     <ClCompile Include="jump_cmds.cpp" />
     <ClCompile Include="jump_ents.cpp" />
     <ClCompile Include="jump_ghost.cpp" />
@@ -205,12 +210,14 @@ copy /B /Y "$(OutDir)$(TargetName).pdb" "G:\Quake2Dev\jumprefresh";</Command>
   <ItemGroup>
     <ClInclude Include="base64.h" />
     <ClInclude Include="g_chase.h" />
+    <ClInclude Include="jump_admin.h" />
     <ClInclude Include="jump_ents.h" />
     <ClInclude Include="jump_ghost.h" />
     <ClInclude Include="jump_local_database.h" />
     <ClInclude Include="jump_msets.h" />
     <ClInclude Include="jump_spawn.h" />
     <ClInclude Include="sqlite3.h" />
+    <ClInclude Include="thirdparty\picosha3\picosha3.h" />
     <ClInclude Include="thread_queue.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="g_local.h" />

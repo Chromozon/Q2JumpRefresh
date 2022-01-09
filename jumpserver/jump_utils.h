@@ -153,4 +153,7 @@ namespace Jump
         out << std::fixed << value;
         return out.str();
     }
+
+    bool LaunchParameterExists(const std::string& param);
+    const char* GetLaunchParameterValue(const std::string& param);
 }

@@ -1,4 +1,4 @@
-
+#include "g_local.h"
 #include "jump_local_database.h"
 #include "jump_utils.h"
 #include "jump_logger.h"
@@ -11,6 +11,10 @@
 #include <map>
 #include <array>
 #include <set>
+#include "thirdparty/picosha3/picosha3.h"
+
+
+#define TEMP_SALT           "TEMP_SALT"
 
 namespace Jump
 {
@@ -19,12 +23,27 @@ namespace Jump
 /// Private variables
 /// </summary>
 sqlite3* LocalDatabase::_db = nullptr;
+std::string LocalDatabase::_adminPasswordSalt = TEMP_SALT;
 
 /// <summary>
 /// Opens the connection to the database.  Creates the initial tables.
 /// </summary>
 void LocalDatabase::Init()
 {
+    std::ifstream saltFile(GetModPortDir() + "/.dbsalt", std::ios::binary);
+    std::string salt;
+    if (saltFile.is_open() && std::getline(saltFile, salt) && salt.length() > 0)
+    {
+        _adminPasswordSalt = salt;
+
+        Logger::Info("Database password salt has been set!");
+    }
+    else
+    {
+        Logger::Warning("DATABASE PASSWORD SALT HAS NOT BEEN SET! Please set -dbpasswordsalt launch parameter!");
+    }
+
+
     std::string dbname = "local_db.sqlite3";
     std::string dbpath = GetModPortDir() + "/" + dbname;
 
@@ -49,6 +68,7 @@ void LocalDatabase::Init()
     CreateTableUsers();
     CreateTableMaps();
     CreateTableMapTimes();
+    CreateTableAdmins();
 }
 
 /// <summary>
@@ -123,6 +143,24 @@ void LocalDatabase::CreateTableMapTimes()
     if (error != SQLITE_OK)
     {
         Logger::Error(va("Could not create MapTimes table, error: %d, %s", error, sqlite3_errmsg(_db)));
+    }
+}
+
+void LocalDatabase::CreateTableAdmins()
+{
+    std::string sql = ""
+        "CREATE TABLE IF NOT EXISTS Admins"
+        "("
+            "UserId INTEGER NOT NULL,"
+            "Password VARCHAR(128) NOT NULL,"
+            "Flags INTEGER NOT NULL DEFAULT 0,"
+            "PRIMARY KEY(UserId)"
+        ")"
+    ;
+    int error = sqlite3_exec(_db, sql.c_str(), nullptr, nullptr, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Could not create Admins table, error: %d, %s", error, sqlite3_errmsg(_db)));
     }
 }
 
@@ -986,6 +1024,239 @@ void LocalDatabase::GetTotalCompletions(const std::string& mapname, int& totalPl
 }
 
 /// <summary>
+/// Authenticate admin.
+/// </summary>
+/// <param name="username"></param>
+/// <param name="password"></param>
+/// <param name="flags"></param>
+/// <returns>If user was successfully authenticated, false otherwise.</returns>
+bool LocalDatabase::AdminAuthenticate(const std::string& username, const std::string& password, AdminFlagEnum* flags)
+{
+    bool authenticated = false;
+
+    auto passwordSalted = SaltString(password);
+    std::array<uint8_t, picosha3::bits_to_bytes(512)> hash {};
+    auto shaGenerator512 = picosha3::get_sha3_generator<512>();
+    shaGenerator512(passwordSalted.cbegin(), passwordSalted.cend(), hash.begin(), hash.end());
+    auto passwordHash = picosha3::bytes_to_hex_string(hash);
+
+    const char* sql =
+        "SELECT Flags FROM Admins "
+        "WHERE UserId = (SELECT UserId FROM Users WHERE UserName = @username LIMIT 1) "
+        "AND "
+        "Password = @passwordhash"
+    ;
+    int index, error;
+    sqlite3_stmt* prepared = nullptr;
+    error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error authenticating admin, username %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(_db)));
+        sqlite3_finalize(prepared);
+    }
+
+    
+
+    index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    index = sqlite3_bind_parameter_index(prepared, "@passwordhash");
+    sqlite3_bind_text(prepared, index, passwordHash.c_str(), -1, SQLITE_STATIC);
+
+    int step = sqlite3_step(prepared);
+    if (step == SQLITE_ROW)
+    {
+        if (flags != nullptr)
+            *flags = static_cast<AdminFlagEnum>(sqlite3_column_int(prepared, 0));
+        
+        authenticated = true;
+    }
+    sqlite3_finalize(prepared);
+
+    return authenticated;
+}
+
+/// <summary>
+/// Adds an admin to the database.
+/// </summary>
+/// <param name="username"></param>
+/// <param name="password"></param>
+/// <returns>Whether the addition succeeded.</returns>
+bool LocalDatabase::AddAdmin(const std::string& username, const std::string& password)
+{
+    auto passwordSalted = SaltString(password);
+    std::array<uint8_t, picosha3::bits_to_bytes(512)> hash {};
+    auto shaGenerator512 = picosha3::get_sha3_generator<512>();
+    shaGenerator512(passwordSalted.cbegin(), passwordSalted.cend(), hash.begin(), hash.end());
+    auto passwordHash = picosha3::bytes_to_hex_string(hash);
+
+    auto sql =
+        "INSERT INTO Admins (UserId, Password) VALUES "
+        "("
+            "(SELECT UserId FROM Users WHERE UserName = @username LIMIT 1),"
+            "@passwordhash"
+        ")"
+    ;
+    sqlite3_stmt* prepared = nullptr;
+    int error, index;
+
+    error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error adding new admin %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(_db)));
+        sqlite3_finalize(prepared);
+        return false;
+    }
+
+    index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    index = sqlite3_bind_parameter_index(prepared, "@passwordhash");
+    sqlite3_bind_text(prepared, index, passwordHash.c_str(), -1, SQLITE_STATIC);
+
+    sqlite3_step(prepared);
+
+    error = sqlite3_finalize(prepared);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error adding new admin %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(_db)));
+        return false;
+    }
+
+    return true;
+}
+
+/// <summary>
+/// Removes the admin from the database.
+/// </summary>
+/// <param name="username"></param>
+/// <returns>Whether the removal succeeded.</returns>
+bool LocalDatabase::RemoveAdmin(const std::string& username)
+{
+    auto sql =
+        "DELETE FROM Admins WHERE UserId = (SELECT UserId FROM Users WHERE UserName = @username LIMIT 1) LIMIT 1"
+    ;
+    sqlite3_stmt* prepared = nullptr;
+    int error, index;
+
+    error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error removing admin %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(_db)));
+        sqlite3_finalize(prepared);
+        return false;
+    }
+
+    index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    sqlite3_step(prepared);
+
+    error = sqlite3_finalize(prepared);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error removing admin %s, error: %d, %s",
+            username.c_str(), error, sqlite3_errmsg(_db)));
+        return false;
+    }
+
+    return true;
+}
+
+/// <summary>
+/// Gives the specified admin flags to an admin.
+/// </summary>
+/// <param name="username"></param>
+/// <param name="flags">Admin flags</param>
+/// <returns>Whether the addition succeeded.</returns>
+bool LocalDatabase::AddAdminFlags(const std::string& username, AdminFlagEnum flags)
+{
+    auto sql = va(
+        "UPDATE Admins SET AdminFlags = (AdminFlags | %i) WHERE UserId = (SELECT UserId FROM Users WHERE UserName = @username LIMIT 1)",
+        flags
+    );
+    sqlite3_stmt* prepared = nullptr;
+    int error, index;
+
+    error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error adding admin flags for %s, %i, error: %d, %s",
+            username.c_str(), flags, error, sqlite3_errmsg(_db)));
+        sqlite3_finalize(prepared);
+        return false;
+    }
+
+    index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    sqlite3_step(prepared);
+
+    error = sqlite3_finalize(prepared);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error adding admin flags for %s, %i error: %d, %s",
+            username.c_str(), flags, error, sqlite3_errmsg(_db)));
+        return false;
+    }
+
+    return true;
+}
+
+/// <summary>
+/// Removes the specified admin flags from an admin.
+/// </summary>
+/// <param name="username"></param>
+/// <param name="flags">Admin flags</param>
+/// <returns>Whether the removal succeeded.</returns>
+bool LocalDatabase::RemoveAdminFlags(const std::string& username, AdminFlagEnum flags)
+{
+    auto sql = va(
+        "UPDATE Admins SET AdminFlags = (AdminFlags & (~%i)) WHERE UserId = (SELECT UserId FROM Users WHERE UserName = @username LIMIT 1)",
+        flags
+    );
+    sqlite3_stmt* prepared = nullptr;
+    int error, index;
+
+    error = sqlite3_prepare_v2(_db, sql, -1, &prepared, nullptr);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error removing admin flags for %s, %i, error: %d, %s",
+            username.c_str(), flags, error, sqlite3_errmsg(_db)));
+        sqlite3_finalize(prepared);
+        return false;
+    }
+
+    index = sqlite3_bind_parameter_index(prepared, "@username");
+    sqlite3_bind_text(prepared, index, username.c_str(), -1, SQLITE_STATIC);
+
+    sqlite3_step(prepared);
+
+    error = sqlite3_finalize(prepared);
+    if (error != SQLITE_OK)
+    {
+        Logger::Error(va("Error removing admin flags for %s, %i error: %d, %s",
+            username.c_str(), flags, error, sqlite3_errmsg(_db)));
+        return false;
+    }
+
+    return true;
+}
+
+/// <summary>
+/// Salts a string.
+/// </summary>
+/// <param name="str"></param>
+std::string LocalDatabase::SaltString(const std::string& str)
+{
+    return str + _adminPasswordSalt;
+}
+
+/// <summary>
 /// Deletes all data from all tables.
 /// </summary>
 void LocalDatabase::ClearAllTables()
@@ -1362,6 +1633,5 @@ void LocalDatabase::MigrateAll()
     timer.End();
     Logger::Info(va("Migration: added maptimes (%d ms)", timer.DurationMilliseconds()));
 }
-
 
 }

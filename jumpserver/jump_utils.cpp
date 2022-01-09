@@ -6,6 +6,21 @@
 #include <time.h>
 #include <sstream>
 
+#ifdef WIN32
+#include <Windows.h>
+#endif
+
+static void GetLaunchParams(const char*** argv, int& argc)
+{
+#ifdef WIN32
+    *argv = (const char**)__argv;
+    argc = __argc;
+#else
+    *argv = nullptr;
+    args = 0;
+#endif
+}
+
 namespace Jump
 {
     // Returns the path to the mod files relative to the root q2 folder ("jumprefresh")
@@ -377,6 +392,43 @@ namespace Jump
         char buffer[16] = {};
         strftime(buffer, sizeof(buffer), "%d/%m/%y", &tm);
         return buffer;
+    }
+
+    bool LaunchParameterExists(const std::string& param)
+    {
+        auto argc = gi.argc();
+        for (int i = 0; i < argc; i++)
+        {
+            if (StringCompareInsensitive(gi.argv(i), param))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    const char* GetLaunchParameterValue(const std::string& param)
+    {
+        int argc = 0;
+        const char** argv = nullptr;
+        GetLaunchParams(&argv, argc);
+        if (argv == nullptr || !argc)
+        {
+            return nullptr;
+        }
+
+        for (int i = 0; i < argc; i++)
+        {
+            if (StringCompareInsensitive(argv[i], param))
+            {
+                auto value_index = i + 1;
+                if (value_index < argc)
+                    return argv[value_index];
+            }
+        }
+
+        return nullptr;
     }
 
 } // namespace Jump
